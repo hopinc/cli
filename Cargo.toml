@@ -1,0 +1,26 @@
+[package]
+name = "hop"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# storage stuff
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0" }
+dirs = { version = "4.0" }
+
+# login
+hyper = { version = "0.14", features = ["server"] }
+querystring = { version = "1.1" }
+webbrowser = { version = "0.7" }
+portpicker = { version = "0.1" }
+
+# cli
+structopt = { version = "0.3" }
+terminal-menu = { version = "2.0" }
+# async
+tokio = { version = "1", features = ["full"] }
+# http client
+reqwest = { version = "0.11", features = ["json"] }
