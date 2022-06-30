@@ -2,13 +2,14 @@ mod commands;
 mod config;
 mod state;
 mod store;
+mod types;
 
 use commands::{handle_command, Commands};
 use state::{State, StateOptions};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
-#[structopt(name = "hop", about = "Interact with Hop in a simple way")]
+#[structopt(name = "hop", about = "🐇 Interact with Hop via command line")]
 struct CLI {
     #[structopt(subcommand)]
     commands: Option<Commands>,
@@ -38,8 +39,10 @@ async fn main() -> Result<(), std::io::Error> {
     // match the subcommand
     if let Some(command) = cli.commands {
         // this is the global app state
+        // initiated here to get all overrides from the CLI
         let state = State::new(StateOptions {
             override_project_id: cli.project,
+            override_token: option_env!("HOP_TOKEN").map(|s| s.to_string()),
         })
         .await
         .unwrap();

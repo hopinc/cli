@@ -19,8 +19,10 @@ portpicker = { version = "0.1" }
 
 # cli
 structopt = { version = "0.3" }
-terminal-menu = { version = "2.0" }
+dialoguer = { version = "0.10" }
+
 # async
 tokio = { version = "1", features = ["full"] }
+
 # http client
 reqwest = { version = "0.11", features = ["json"] }

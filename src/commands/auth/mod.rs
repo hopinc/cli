@@ -1,14 +1,16 @@
 mod login;
+mod logout;
 
-use self::login::handle_login;
+use self::login::{handle_login, LoginOptions};
+use self::logout::hanndle_logout;
 use crate::state::State;
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
-#[structopt(name = "hop auth", about = "Interact with Hop in a simple way")]
+#[structopt(name = "hop auth", about = "🐇 Interact with Hop via command line")]
 pub enum Commands {
     #[structopt(name = "login", about = "Login to Hop")]
-    Login,
+    Login(LoginOptions),
     #[structopt(name = "logout", about = "Logout the current user")]
     Logout,
 }
@@ -22,11 +24,8 @@ pub struct AuthOptions {
 pub async fn handle_command(command: Option<Commands>, state: State) -> Result<(), std::io::Error> {
     if let Some(command) = command {
         match command {
-            Commands::Login => handle_login(state).await,
-            Commands::Logout => {
-                // TODO: remove panic test
-                panic!("test")
-            }
+            Commands::Login(options) => handle_login(options, state).await,
+            Commands::Logout => hanndle_logout(state).await,
         }
     } else {
         Commands::clap().print_help().unwrap();
