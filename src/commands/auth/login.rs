@@ -19,14 +19,26 @@ async fn request_handler(
     req: Request<Body>,
     sender: Sender<String>,
 ) -> Result<Response<Body>, Infallible> {
-    let token = req.uri().path()[1..].to_string();
+    let query = req.uri().query();
 
     // only send if it's an actual token
-    if token.starts_with("pat_") {
-        sender.send(token).await.unwrap();
+    if query.is_some() {
+        // parse the query
+        // since pat should be a URL safe string we can just split on '='
+        let query = querystring::querify(query.unwrap());
+
+        // if query has a key called "token"
+        if let Some(token) = query.iter().find(|(k, _)| k.to_owned() == "token") {
+            // send it to the main thread
+            sender.send(token.1.to_string()).await.unwrap();
+            return Ok(Response::new("You've been authorized".into()));
+        }
     }
 
-    Ok(Response::new("You've been authorized".into()))
+    return Ok(Response::builder()
+        .status(400)
+        .body("You're not authorized".into())
+        .unwrap());
 }
 
 async fn web_auth(port: u16) -> Result<String, std::io::Error> {
@@ -154,6 +166,7 @@ pub async fn handle_login(options: LoginOptions, mut state: State) -> Result<(),
         .insert(json.data.user.id.clone(), token);
     state.auth.save().await?;
 
+    state.ctx.project = None;
     state.ctx.user = Some(json.data.user.id);
     state.ctx.save().await?;
 

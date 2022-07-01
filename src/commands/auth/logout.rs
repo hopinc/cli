@@ -17,5 +17,7 @@ pub async fn hanndle_logout(mut state: State) -> Result<(), std::io::Error> {
     state.auth.authorized.remove(&user_id.unwrap());
     state.auth.save().await?;
 
+    println!("You have been logged out");
+
     Ok(())
 }

@@ -57,6 +57,8 @@ impl State {
 
         // preffer the override token over the auth token
         let token: Option<String> = if let Some(token) = options.override_token {
+            // TODO: add user id to context if token was overridden
+
             Some(token)
         } else {
             // get the auth token from the auth store if it exists
