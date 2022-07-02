@@ -34,3 +34,14 @@ pub struct User {
 pub struct UsersMe {
     pub user: User,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct ErrorContent {
+    pub code: String,
+    pub message: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ErrorResponse {
+    pub error: ErrorContent,
+}

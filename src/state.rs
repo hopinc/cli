@@ -3,18 +3,21 @@ use std::io;
 use crate::config::{HOP_API_BASE_URL, PLATFORM, VERSION};
 use crate::store::auth::Auth;
 use crate::store::context::Context;
-use reqwest::header::{HeaderMap, HeaderValue};
-use reqwest::{Client, ClientBuilder};
+use reqwest::blocking::Client as BlockingClient;
+use reqwest::header::HeaderMap;
+use reqwest::Client as AsyncClient;
 
 #[derive(Debug, Clone)]
 pub struct HttpClient {
-    pub http: Client,
+    pub client: AsyncClient,
     pub base_url: String,
+    pub headers: HeaderMap,
+    pub ua: String,
 }
 
 #[derive(Debug, Clone)]
 pub struct State {
-    pub client: HttpClient,
+    pub http: HttpClient,
     pub auth: Auth,
     pub ctx: Context,
 }
@@ -28,21 +31,32 @@ impl State {
     fn build_http_client(token: Option<String>) -> HttpClient {
         let mut headers = HeaderMap::new();
 
+        headers.insert("content-type", "application/json".parse().unwrap());
+
         if token.is_some() {
-            headers.insert(
-                "Authorization",
-                HeaderValue::from_str(&token.clone().unwrap()).unwrap(),
-            );
+            headers.insert("Authorization", token.clone().unwrap().parse().unwrap());
         }
 
+        let ua = format!("hop_cli/{} on {}", VERSION, PLATFORM);
+
         HttpClient {
-            http: ClientBuilder::new()
-                .user_agent(format!("hop/{} on {}", VERSION, PLATFORM))
-                .default_headers(headers)
+            headers: headers.clone(),
+            ua: ua.clone(),
+            client: AsyncClient::builder()
+                .user_agent(ua.clone())
+                .default_headers(headers.clone())
                 .build()
                 .unwrap(),
             base_url: HOP_API_BASE_URL.to_string(),
         }
+    }
+
+    pub fn sync_client(self) -> BlockingClient {
+        BlockingClient::builder()
+            .user_agent(self.http.ua)
+            .default_headers(self.http.headers)
+            .build()
+            .unwrap()
     }
 
     pub async fn new(options: StateOptions) -> io::Result<Self> {
@@ -56,25 +70,29 @@ impl State {
         }
 
         // preffer the override token over the auth token
-        let token: Option<String> = if let Some(token) = options.override_token {
-            // TODO: add user id to context if token was overridden
+        let token: Option<String> = match options.override_token {
+            Some(token) => Some(token),
 
-            Some(token)
-        } else {
-            // get the auth token from the auth store if it exists
-            if let Some(ref user) = ctx.user {
-                auth.authorized.get(user).map(|x| x.to_string())
-            } else {
-                None
+            None => {
+                // get the auth token from the auth store if it exists
+                match ctx.user {
+                    Some(ref user) => auth.authorized.get(user).map(|x| x.to_string()),
+                    None => None,
+                }
             }
         };
 
         let client = Self::build_http_client(token.clone());
 
-        Ok(State { ctx, client, auth })
+        Ok(State {
+            ctx,
+            http: client,
+            auth,
+        })
     }
 
-    pub fn update_token(&mut self, token: String) {
-        self.client = Self::build_http_client(Some(token));
+    /// Rebuilds the http client with the current auth token.
+    pub fn update_http_token(&mut self, token: String) {
+        self.http = Self::build_http_client(Some(token));
     }
 }

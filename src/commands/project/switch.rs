@@ -1,20 +1,22 @@
 use crate::state::State;
 use crate::types::{Base, Projects};
+use structopt::StructOpt;
+
+#[derive(Debug, StructOpt)]
+#[structopt(
+    name = "hop project switch",
+    about = "🚦 Switch to a different project"
+)]
+pub struct SwitchOptions {}
 
 pub async fn handle_switch(mut state: State) -> Result<(), std::io::Error> {
-    let request = state
-        .client
+    let response = state
         .http
-        .get(format!("{}/users/@me", state.client.base_url))
+        .client
+        .get(format!("{}/users/@me", state.http.base_url))
         .send()
-        .await;
-
-    if request.is_err() {
-        eprintln!("Error while getting project info: {}", request.unwrap_err());
-        std::process::exit(1);
-    }
-
-    let response = request.unwrap();
+        .await
+        .expect("Error while getting project info: {}");
 
     let user = response
         .json::<Base<Projects>>()
@@ -29,17 +31,17 @@ pub async fn handle_switch(mut state: State) -> Result<(), std::io::Error> {
         .collect::<Vec<_>>();
 
     let idx = dialoguer::Select::new()
-        .with_prompt("Select a project (use arrow keys and enter to select)")
+        .with_prompt("Select a project to set as default (use arrow keys and enter to select)")
         .items(&projects_fmt)
         .default(if let Some(id) = state.ctx.project {
-            projects.iter().position(|p| p.id == id).unwrap()
+            projects.iter().position(|p| p.id == id).unwrap_or(0)
         } else {
             0
         })
-        .interact()
+        .interact_opt()
         .unwrap();
 
-    state.ctx.project = Some(projects[idx].id.clone());
+    state.ctx.project = Some(projects[idx.expect("No project selected")].id.clone());
     state.ctx.save().await?;
 
     Ok(())

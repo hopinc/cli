@@ -6,7 +6,7 @@ use auth::{handle_command as handle_auth, AuthOptions};
 use project::{handle_command as handle_project, ProjectOptions};
 use structopt::StructOpt;
 
-#[derive(StructOpt, Debug)]
+#[derive(Debug, StructOpt)]
 pub enum Commands {
     #[structopt(name = "auth", about = "Authenticate with Hop")]
     Auth(AuthOptions),

@@ -8,15 +8,17 @@ use commands::{handle_command, Commands};
 use state::{State, StateOptions};
 use structopt::StructOpt;
 
-#[derive(StructOpt, Debug)]
+#[derive(Debug, StructOpt)]
 #[structopt(name = "hop", about = "🐇 Interact with Hop via command line")]
 struct CLI {
     #[structopt(subcommand)]
     commands: Option<Commands>,
 
     #[structopt(
+        short = "p",
         long = "project",
-        help = "Override the default project used for all commands"
+        help = "Override the default project used for all commands",
+        global = true
     )]
     project: Option<String>,
 }
@@ -49,7 +51,7 @@ async fn main() -> Result<(), std::io::Error> {
 
         handle_command(command, state).await
     } else {
-        CLI::clap().print_help().unwrap();
+        CLI::clap().print_long_help().unwrap();
         // newline to separate from the help output
         println!("");
         std::process::exit(1);

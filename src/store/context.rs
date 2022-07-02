@@ -33,25 +33,24 @@ impl Context {
     pub async fn new() -> Self {
         let path = Self::path();
 
-        if fs::metadata(path.clone()).await.is_err() {
-            Self::default().save().await.unwrap()
-        } else {
-            match File::open(path).await {
+        match fs::metadata(path.clone()).await {
+            Ok(_) => match File::open(path).await {
                 Ok(mut file) => {
                     let mut buffer = String::new();
                     file.read_to_string(&mut buffer)
                         .await
-                        .expect("Failed to read context store");
+                        .expect("Failed to read auth store");
 
                     let auth: Self = serde_json::from_str(&buffer).unwrap();
                     auth
                 }
 
                 Err(err) => {
-                    eprintln!("Error opening context file: {}", err);
+                    eprintln!("Error opening auth file: {}", err);
                     std::process::exit(1);
                 }
-            }
+            },
+            Err(_) => Self::default().save().await.unwrap(),
         }
     }
 

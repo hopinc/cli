@@ -1,20 +1,19 @@
 use crate::state::State;
 use crate::types::{Base, Projects};
+use structopt::StructOpt;
+
+#[derive(Debug, StructOpt)]
+#[structopt(name = "hop project ls", about = "🗒️ List all available projects")]
+pub struct LsOptions {}
 
 pub async fn handle_ls(state: State) -> Result<(), std::io::Error> {
-    let request = state
-        .client
+    let response = state
         .http
-        .get(format!("{}/users/@me", state.client.base_url))
+        .client
+        .get(format!("{}/users/@me", state.http.base_url))
         .send()
-        .await;
-
-    if request.is_err() {
-        eprintln!("Error while getting project info: {}", request.unwrap_err());
-        std::process::exit(1);
-    }
-
-    let response = request.unwrap();
+        .await
+        .expect("Error while getting project info: {}");
 
     let user = response
         .json::<Base<Projects>>()

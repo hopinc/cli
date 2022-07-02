@@ -1,21 +1,25 @@
+mod create;
+mod delete;
 mod ls;
 mod switch;
 
+use self::create::{handle_create, CreateOptions};
+use self::delete::{handle_delete, DeleteOptions};
+use self::ls::{handle_ls, LsOptions};
+use self::switch::{handle_switch, SwitchOptions};
 use crate::state::State;
 use structopt::StructOpt;
 
-use self::{ls::handle_ls, switch::handle_switch};
-
-#[derive(StructOpt, Debug)]
-#[structopt(name = "hop project", about = "🐇 Interact with Hop via command line")]
+#[derive(Debug, StructOpt)]
 pub enum Commands {
-    #[structopt(name = "ls", about = "List all available projects")]
-    Ls,
-    #[structopt(name = "switch", about = "Switch to a different project")]
-    Switch,
+    Ls(LsOptions),
+    Switch(SwitchOptions),
+    Create(CreateOptions),
+    Delete(DeleteOptions),
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(Debug, StructOpt)]
+#[structopt(name = "hop project", about = "🐇 Interact with Hop via command line")]
 pub struct ProjectOptions {
     #[structopt(subcommand)]
     pub commands: Option<Commands>,
@@ -29,11 +33,13 @@ pub async fn handle_command(command: Option<Commands>, state: State) -> Result<(
 
     if let Some(command) = command {
         match command {
-            Commands::Ls => handle_ls(state).await,
-            Commands::Switch => handle_switch(state).await,
+            Commands::Ls(_) => handle_ls(state).await,
+            Commands::Switch(_) => handle_switch(state).await,
+            Commands::Delete(options) => handle_delete(options, state).await,
+            Commands::Create(options) => handle_create(options, state).await,
         }
     } else {
-        Commands::clap().print_help().unwrap();
+        ProjectOptions::clap().print_long_help().unwrap();
 
         // newline to separate from the help output
         println!("");

@@ -95,11 +95,11 @@ pub async fn handle_login(options: LoginOptions, mut state: State) -> Result<(),
 
     // lunch a web server to handle the auth request
     let token = if !options.browserless && webbrowser::open(&auth_url).is_ok() {
-        println!("Opening browser to {}", auth_url);
+        println!("Opening browser to: {}", auth_url);
 
         web_auth(port)
             .await
-            .expect("Error while opening web browser")
+            .expect("Error while starting web auth server")
     } else {
         if !options.browserless {
             println!("Could not open web a browser.");
@@ -115,23 +115,16 @@ pub async fn handle_login(options: LoginOptions, mut state: State) -> Result<(),
     };
 
     // update the token assuming it's a valid PAT
-    state.update_token(token.clone());
+    state.update_http_token(token.clone());
 
     // for sanity fetch the user info
-    let request = state
-        .client
+    let response = state
         .http
-        .get(format!("{}/users/@me", state.client.base_url))
+        .client
+        .get(format!("{}/users/@me", state.http.base_url))
         .send()
-        .await;
-
-    // some client error
-    if request.is_err() {
-        eprintln!("Error while getting user info: {}", request.unwrap_err());
-        std::process::exit(1);
-    }
-
-    let response = request.unwrap();
+        .await
+        .expect("Error while getting user info: {}");
 
     // if status code is not 200, then the token is probably invalid
     // or platform is down lol!
