@@ -19,30 +19,22 @@ pub enum Commands {
 }
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "hop project", about = "🐇 Interact with Hop via command line")]
+#[structopt(name = "hop project", about = "🗺️ Interact with projects")]
 pub struct ProjectOptions {
     #[structopt(subcommand)]
-    pub commands: Option<Commands>,
+    pub commands: Commands,
 }
 
-pub async fn handle_command(command: Option<Commands>, state: State) -> Result<(), std::io::Error> {
+pub async fn handle_command(command: Commands, state: State) -> Result<(), std::io::Error> {
     if state.ctx.user.is_none() {
         println!("You are not logged in. Please run `hop auth login` first.");
         std::process::exit(1);
     }
 
-    if let Some(command) = command {
-        match command {
-            Commands::Ls(_) => handle_ls(state).await,
-            Commands::Switch(_) => handle_switch(state).await,
-            Commands::Delete(options) => handle_delete(options, state).await,
-            Commands::Create(options) => handle_create(options, state).await,
-        }
-    } else {
-        ProjectOptions::clap().print_long_help().unwrap();
-
-        // newline to separate from the help output
-        println!("");
-        std::process::exit(1);
+    match command {
+        Commands::Ls(_) => handle_ls(state).await,
+        Commands::Switch(_) => handle_switch(state).await,
+        Commands::Delete(options) => handle_delete(options, state).await,
+        Commands::Create(options) => handle_create(options, state).await,
     }
 }

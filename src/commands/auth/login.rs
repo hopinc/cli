@@ -10,8 +10,9 @@ use tokio::sync::mpsc::{channel, Sender};
 use tokio::task;
 
 #[derive(Debug, StructOpt)]
+#[structopt(name = "login", about = "🔐 Login to Hop")]
 pub struct LoginOptions {
-    #[structopt(long = "browserless", help = "Do not use a browser to login")]
+    #[structopt(long = "browserless", about = "Do not use a browser to login")]
     pub browserless: bool,
 }
 

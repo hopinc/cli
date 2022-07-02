@@ -12,7 +12,7 @@ use structopt::StructOpt;
 #[structopt(name = "hop", about = "🐇 Interact with Hop via command line")]
 struct CLI {
     #[structopt(subcommand)]
-    commands: Option<Commands>,
+    commands: Commands,
 
     #[structopt(
         short = "p",
@@ -38,22 +38,12 @@ async fn main() -> Result<(), std::io::Error> {
     // create a new CLI instance
     let cli = CLI::from_args();
 
-    // match the subcommand
-    if let Some(command) = cli.commands {
-        // this is the global app state
-        // initiated here to get all overrides from the CLI
-        let state = State::new(StateOptions {
-            override_project_id: cli.project,
-            override_token: option_env!("HOP_TOKEN").map(|s| s.to_string()),
-        })
-        .await
-        .unwrap();
+    let state = State::new(StateOptions {
+        override_project_id: cli.project,
+        override_token: option_env!("HOP_TOKEN").map(|s| s.to_string()),
+    })
+    .await
+    .unwrap();
 
-        handle_command(command, state).await
-    } else {
-        CLI::clap().print_long_help().unwrap();
-        // newline to separate from the help output
-        println!("");
-        std::process::exit(1);
-    }
+    handle_command(cli.commands, state).await
 }

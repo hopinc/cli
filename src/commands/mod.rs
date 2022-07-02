@@ -8,9 +8,7 @@ use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 pub enum Commands {
-    #[structopt(name = "auth", about = "Authenticate with Hop")]
     Auth(AuthOptions),
-    #[structopt(name = "project", about = "Interact with projects")]
     Project(ProjectOptions),
 }
 

@@ -11,11 +11,13 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Context {
-    #[serde(rename = "default_project")]
-    pub project: Option<String>,
+    pub default_project: Option<String>,
 
     #[serde(rename = "default_user")]
     pub user: Option<String>,
+
+    #[serde(skip)]
+    pub project: Option<String>,
 }
 
 impl Context {
@@ -25,6 +27,7 @@ impl Context {
 
     pub fn default() -> Context {
         Context {
+            default_project: None,
             project: None,
             user: None,
         }

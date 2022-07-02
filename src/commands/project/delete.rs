@@ -4,12 +4,12 @@ use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "hop project delete", about = "⚠️ Delete a project")]
-pub struct DeleteOptions {
-    #[structopt(long = "project", help = "Delete a project by id")]
-    project: Option<String>,
-}
+pub struct DeleteOptions {}
 
-pub async fn handle_delete(options: DeleteOptions, mut state: State) -> Result<(), std::io::Error> {
+pub async fn handle_delete(
+    _options: DeleteOptions,
+    mut state: State,
+) -> Result<(), std::io::Error> {
     let response = state
         .http
         .client
@@ -30,20 +30,16 @@ pub async fn handle_delete(options: DeleteOptions, mut state: State) -> Result<(
         .map(|p| format!("{} ({})", p.name, p.namespace))
         .collect::<Vec<_>>();
 
-    let idx = if let Some(id) = options.project {
-        projects.iter().position(|p| p.id == id)
-    } else {
-        dialoguer::Select::new()
-            .with_prompt("Select a project to delete (use arrow keys and enter to select)")
-            .items(&projects_fmt)
-            .default(if let Some(id) = state.ctx.project.clone() {
-                projects.iter().position(|p| p.id == id).unwrap_or(0)
-            } else {
-                0
-            })
-            .interact_opt()
-            .unwrap()
-    };
+    let idx = dialoguer::Select::new()
+        .with_prompt("Select a project to delete (use arrow keys and enter to select)")
+        .items(&projects_fmt)
+        .default(if let Some(id) = state.ctx.project.clone() {
+            projects.iter().position(|p| p.id == id).unwrap_or(0)
+        } else {
+            0
+        })
+        .interact_opt()
+        .unwrap();
 
     let project = &projects[idx.unwrap_or_else(|| {
         eprintln!("Project not found");

@@ -1,5 +1,11 @@
+use structopt::StructOpt;
+
 use crate::state::State;
 use crate::store::context::Context;
+
+#[derive(Debug, StructOpt)]
+#[structopt(name = "logout", about = "🔑 Logout the current user")]
+pub struct LogoutOptions {}
 
 pub async fn hanndle_logout(mut state: State) -> Result<(), std::io::Error> {
     let user_id = state.ctx.user;

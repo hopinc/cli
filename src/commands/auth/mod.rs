@@ -2,36 +2,26 @@ mod login;
 mod logout;
 
 use self::login::{handle_login, LoginOptions};
-use self::logout::hanndle_logout;
+use self::logout::{hanndle_logout, LogoutOptions};
 use crate::state::State;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 pub enum Commands {
-    #[structopt(name = "login", about = "Login to Hop")]
     Login(LoginOptions),
-    #[structopt(name = "logout", about = "Logout the current user")]
-    Logout,
+    Logout(LogoutOptions),
 }
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "hop auth", about = "🐇 Interact with Hop via command line")]
+#[structopt(name = "hop auth", about = "🔒 Authenticate with Hop")]
 pub struct AuthOptions {
     #[structopt(subcommand)]
-    pub commands: Option<Commands>,
+    pub commands: Commands,
 }
 
-pub async fn handle_command(command: Option<Commands>, state: State) -> Result<(), std::io::Error> {
-    if let Some(command) = command {
-        match command {
-            Commands::Login(options) => handle_login(options, state).await,
-            Commands::Logout => hanndle_logout(state).await,
-        }
-    } else {
-        Commands::clap().print_long_help().unwrap();
-
-        // newline to separate from the help output
-        println!("");
-        std::process::exit(1);
+pub async fn handle_command(command: Commands, state: State) -> Result<(), std::io::Error> {
+    match command {
+        Commands::Login(options) => handle_login(options, state).await,
+        Commands::Logout(_) => hanndle_logout(state).await,
     }
 }
