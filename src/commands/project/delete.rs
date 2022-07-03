@@ -19,9 +19,13 @@ pub async fn handle_delete(
         .data
         .projects;
 
+    if projects.len() == 0 {
+        panic!("No projects found");
+    }
+
     let projects_fmt = projects
         .iter()
-        .map(|p| format!("{} ({})", p.name, p.namespace))
+        .map(|p| format!("{} @{} ({})", p.name, p.namespace, p.id))
         .collect::<Vec<_>>();
 
     let idx = dialoguer::Select::new()
@@ -35,10 +39,9 @@ pub async fn handle_delete(
         .interact_opt()
         .unwrap();
 
-    let project = &projects[idx.unwrap_or_else(|| {
-        eprintln!("Project not found");
-        std::process::exit(1)
-    })];
+    let project = &projects[idx.expect("Project not found")];
+
+    // TODO: https://canary.discord.com/channels/843908803832578108/975880265857634366/992995461965295796
 
     state
         .http

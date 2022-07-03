@@ -26,10 +26,11 @@ pub struct ProjectOptions {
 }
 
 pub async fn handle_command(command: Commands, state: State) -> Result<(), std::io::Error> {
-    if state.ctx.user.is_none() {
-        println!("You are not logged in. Please run `hop auth login` first.");
-        std::process::exit(1);
-    }
+    state
+        .clone()
+        .ctx
+        .user
+        .expect("You are not logged in. Please run `hop auth login` first.");
 
     match command {
         Commands::List(_) => handle_list(state).await,
