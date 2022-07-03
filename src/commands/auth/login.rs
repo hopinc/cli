@@ -129,7 +129,7 @@ pub async fn handle_login(options: LoginOptions, mut state: State) -> Result<(),
         .user;
 
     // output the login info
-    println!("Logged in as: \"{}\" ({})", user.username, user.email);
+    println!("Logged in as: `{}` ({})", user.username, user.email);
 
     // save the state
     state.auth.authorized.insert(user.id.clone(), token);

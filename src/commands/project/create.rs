@@ -81,7 +81,7 @@ pub async fn handle_create(options: CreateOptions, mut state: State) -> Result<(
                             if resp.json::<NamespaceRes>().unwrap().success {
                                 Ok(())
                             } else {
-                                Err(format!("Namespace \"{}\" is already taken", input))
+                                Err(format!("Namespace `{}` is already taken", input))
                             }
                         }
                     })
@@ -114,7 +114,7 @@ pub async fn handle_create(options: CreateOptions, mut state: State) -> Result<(
         state.ctx.save().await?;
     }
 
-    println!("Created project \"{}\" ({})", name, namespace);
+    println!("Created project `{}` ({})", name, namespace);
 
     Ok(())
 }

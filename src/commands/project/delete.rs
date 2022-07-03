@@ -46,10 +46,7 @@ pub async fn handle_delete(
         .await
         .expect("Error while deleting project");
 
-    println!(
-        "Project \"{}\" ({}) deleted",
-        project.name, project.namespace
-    );
+    println!("Project `{}` ({}) deleted", project.name, project.namespace);
 
     if state.ctx.project == Some(project.id.to_string()) {
         state.ctx.project = None;

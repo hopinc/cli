@@ -3,10 +3,10 @@ use crate::types::{Base, Projects};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "hop project ls", about = "🗒️ List all available projects")]
-pub struct LsOptions {}
+#[structopt(name = "hop project list", about = "🗒️ List all available projects")]
+pub struct ListOptions {}
 
-pub async fn handle_ls(state: State) -> Result<(), std::io::Error> {
+pub async fn handle_list(state: State) -> Result<(), std::io::Error> {
     let projects = state
         .http
         .request::<Base<Projects>>("GET", "/users/@me", None)
