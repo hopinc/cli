@@ -7,28 +7,22 @@ use structopt::StructOpt;
 pub struct LsOptions {}
 
 pub async fn handle_ls(state: State) -> Result<(), std::io::Error> {
-    let response = state
+    let projects = state
         .http
-        .client
-        .get(format!("{}/users/@me", state.http.base_url))
-        .send()
+        .request::<Base<Projects>>("GET", "/users/@me", None)
         .await
-        .expect("Error while getting project info: {}");
-
-    let user = response
-        .json::<Base<Projects>>()
-        .await
-        .expect("Error while parsing json");
-
-    let projects = user
+        .expect("Error while getting project info")
+        .unwrap()
         .data
-        .projects
+        .projects;
+
+    let projects_fmt = projects
         .iter()
         .map(|p| format!("> {} ({}) ", p.name, p.namespace))
         .collect::<Vec<_>>();
 
     println!("Available projects:");
-    println!("{}", projects.join("\n"));
+    println!("{}", projects_fmt.join("\n"));
 
     Ok(())
 }

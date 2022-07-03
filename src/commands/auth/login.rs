@@ -119,49 +119,24 @@ pub async fn handle_login(options: LoginOptions, mut state: State) -> Result<(),
     state.update_http_token(token.clone());
 
     // for sanity fetch the user info
-    let response = state
+    let user = state
         .http
-        .client
-        .get(format!("{}/users/@me", state.http.base_url))
-        .send()
+        .request::<Base<UsersMe>>("GET", "/users/@me", None)
         .await
-        .expect("Error while getting user info: {}");
-
-    // if status code is not 200, then the token is probably invalid
-    // or platform is down lol!
-    if !response.status().is_success() {
-        if response.status().is_client_error() {
-            eprintln!("The provided token is invalid or expired");
-        } else if response.status().is_server_error() {
-            eprintln!("Unknown server error occured: {}", response.status());
-        } else {
-            eprintln!("Unknown error");
-        }
-
-        std::process::exit(1);
-    }
-
-    // parse the json
-    let json = response
-        .json::<Base<UsersMe>>()
-        .await
-        .expect("Error while parsing json");
+        .expect("Error while getting user info")
+        .unwrap()
+        .data
+        .user;
 
     // output the login info
-    println!(
-        "Logged in as: \"{}\" ({})",
-        json.data.user.username, json.data.user.email
-    );
+    println!("Logged in as: \"{}\" ({})", user.username, user.email);
 
     // save the state
-    state
-        .auth
-        .authorized
-        .insert(json.data.user.id.clone(), token);
+    state.auth.authorized.insert(user.id.clone(), token);
     state.auth.save().await?;
 
     state.ctx.project = None;
-    state.ctx.user = Some(json.data.user.id);
+    state.ctx.user = Some(user.id);
     state.ctx.save().await?;
 
     Ok(())

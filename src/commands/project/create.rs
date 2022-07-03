@@ -38,26 +38,16 @@ struct NamespaceRes {
 }
 
 async fn create_project(params: CreateParams, state: State) -> Result<ProjectRes, std::io::Error> {
-    let response = state
+    let json = state
         .http
-        .client
-        .post(format!("{}/projects", state.http.base_url))
-        .body(serde_json::to_string(&params).unwrap())
-        .send()
-        .await;
-
-    let response = match response {
-        Ok(response) => response,
-        Err(err) => {
-            eprintln!("Error while creating project: {}", err);
-            std::process::exit(1);
-        }
-    };
-
-    let json = response
-        .json::<Base<CreateResponse>>()
+        .request::<Base<CreateResponse>>(
+            "POST",
+            "/projects",
+            Some(serde_json::to_string(&params).unwrap()),
+        )
         .await
-        .expect("Error while parsing json");
+        .expect("Error while creating project")
+        .unwrap();
 
     Ok(json.data.project)
 }
@@ -77,7 +67,7 @@ pub async fn handle_create(options: CreateOptions, mut state: State) -> Result<(
                 dialoguer::Input::<String>::new()
                     .with_prompt("Namespace of the project")
                     .validate_with({
-                        let client = blocking_state.clone().sync_client();
+                        let client = blocking_state.clone().http.sync_client();
 
                         move |input: &String| -> Result<(), String> {
                             let resp = client

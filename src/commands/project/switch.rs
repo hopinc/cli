@@ -10,20 +10,14 @@ use structopt::StructOpt;
 pub struct SwitchOptions {}
 
 pub async fn handle_switch(mut state: State) -> Result<(), std::io::Error> {
-    let response = state
+    let projects = state
         .http
-        .client
-        .get(format!("{}/users/@me", state.http.base_url))
-        .send()
+        .request::<Base<Projects>>("GET", "/users/@me", None)
         .await
-        .expect("Error while getting project info: {}");
-
-    let user = response
-        .json::<Base<Projects>>()
-        .await
-        .expect("Error while parsing json");
-
-    let projects = user.data.projects;
+        .expect("Error while getting project info")
+        .unwrap()
+        .data
+        .projects;
 
     let projects_fmt = projects
         .iter()
