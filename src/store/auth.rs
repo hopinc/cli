@@ -39,8 +39,7 @@ impl Auth {
                 }
 
                 Err(err) => {
-                    eprintln!("Error opening auth file: {}", err);
-                    std::process::exit(1);
+                    panic!("Error opening auth file: {}", err)
                 }
             },
             Err(_) => Self::default().save().await.unwrap(),

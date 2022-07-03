@@ -25,6 +25,13 @@ impl Context {
         get_path(CONTEXT_STORE_PATH)
     }
 
+    pub fn current_project(self) -> Option<String> {
+        match self.project {
+            Some(project) => Some(project),
+            None => self.default_project,
+        }
+    }
+
     pub fn default() -> Context {
         Context {
             default_project: None,
@@ -49,42 +56,36 @@ impl Context {
                 }
 
                 Err(err) => {
-                    eprintln!("Error opening auth file: {}", err);
-                    std::process::exit(1);
+                    panic!("Error opening auth file: {}", err)
                 }
             },
             Err(_) => Self::default().save().await.unwrap(),
         }
     }
 
-    pub async fn save(self) -> Result<Context, std::io::Error> {
+    pub async fn save(self) -> Result<Self, std::io::Error> {
         let path = Self::path();
 
         fs::create_dir_all(path.parent().unwrap())
             .await
-            .expect("Failed to create context store directory");
+            .expect("Failed to create auth store directory");
 
-        match File::create(path.clone()).await {
-            Ok(mut file) => {
-                file.write(
-                    serde_json::to_string(&self)
-                        .expect("Failed to deserialize context")
-                        .as_bytes(),
-                )
-                .await
-                .expect("Failed to write context store");
+        let mut file = File::create(path.clone())
+            .await
+            .expect("Error opening auth file:");
 
-                if self.user.is_some() || self.project.is_some() {
-                    println!("Saved current context to {}", path.display());
-                }
+        file.write(
+            serde_json::to_string(&self)
+                .expect("Failed to deserialize auth")
+                .as_bytes(),
+        )
+        .await
+        .expect("Failed to write auth store");
 
-                Ok(self)
-            }
-
-            Err(err) => {
-                eprintln!("Error creating context file: {}", err);
-                std::process::exit(1);
-            }
+        if !self.user.is_none() || !self.project.is_none() {
+            println!("Saved context to {}", path.display());
         }
+
+        Ok(self)
     }
 }

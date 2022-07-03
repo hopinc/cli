@@ -1,5 +1,5 @@
 use crate::config::{HOP_API_BASE_URL, PLATFORM, VERSION};
-use reqwest::blocking::Client as BlockingClient;
+use crate::types::ErrorResponse;
 use reqwest::header::HeaderMap;
 use reqwest::Client as AsyncClient;
 
@@ -12,21 +12,13 @@ pub struct HttpClient {
 }
 
 impl HttpClient {
-    pub fn sync_client(self) -> BlockingClient {
-        BlockingClient::builder()
-            .user_agent(self.ua)
-            .default_headers(self.headers)
-            .build()
-            .unwrap()
-    }
-
     pub fn new(token: Option<String>) -> Self {
         let mut headers = HeaderMap::new();
 
         headers.insert("content-type", "application/json".parse().unwrap());
 
-        if token.is_some() {
-            headers.insert("Authorization", token.clone().unwrap().parse().unwrap());
+        if let Some(token) = token {
+            headers.insert("Authorization", token.parse().unwrap());
         }
 
         let ua = format!("hop_cli/{} on {}", VERSION, PLATFORM);
@@ -50,7 +42,7 @@ impl HttpClient {
         body: Option<String>,
     ) -> Result<Option<T>, reqwest::Error>
     where
-        T: serde::de::DeserializeOwned,
+        T: serde::de::DeserializeOwned + std::fmt::Debug,
     {
         let mut request = self.client.request(
             method.parse().unwrap(),
@@ -61,16 +53,30 @@ impl HttpClient {
             request = request.body(body);
         }
 
-        let response = request
-            .send()
-            .await
-            .expect("Failed to send request")
-            .json::<T>()
-            .await;
+        let response = request.send().await.expect("Failed to send request");
 
-        match response {
-            Ok(response) => Ok(Some(response)),
-            Err(_) => Ok(None),
-        }
+        let response = match response.status() {
+            reqwest::StatusCode::OK => response,
+            reqwest::StatusCode::NO_CONTENT => return Ok(None),
+            _ => {
+                let body = response.json::<ErrorResponse>().await;
+
+                match body {
+                    Ok(body) => {
+                        panic!("{}", body.error.message)
+                    }
+                    Err(err) => {
+                        panic!("{}", err)
+                    }
+                }
+            }
+        };
+
+        let response = response
+            .json::<T>()
+            .await
+            .expect("Failed to parse response");
+
+        Ok(Some(response))
     }
 }
