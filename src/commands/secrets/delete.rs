@@ -1,3 +1,4 @@
+use crate::commands::secrets::util::validate_name;
 use crate::state::State;
 use crate::types::{Base, Secrets};
 use structopt::StructOpt;
@@ -10,6 +11,10 @@ pub struct DeleteOptions {
 }
 
 pub async fn handle_delete(options: DeleteOptions, state: State) -> Result<(), std::io::Error> {
+    if let Some(ref name) = options.name {
+        validate_name(&name).unwrap();
+    }
+
     let project_id = state.ctx.current_project().unwrap();
 
     let secrets = state

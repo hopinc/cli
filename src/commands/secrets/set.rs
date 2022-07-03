@@ -1,4 +1,4 @@
-use crate::commands::secrets::types::{CreateParams, SecretResponse, UpdateParams};
+use crate::commands::secrets::util::{validate_name, CreateParams, SecretResponse, UpdateParams};
 use crate::state::State;
 use crate::types::{Base, Secrets};
 use structopt::StructOpt;
@@ -13,6 +13,8 @@ pub struct SetOptions {
 }
 
 pub async fn handle_set(options: SetOptions, state: State) -> Result<(), std::io::Error> {
+    validate_name(&options.name).unwrap();
+
     let project_id = state.ctx.current_project().unwrap();
 
     let secrets = state

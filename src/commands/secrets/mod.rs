@@ -1,7 +1,7 @@
 mod delete;
 mod list;
 mod set;
-mod types;
+mod util;
 
 use self::delete::{handle_delete, DeleteOptions};
 use self::list::{handle_list, ListOptions};
