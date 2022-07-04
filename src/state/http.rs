@@ -19,6 +19,8 @@ impl HttpClient {
     pub fn new(token: Option<String>) -> Self {
         let mut headers = HeaderMap::new();
 
+        headers.insert("Accept", "application/json".parse().unwrap());
+
         if let Some(token) = token {
             headers.insert("Authorization", token.parse().unwrap());
         }
