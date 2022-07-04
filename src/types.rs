@@ -6,7 +6,7 @@ pub struct Base<T> {
     pub data: T,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Project {
     pub id: String,
     pub name: String,
@@ -17,12 +17,7 @@ pub struct Project {
     pub p_type: String,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct Projects {
-    pub projects: Vec<Project>,
-}
-
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct User {
     pub id: String,
     pub name: String,
@@ -30,9 +25,10 @@ pub struct User {
     pub username: String,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct UsersMe {
+#[derive(Debug, Deserialize, Clone)]
+pub struct UserMe {
     pub user: User,
+    pub projects: Vec<Project>,
 }
 
 #[derive(Debug, Deserialize)]

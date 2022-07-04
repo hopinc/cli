@@ -4,7 +4,7 @@ use crate::types::{Base, Secrets};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "hop secrets delete", about = "🗒️ Delete a secret")]
+#[structopt(name = "rm", about = "Delete a secret")]
 pub struct DeleteOptions {
     #[structopt(name = "name", help = "Name of the secret")]
     pub name: Option<String>,
@@ -15,7 +15,7 @@ pub async fn handle_delete(options: DeleteOptions, state: State) -> Result<(), s
         validate_name(&name).unwrap();
     }
 
-    let project_id = state.ctx.current_project().unwrap();
+    let project_id = state.ctx.current_project().expect("Project not found").id;
 
     let secrets = state
         .http

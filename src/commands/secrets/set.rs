@@ -4,7 +4,7 @@ use crate::types::{Base, Secrets};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "hop secrets set", about = "⬆️ Set a secret")]
+#[structopt(name = "set", about = "Set a secret")]
 pub struct SetOptions {
     #[structopt(name = "name", help = "Name of the secret")]
     pub name: String,
@@ -15,7 +15,7 @@ pub struct SetOptions {
 pub async fn handle_set(options: SetOptions, state: State) -> Result<(), std::io::Error> {
     validate_name(&options.name).unwrap();
 
-    let project_id = state.ctx.current_project().unwrap();
+    let project_id = state.ctx.current_project().expect("Project not found").id;
 
     let secrets = state
         .http

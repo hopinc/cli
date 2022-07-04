@@ -11,14 +11,15 @@ use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 pub enum Commands {
-    List(ListOptions),
-    Update(SetOptions),
     Set(SetOptions),
+    #[structopt(name = "ls", alias = "list")]
+    List(ListOptions),
+    #[structopt(name = "rm", alias = "del", alias = "delete", alias = "remove")]
     Delete(DeleteOptions),
 }
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "hop secrets", about = "🔏 Interact with secrets")]
+#[structopt(name = "secrets", about = "Interact with secrets")]
 pub struct SecretsOptions {
     #[structopt(subcommand)]
     pub commands: Commands,
@@ -28,18 +29,11 @@ pub async fn handle_command(command: Commands, state: State) -> Result<(), std::
     state
         .clone()
         .ctx
-        .user
-        .expect("You are not logged in. Please run `hop auth login` first.");
-
-    state
-        .clone()
-        .ctx
         .current_project()
         .expect("No project selected run `hop project switch` to select one or use `--project` to specify a project");
 
     match command {
-        Commands::List(_) => handle_list(state).await,
-        Commands::Update(options) => handle_set(options, state).await,
+        Commands::List(options) => handle_list(options, state).await,
         Commands::Set(options) => handle_set(options, state).await,
         Commands::Delete(options) => handle_delete(options, state).await,
     }

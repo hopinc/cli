@@ -2,7 +2,6 @@ use std::convert::Infallible;
 
 use crate::config::{PAT_FALLBACK_URL, WEB_AUTH_URL};
 use crate::state::State;
-use crate::types::{Base, UsersMe};
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server};
 use structopt::StructOpt;
@@ -10,7 +9,7 @@ use tokio::sync::mpsc::{channel, Sender};
 use tokio::task;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "login", about = "🔐 Login to Hop")]
+#[structopt(name = "login", about = "Login to Hop")]
 pub struct LoginOptions {
     #[structopt(long = "browserless", about = "Do not use a browser to login")]
     pub browserless: bool,
@@ -119,24 +118,18 @@ pub async fn handle_login(options: LoginOptions, mut state: State) -> Result<(),
     state.update_http_token(token.clone());
 
     // for sanity fetch the user info
-    let user = state
-        .http
-        .request::<Base<UsersMe>>("GET", "/users/@me", None)
-        .await
-        .expect("Error while getting user info")
-        .unwrap()
-        .data
-        .user;
+    state.login().await;
+
+    let me = state.clone().ctx.me.unwrap();
 
     // output the login info
-    println!("Logged in as: `{}` ({})", user.username, user.email);
+    println!("Logged in as: `{}` ({})", me.user.username, me.user.email);
 
     // save the state
-    state.auth.authorized.insert(user.id.clone(), token);
+    state.auth.authorized.insert(me.user.id.clone(), token);
     state.auth.save().await?;
 
-    state.ctx.project = None;
-    state.ctx.user = Some(user.id);
+    state.ctx.default_user = Some(me.user.id);
     state.ctx.save().await?;
 
     Ok(())

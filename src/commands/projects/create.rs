@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "hop project create", about = "🎇 Create a new project")]
+#[structopt(name = "create", about = "Create a new project")]
 pub struct CreateOptions {
     #[structopt(name = "name", help = "Name of the project")]
     name: String,
@@ -57,7 +57,7 @@ pub async fn handle_create(options: CreateOptions, mut state: State) -> Result<(
     let res = create_project(params, state.clone()).await?;
 
     if options.default {
-        state.ctx.project = Some(res.id.clone());
+        state.ctx.default_project = Some(res.id.clone());
         state.ctx.save().await?;
     }
 

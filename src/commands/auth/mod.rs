@@ -13,7 +13,7 @@ pub enum Commands {
 }
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "hop auth", about = "🔒 Authenticate with Hop")]
+#[structopt(name = "auth", about = "Authenticate with Hop")]
 pub struct AuthOptions {
     #[structopt(subcommand)]
     pub commands: Commands,
@@ -22,6 +22,6 @@ pub struct AuthOptions {
 pub async fn handle_command(command: Commands, state: State) -> Result<(), std::io::Error> {
     match command {
         Commands::Login(options) => handle_login(options, state).await,
-        Commands::Logout(_) => hanndle_logout(state).await,
+        Commands::Logout(options) => hanndle_logout(options, state).await,
     }
 }

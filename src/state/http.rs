@@ -40,7 +40,7 @@ impl HttpClient {
         method: &str,
         path: &str,
         body: Option<String>,
-    ) -> Result<Option<T>, reqwest::Error>
+    ) -> Result<Option<T>, String>
     where
         T: serde::de::DeserializeOwned + std::fmt::Debug,
     {
@@ -53,22 +53,20 @@ impl HttpClient {
             request = request.body(body);
         }
 
-        let response = request.send().await.expect("Failed to send request");
+        let response = request.send().await.expect("Error sending request");
 
         let response = match response.status() {
             reqwest::StatusCode::OK => response,
             reqwest::StatusCode::NO_CONTENT => return Ok(None),
-            _ => {
+            code => {
                 let body = response.json::<ErrorResponse>().await;
 
                 match body {
-                    Ok(body) => {
-                        panic!("{}", body.error.message)
-                    }
+                    Ok(body) => return Err(format!("{}: {}", code.as_u16(), body.error.message)),
                     Err(err) => {
                         panic!("{}", err)
                     }
-                }
+                };
             }
         };
 

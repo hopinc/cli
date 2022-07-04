@@ -5,6 +5,7 @@ use std::io;
 use self::http::HttpClient;
 use crate::store::auth::Auth;
 use crate::store::context::Context;
+use crate::types::{Base, UserMe};
 
 #[derive(Debug, Clone)]
 pub struct State {
@@ -35,7 +36,7 @@ impl State {
 
             None => {
                 // get the auth token from the auth store if it exists
-                match ctx.user {
+                match ctx.default_user {
                     Some(ref user) => auth.authorized.get(user).map(|x| x.to_string()),
                     None => None,
                 }
@@ -54,5 +55,18 @@ impl State {
     /// Rebuilds the http client with the current auth token.
     pub fn update_http_token(&mut self, token: String) {
         self.http = HttpClient::new(Some(token));
+    }
+
+    pub async fn login(&mut self) {
+        let response = self
+            .http
+            .request::<Base<UserMe>>("GET", "/users/@me", None)
+            .await
+            .expect("Error logging in, try running `hop auth login`")
+            .unwrap()
+            .data;
+
+        // get current user to global
+        self.ctx.me = Some(response.clone());
     }
 }

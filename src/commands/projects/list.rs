@@ -1,19 +1,16 @@
 use crate::state::State;
-use crate::types::{Base, Projects};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "hop project list", about = "🗒️ List all available projects")]
+#[structopt(name = "ls", about = "List all available projects")]
 pub struct ListOptions {}
 
-pub async fn handle_list(state: State) -> Result<(), std::io::Error> {
+pub async fn handle_list(_options: ListOptions, state: State) -> Result<(), std::io::Error> {
     let projects = state
-        .http
-        .request::<Base<Projects>>("GET", "/users/@me", None)
-        .await
-        .expect("Error while getting project info")
-        .unwrap()
-        .data
+        .ctx
+        .me
+        .clone()
+        .expect("You are not logged in. Please run `hop auth login` first.")
         .projects;
 
     if projects.len() == 0 {
