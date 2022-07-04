@@ -38,7 +38,10 @@ async fn create_project(params: CreateParams, state: State) -> Result<ProjectRes
         .request::<Base<CreateResponse>>(
             "POST",
             "/projects",
-            Some(serde_json::to_string(&params).unwrap().into()),
+            Some((
+                serde_json::to_string(&params).unwrap().into(),
+                "application/json",
+            )),
         )
         .await
         .expect("Error while creating project")

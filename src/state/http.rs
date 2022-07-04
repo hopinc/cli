@@ -3,6 +3,10 @@ use crate::types::ErrorResponse;
 use reqwest::header::HeaderMap;
 use reqwest::Client as AsyncClient;
 
+/// Request data for the API
+/// body, content_type
+type RequestData<'a> = (hyper::Body, &'a str);
+
 #[derive(Debug, Clone)]
 pub struct HttpClient {
     pub client: AsyncClient,
@@ -14,8 +18,6 @@ pub struct HttpClient {
 impl HttpClient {
     pub fn new(token: Option<String>) -> Self {
         let mut headers = HeaderMap::new();
-
-        headers.insert("content-type", "application/json".parse().unwrap());
 
         if let Some(token) = token {
             headers.insert("Authorization", token.parse().unwrap());
@@ -39,7 +41,7 @@ impl HttpClient {
         &self,
         method: &str,
         path: &str,
-        body: Option<hyper::Body>,
+        data: Option<RequestData<'_>>,
     ) -> Result<Option<T>, String>
     where
         T: serde::de::DeserializeOwned + std::fmt::Debug,
@@ -49,8 +51,9 @@ impl HttpClient {
             &format!("{}{}", self.base_url, path),
         );
 
-        if let Some(body) = body {
+        if let Some((body, content_type)) = data {
             request = request.body(body);
+            request = request.header("Content-Type", content_type);
         }
 
         let response = request.send().await.expect("Error sending request");

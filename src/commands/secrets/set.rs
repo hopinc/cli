@@ -68,7 +68,7 @@ pub async fn handle_set(options: SetOptions, state: State) -> Result<(), std::io
 
     let secret = state
         .http
-        .request::<Base<SecretResponse>>(method, &url, Some(body.into()))
+        .request::<Base<SecretResponse>>(method, &url, Some((body.into(), "application/json")))
         .await
         .expect("Error while setting secret")
         .unwrap()
