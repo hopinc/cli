@@ -4,7 +4,12 @@ use crate::types::{Base, Secrets};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "set", about = "Set a secret")]
+#[structopt(
+    name = "set",
+    about = "Set a secret",
+    alias = "create",
+    alias = "update"
+)]
 pub struct SetOptions {
     #[structopt(name = "name", help = "Name of the secret")]
     pub name: String,
@@ -63,7 +68,7 @@ pub async fn handle_set(options: SetOptions, state: State) -> Result<(), std::io
 
     let secret = state
         .http
-        .request::<Base<SecretResponse>>(method, &url, Some(body))
+        .request::<Base<SecretResponse>>(method, &url, Some(body.into()))
         .await
         .expect("Error while setting secret")
         .unwrap()

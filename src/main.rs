@@ -25,21 +25,26 @@ struct CLI {
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
-    // // setup a panic hook to easily exit the program on panic
-    // std::panic::set_hook(Box::new(|panic_info| {
-    //     // print the panic message
-    //     let message = if let Some(message) = panic_info.payload().downcast_ref::<String>() {
-    //         message.to_owned()
-    //     } else if let Some(message) = panic_info.payload().downcast_ref::<&str>() {
-    //         message.to_string()
-    //     } else {
-    //         format!("{:?}", panic_info).to_string()
-    //     };
+    // setup a panic hook to easily exit the program on panic
+    std::panic::set_hook(Box::new(|panic_info| {
+        // print the panic message
+        let message = if let Some(message) = panic_info.payload().downcast_ref::<String>() {
+            message.to_owned()
+        } else if let Some(message) = panic_info.payload().downcast_ref::<&str>() {
+            message.to_string()
+        } else {
+            format!("{:?}", panic_info).to_string()
+        };
 
-    //     // add some color
-    //     eprintln!("\x1b[31m\x1b[1merror:\x1b[0m {}", message);
-    //     std::process::exit(1);
-    // }));
+        // add some color
+        eprintln!("\x1b[31m\x1b[1merror:\x1b[0m {}", message);
+
+        if cfg!(debug_assertions) {
+            eprintln!("Backtrace: {}", panic_info)
+        }
+
+        std::process::exit(1);
+    }));
 
     // create a new CLI instance
     let cli = CLI::from_args();

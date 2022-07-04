@@ -39,7 +39,7 @@ impl HttpClient {
         &self,
         method: &str,
         path: &str,
-        body: Option<String>,
+        body: Option<hyper::Body>,
     ) -> Result<Option<T>, String>
     where
         T: serde::de::DeserializeOwned + std::fmt::Debug,

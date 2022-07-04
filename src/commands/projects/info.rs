@@ -12,7 +12,7 @@ pub async fn handle_command(_options: InfoOptions, state: State) -> Result<(), s
             project.name, project.id, project.p_type
         );
     } else {
-        panic!("No project selected. Run `hop project switch` to select one or use `--project` to specify a project");
+        println!("No project selected. Run `hop project switch` to select one or use `--project` to specify a project");
     }
 
     Ok(())
