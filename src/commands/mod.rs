@@ -31,11 +31,11 @@ pub async fn handle_command(command: Commands, mut state: State) -> Result<(), s
             state.login().await;
 
             match authorized_command {
+                Commands::Auth(_) => unreachable!(),
                 Commands::Projects(option) => handle_project(option.commands, state).await,
                 Commands::Secrets(option) => handle_secrets(option.commands, state).await,
                 Commands::Info(option) => handle_info(option, state).await,
                 Commands::Deploy(option) => handle_deploy(option, state).await,
-                _ => unreachable!(),
             }
         }
     }
