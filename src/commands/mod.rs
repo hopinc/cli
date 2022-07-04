@@ -1,9 +1,11 @@
 mod auth;
+mod deploy;
 mod info;
 mod projects;
 mod secrets;
 
 use self::auth::{handle_command as handle_auth, AuthOptions};
+use self::deploy::{handle_command as handle_deploy, DeployOptions};
 use self::info::{handle_command as handle_info, InfoOptions};
 use self::projects::{handle_command as handle_project, ProjectsOptions};
 use self::secrets::{handle_command as handle_secrets, SecretsOptions};
@@ -17,6 +19,7 @@ pub enum Commands {
     Secrets(SecretsOptions),
     #[structopt(name = "info", alias = "ctx")]
     Info(InfoOptions),
+    Deploy(DeployOptions),
 }
 
 pub async fn handle_command(command: Commands, mut state: State) -> Result<(), std::io::Error> {
@@ -31,6 +34,7 @@ pub async fn handle_command(command: Commands, mut state: State) -> Result<(), s
                 Commands::Projects(option) => handle_project(option.commands, state).await,
                 Commands::Secrets(option) => handle_secrets(option.commands, state).await,
                 Commands::Info(option) => handle_info(option, state).await,
+                Commands::Deploy(option) => handle_deploy(option, state).await,
                 _ => unreachable!(),
             }
         }
