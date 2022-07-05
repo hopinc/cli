@@ -15,7 +15,7 @@ pub enum Commands {
     Auth(AuthOptions),
     Projects(ProjectsOptions),
     Secrets(SecretsOptions),
-    #[structopt(name = "info", alias = "ctx")]
+    #[structopt(name = "whoami", alias = "info", alias = "ctx")]
     Whoami(WhoamiOptions),
 }
 
