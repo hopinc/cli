@@ -30,8 +30,8 @@ pub struct ProjectsOptions {
     pub commands: Commands,
 }
 
-pub async fn handle_command(command: Commands, state: State) -> Result<(), std::io::Error> {
-    match command {
+pub async fn handle_projects(options: ProjectsOptions, state: State) -> Result<(), std::io::Error> {
+    match options.commands {
         Commands::List(options) => handle_list(options, state).await,
         Commands::Switch(options) => handle_switch(options, state).await,
         Commands::Delete(options) => handle_delete(options, state).await,
