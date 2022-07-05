@@ -44,7 +44,10 @@ impl Context {
 
     pub fn current_project(self) -> Option<Project> {
         match self.project.clone() {
-            Some(project) => self.find_project_by_id_or_namespace(project),
+            Some(project) => Some(
+                self.find_project_by_id_or_namespace(project.clone())
+                    .expect(format!("Could not find project `{}`", project).as_str()),
+            ),
 
             None => self
                 .default_project
