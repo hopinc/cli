@@ -21,8 +21,6 @@ static FILENAMES: &[&str] = &[
     ".hoprc.json",
 ];
 
-// TODO: use this later
-#[allow(dead_code)]
 static DEFAULT_IGNORE: &[&str] = &[".git", ".gitignore", ".gitmodules"];
 
 async fn compress(base_dir: PathBuf, ignore: Vec<&str>) -> Result<String, std::io::Error> {
@@ -33,6 +31,7 @@ async fn compress(base_dir: PathBuf, ignore: Vec<&str>) -> Result<String, std::i
     let mut archive = TarBuilder::new(tar_file);
     archive.follow_symlinks(true);
 
+    // TODO: make custom implementation of walkdir
     let mut walker = async_walkdir::WalkDir::new(base_dir.clone());
 
     while let Some(entry) = walker.next().await {
@@ -59,7 +58,6 @@ pub async fn handle_deploy(_options: DeployOptions, _state: State) -> Result<(),
 
     // check if dir has a hop.yml hop.json file
     // if not, ask if they want to create one
-
     let mut dir = fs::read_dir(path.clone())
         .await
         .expect("Could not read directory");
