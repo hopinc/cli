@@ -3,7 +3,7 @@ use crate::types::{Base, Secrets};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "ls", about = "List all secrets names")]
+#[structopt(about = "List all secrets names")]
 pub struct ListOptions {}
 
 pub async fn handle_list(_options: ListOptions, state: State) -> Result<(), std::io::Error> {

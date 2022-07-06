@@ -14,6 +14,7 @@ use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 pub enum Commands {
+    #[structopt(name = "new", alias = "create")]
     Create(CreateOptions),
     Switch(SwitchOptions),
     Info(InfoOptions),

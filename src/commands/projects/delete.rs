@@ -2,7 +2,7 @@ use crate::state::State;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "rm", about = "Delete a project")]
+#[structopt(about = "Delete a project")]
 pub struct DeleteOptions {}
 
 pub async fn handle_delete(

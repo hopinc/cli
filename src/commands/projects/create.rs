@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "create", about = "Create a new project")]
+#[structopt(about = "Create a new project")]
 pub struct CreateOptions {
     #[structopt(name = "name", help = "Name of the project")]
     name: String,

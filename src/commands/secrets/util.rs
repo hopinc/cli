@@ -1,20 +1,9 @@
 use crate::types::Secret;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct SecretResponse {
     pub secret: Secret,
-}
-
-#[derive(Debug, Serialize)]
-pub struct CreateParams {
-    pub name: String,
-    pub value: String,
-}
-
-#[derive(Debug, Serialize)]
-pub struct UpdateParams {
-    pub value: String,
 }
 
 pub fn validate_name(name: &str) -> Result<(), String> {
