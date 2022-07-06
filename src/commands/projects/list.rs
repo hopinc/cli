@@ -2,7 +2,7 @@ use crate::state::State;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "ls", about = "List all available projects")]
+#[structopt(about = "List all available projects")]
 pub struct ListOptions {}
 
 pub async fn handle_list(_options: ListOptions, state: State) -> Result<(), std::io::Error> {

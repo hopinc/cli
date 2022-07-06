@@ -2,7 +2,7 @@ use crate::state::State;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "info", about = "Get information about a project")]
+#[structopt(about = "Get information about a project")]
 pub struct InfoOptions {}
 
 pub async fn handle_command(_options: InfoOptions, state: State) -> Result<(), std::io::Error> {

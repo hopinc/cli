@@ -54,7 +54,7 @@ async fn compress(base_dir: PathBuf, ignore: Vec<&str>) -> Result<String, std::i
     Ok(archive_path.to_str().unwrap().into())
 }
 
-pub async fn handle_command(_options: DeployOptions, _state: State) -> Result<(), std::io::Error> {
+pub async fn handle_deploy(_options: DeployOptions, _state: State) -> Result<(), std::io::Error> {
     let path = std::env::current_dir().expect("Could not get current directory");
 
     // check if dir has a hop.yml hop.json file

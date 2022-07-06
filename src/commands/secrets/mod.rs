@@ -11,6 +11,7 @@ use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 pub enum Commands {
+    #[structopt(name = "set", alias = "create", alias = "update")]
     Set(SetOptions),
     #[structopt(name = "ls", alias = "list")]
     List(ListOptions),
@@ -25,14 +26,14 @@ pub struct SecretsOptions {
     pub commands: Commands,
 }
 
-pub async fn handle_command(command: Commands, state: State) -> Result<(), std::io::Error> {
+pub async fn handle_secrets(options: SecretsOptions, state: State) -> Result<(), std::io::Error> {
     state
         .clone()
         .ctx
         .current_project()
-        .expect("No project selected run `hop project switch` to select one or use `--project` to specify a project");
+        .expect("No project selected run `hop projects switch` to select one or use `--project` to specify a project");
 
-    match command {
+    match options.commands {
         Commands::List(options) => handle_list(options, state).await,
         Commands::Set(options) => handle_set(options, state).await,
         Commands::Delete(options) => handle_delete(options, state).await,

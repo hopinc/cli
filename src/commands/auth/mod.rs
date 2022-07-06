@@ -19,8 +19,8 @@ pub struct AuthOptions {
     pub commands: Commands,
 }
 
-pub async fn handle_command(command: Commands, state: State) -> Result<(), std::io::Error> {
-    match command {
+pub async fn handle_auth(options: AuthOptions, state: State) -> Result<(), std::io::Error> {
+    match options.commands {
         Commands::Login(options) => handle_login(options, state).await,
         Commands::Logout(options) => hanndle_logout(options, state).await,
     }

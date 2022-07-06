@@ -4,7 +4,7 @@ use crate::state::State;
 use crate::store::context::Context;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "logout", about = "Logout the current user")]
+#[structopt(about = "Logout the current user")]
 pub struct LogoutOptions {}
 
 pub async fn hanndle_logout(
