@@ -6,10 +6,10 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Create a new project")]
 pub struct CreateOptions {
-    #[structopt(name = "name", help = "Name of the project")]
-    name: String,
     #[structopt(name = "namespace", help = "Namespace of the project")]
     namespace: String,
+    #[structopt(name = "name", help = "Name of the project")]
+    name: String,
     #[structopt(short = "d", long = "default", help = "Set as default project")]
     default: bool,
 }

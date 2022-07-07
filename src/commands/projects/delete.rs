@@ -1,14 +1,18 @@
 use crate::state::State;
 use structopt::StructOpt;
 
+static CONFIRM_DELETE_PROJECT_MESSAGE: &str = "I am sure I want to delete the project named ";
+
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Delete a project")]
-pub struct DeleteOptions {}
+pub struct DeleteOptions {
+    #[structopt(name = "namespace", help = "Namespace of the project")]
+    namespace: Option<String>,
+    #[structopt(long = "no-confirm", help = "Skip confirmation")]
+    force: bool,
+}
 
-pub async fn handle_delete(
-    _options: DeleteOptions,
-    mut state: State,
-) -> Result<(), std::io::Error> {
+pub async fn handle_delete(options: DeleteOptions, mut state: State) -> Result<(), std::io::Error> {
     let projects = state
         .ctx
         .me
@@ -20,28 +24,53 @@ pub async fn handle_delete(
         panic!("No projects found");
     }
 
-    let projects_fmt = projects
-        .iter()
-        .map(|p| format!("{} @{} ({})", p.name, p.namespace, p.id))
-        .collect::<Vec<_>>();
-
-    let idx = dialoguer::Select::new()
-        .with_prompt("Select a project to delete (use arrow keys and enter to select)")
-        .items(&projects_fmt)
-        .default(if let Some(project) = state.ctx.clone().current_project() {
-            projects
+    let project = match options.namespace {
+        Some(namespace) => {
+            let project = projects
                 .iter()
-                .position(|p| p.id == project.id)
-                .unwrap_or(0)
-        } else {
-            0
-        })
-        .interact_opt()
-        .unwrap();
+                .find(|p| p.namespace == namespace)
+                .expect("Project not found");
+            project.to_owned()
+        }
+        None => {
+            let projects_fmt = projects
+                .iter()
+                .map(|p| format!("{} @{} ({})", p.name, p.namespace, p.id))
+                .collect::<Vec<_>>();
 
-    let project = &projects[idx.expect("Project not found")];
+            let idx = dialoguer::Select::new()
+                .with_prompt("Select a project to delete (use arrow keys and enter to select)")
+                .items(&projects_fmt)
+                .default(if let Some(current) = state.ctx.clone().current_project() {
+                    projects
+                        .iter()
+                        .position(|p| p.id == current.id)
+                        .unwrap_or(0)
+                } else {
+                    0
+                })
+                .interact_opt()
+                .expect("Failed to select project")
+                .expect("No project selected");
 
-    // TODO: https://canary.discord.com/channels/843908803832578108/975880265857634366/992995461965295796
+            projects[idx].to_owned()
+        }
+    };
+
+    if !options.force {
+        println!(
+            "To confirm, input the following message `{}{}`",
+            CONFIRM_DELETE_PROJECT_MESSAGE, project.name
+        );
+        let output = dialoguer::Input::<String>::new()
+            .with_prompt("Message")
+            .interact()
+            .expect("Failed to confirm deletion");
+
+        if output != format!("{}{}", CONFIRM_DELETE_PROJECT_MESSAGE, project.name) {
+            panic!("Aborted deletion of `{}`", project.name);
+        }
+    }
 
     state
         .http
