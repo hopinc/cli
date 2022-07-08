@@ -56,6 +56,12 @@ impl Context {
         }
     }
 
+    pub fn current_project_error(self) -> Project {
+        self.current_project().expect(
+            "No project specified, run `hop projects switch` or use --project to specify a project",
+        )
+    }
+
     pub fn default() -> Context {
         Context {
             me: None,

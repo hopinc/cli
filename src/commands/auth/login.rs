@@ -1,6 +1,7 @@
 use std::convert::Infallible;
 
 use crate::config::{PAT_FALLBACK_URL, WEB_AUTH_URL};
+use crate::done;
 use crate::state::State;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server};
@@ -122,15 +123,15 @@ pub async fn handle_login(options: LoginOptions, mut state: State) -> Result<(),
 
     let me = state.clone().ctx.me.unwrap();
 
-    // output the login info
-    println!("Logged in as: `{}` ({})", me.user.username, me.user.email);
-
     // save the state
     state.auth.authorized.insert(me.user.id.clone(), token);
     state.auth.save().await?;
 
     state.ctx.default_user = Some(me.user.id);
     state.ctx.save().await?;
+
+    // output the login info
+    done!("Logged in as: `{}` ({})", me.user.username, me.user.email);
 
     Ok(())
 }

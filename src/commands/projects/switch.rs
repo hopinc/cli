@@ -1,4 +1,4 @@
-use crate::state::State;
+use crate::{done, state::State};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -16,7 +16,7 @@ pub async fn handle_switch(
         .expect("You are not logged in. Please run `hop auth login` first.")
         .projects;
 
-    if projects.len() == 0 {
+    if projects.is_empty() {
         panic!("No projects found");
     }
 
@@ -48,6 +48,13 @@ pub async fn handle_switch(
     };
 
     let project = &projects[idx];
+
+    done!(
+        "Switched to project {} @{} ({})",
+        project.name,
+        project.namespace,
+        project.id
+    );
 
     state.ctx.default_project = Some(project.id.clone());
     state.ctx.save().await?;

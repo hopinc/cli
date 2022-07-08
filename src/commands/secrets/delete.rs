@@ -1,6 +1,6 @@
-use crate::commands::secrets::util::validate_name;
+use crate::commands::secrets::util::{validate_name, Secrets};
+use crate::done;
 use crate::state::State;
-use crate::types::{Base, Secrets};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -8,6 +8,8 @@ use structopt::StructOpt;
 pub struct DeleteOptions {
     #[structopt(name = "name", help = "Name of the secret")]
     pub name: Option<String>,
+    #[structopt(long = "no-confirm", help = "Skip confirmation")]
+    force: bool,
 }
 
 pub async fn handle_delete(options: DeleteOptions, state: State) -> Result<(), std::io::Error> {
@@ -22,7 +24,7 @@ pub async fn handle_delete(options: DeleteOptions, state: State) -> Result<(), s
         None => {
             let secrests = state
                 .http
-                .request::<Base<Secrets>>(
+                .request::<Secrets>(
                     "GET",
                     format!("/projects/{}/secrets", project_id).as_str(),
                     None,
@@ -30,7 +32,6 @@ pub async fn handle_delete(options: DeleteOptions, state: State) -> Result<(), s
                 .await
                 .expect("Error while getting secrets")
                 .unwrap()
-                .data
                 .secrets;
 
             if secrests.is_empty() {
@@ -54,6 +55,20 @@ pub async fn handle_delete(options: DeleteOptions, state: State) -> Result<(), s
         }
     };
 
+    if !options.force {
+        let confirm = dialoguer::Confirm::new()
+            .with_prompt(&format!(
+                "Are you sure you want to delete secret {}?",
+                secret_name
+            ))
+            .interact_opt()
+            .expect("Failed to confirm");
+
+        if confirm.is_none() || !confirm.unwrap() {
+            panic!("Aborted deletion of `{}`", secret_name);
+        }
+    }
+
     state
         .http
         .request::<()>(
@@ -64,7 +79,7 @@ pub async fn handle_delete(options: DeleteOptions, state: State) -> Result<(), s
         .await
         .expect("Error while deleting secret");
 
-    println!("Secret `{}` deleted", secret_name);
+    done!("Secret `{}` deleted", secret_name);
 
     Ok(())
 }

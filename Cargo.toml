@@ -14,6 +14,7 @@ structopt = { version = "0.3" }
 dialoguer = { version = "0.10" }
 webbrowser = { version = "0.7" }
 portpicker = { version = "0.1" }
+serde_yaml = { version = "0.8" }
 serde_json = { version = "1.0" }
 querystring = { version = "1.1" }
 async-walkdir = { version = "0.2" }

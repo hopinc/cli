@@ -1,4 +1,4 @@
-use crate::state::State;
+use crate::{done, state::State};
 use structopt::StructOpt;
 
 static CONFIRM_DELETE_PROJECT_MESSAGE: &str = "I am sure I want to delete the project named ";
@@ -20,7 +20,7 @@ pub async fn handle_delete(options: DeleteOptions, mut state: State) -> Result<(
         .expect("You are not logged in. Please run `hop auth login` first.")
         .projects;
 
-    if projects.len() == 0 {
+    if projects.is_empty() {
         panic!("No projects found");
     }
 
@@ -78,7 +78,7 @@ pub async fn handle_delete(options: DeleteOptions, mut state: State) -> Result<(
         .await
         .expect("Error while deleting project");
 
-    println!("Project `{}` ({}) deleted", project.name, project.namespace);
+    done!("Project `{}` ({}) deleted", project.name, project.namespace);
 
     if state.ctx.default_project == Some(project.id.to_string()) {
         state.ctx.default_project = None;

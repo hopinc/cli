@@ -22,14 +22,12 @@ pub async fn handle_whoami(_options: WhoamiOptions, state: State) -> Result<(), 
         me.user.username, me.user.email
     );
 
-    if let Some(project) = state.ctx.current_project() {
-        println!(
-            "Project: `{}` ({}) {}",
-            project.name, project.id, project.p_type
-        );
-    } else {
-        panic!("No project selected. Run `hop project switch` to select one or use `--project` to specify a project");
-    }
+    let project = state.ctx.current_project_error();
+
+    println!(
+        "Project: `{}` ({}) {}",
+        project.name, project.id, project.p_type
+    );
 
     Ok(())
 }

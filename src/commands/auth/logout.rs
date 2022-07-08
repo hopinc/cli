@@ -1,5 +1,6 @@
 use structopt::StructOpt;
 
+use crate::done;
 use crate::state::State;
 use crate::store::context::Context;
 
@@ -25,7 +26,7 @@ pub async fn hanndle_logout(
     state.auth.authorized.remove(&user_id.unwrap());
     state.auth.save().await?;
 
-    println!("You have been logged out");
+    done!("You have been logged out");
 
     Ok(())
 }

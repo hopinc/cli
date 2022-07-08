@@ -1,5 +1,5 @@
 use crate::config::{HOP_API_BASE_URL, PLATFORM, VERSION};
-use crate::types::ErrorResponse;
+use crate::types::{Base, ErrorResponse};
 use reqwest::header::HeaderMap;
 use reqwest::Client as AsyncClient;
 
@@ -62,6 +62,7 @@ impl HttpClient {
 
         let response = match response.status() {
             reqwest::StatusCode::OK => response,
+            reqwest::StatusCode::CREATED => return Ok(None),
             reqwest::StatusCode::NO_CONTENT => return Ok(None),
             code => {
                 let body = response.json::<ErrorResponse>().await;
@@ -76,10 +77,10 @@ impl HttpClient {
         };
 
         let response = response
-            .json::<T>()
+            .json::<Base<T>>()
             .await
             .expect("Failed to parse response");
 
-        Ok(Some(response))
+        Ok(Some(response.data))
     }
 }

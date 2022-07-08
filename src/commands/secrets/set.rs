@@ -1,6 +1,6 @@
 use crate::commands::secrets::util::{validate_name, SecretResponse};
+use crate::done;
 use crate::state::State;
-use crate::types::Base;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -19,7 +19,7 @@ pub async fn handle_set(options: SetOptions, state: State) -> Result<(), std::io
 
     let secret = state
         .http
-        .request::<Base<SecretResponse>>(
+        .request::<SecretResponse>(
             "PUT",
             format!(
                 "/projects/{}/secrets/{}",
@@ -32,10 +32,9 @@ pub async fn handle_set(options: SetOptions, state: State) -> Result<(), std::io
         .await
         .expect("Error while setting secret")
         .unwrap()
-        .data
         .secret;
 
-    println!("Set secret: {} ({})", secret.name, secret.id);
+    done!("Set secret: {} ({})", secret.name, secret.id);
 
     Ok(())
 }

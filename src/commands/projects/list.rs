@@ -13,7 +13,7 @@ pub async fn handle_list(_options: ListOptions, state: State) -> Result<(), std:
         .expect("You are not logged in. Please run `hop auth login` first.")
         .projects;
 
-    if projects.len() == 0 {
+    if projects.is_empty() {
         panic!("No projects found");
     }
 

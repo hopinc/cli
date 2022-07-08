@@ -1,5 +1,4 @@
-use crate::state::State;
-use crate::types::Base;
+use crate::{done, state::State};
 use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 
@@ -35,7 +34,7 @@ struct CreateResponse {
 async fn create_project(params: CreateParams, state: State) -> Result<ProjectRes, std::io::Error> {
     let json = state
         .http
-        .request::<Base<CreateResponse>>(
+        .request::<CreateResponse>(
             "POST",
             "/projects",
             Some((
@@ -47,7 +46,7 @@ async fn create_project(params: CreateParams, state: State) -> Result<ProjectRes
         .expect("Error while creating project")
         .unwrap();
 
-    Ok(json.data.project)
+    Ok(json.project)
 }
 
 pub async fn handle_create(options: CreateOptions, mut state: State) -> Result<(), std::io::Error> {
@@ -59,12 +58,12 @@ pub async fn handle_create(options: CreateOptions, mut state: State) -> Result<(
 
     let res = create_project(params, state.clone()).await?;
 
+    done!("Created project `{}` ({})", options.name, options.namespace);
+
     if options.default {
         state.ctx.default_project = Some(res.id.clone());
         state.ctx.save().await?;
     }
-
-    println!("Created project `{}` ({})", options.name, options.namespace);
 
     Ok(())
 }

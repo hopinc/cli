@@ -27,12 +27,6 @@ pub struct SecretsOptions {
 }
 
 pub async fn handle_secrets(options: SecretsOptions, state: State) -> Result<(), std::io::Error> {
-    state
-        .clone()
-        .ctx
-        .current_project()
-        .expect("No project selected run `hop projects switch` to select one or use `--project` to specify a project");
-
     match options.commands {
         Commands::List(options) => handle_list(options, state).await,
         Commands::Set(options) => handle_set(options, state).await,

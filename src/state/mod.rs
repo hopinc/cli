@@ -5,7 +5,7 @@ use std::io;
 use self::http::HttpClient;
 use crate::store::auth::Auth;
 use crate::store::context::Context;
-use crate::types::{Base, UserMe};
+use crate::types::UserMe;
 
 #[derive(Debug, Clone)]
 pub struct State {
@@ -60,11 +60,10 @@ impl State {
     pub async fn login(&mut self) {
         let response = self
             .http
-            .request::<Base<UserMe>>("GET", "/users/@me", None)
+            .request::<UserMe>("GET", "/users/@me", None)
             .await
             .expect("Error logging in, try running `hop auth login`")
-            .unwrap()
-            .data;
+            .unwrap();
 
         // get current user to global
         self.ctx.me = Some(response.clone());

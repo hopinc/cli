@@ -1,5 +1,5 @@
+use crate::commands::secrets::util::Secrets;
 use crate::state::State;
-use crate::types::{Base, Secrets};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -7,11 +7,11 @@ use structopt::StructOpt;
 pub struct ListOptions {}
 
 pub async fn handle_list(_options: ListOptions, state: State) -> Result<(), std::io::Error> {
-    let project_id = state.ctx.current_project().expect("Project not found").id;
+    let project_id = state.ctx.current_project_error().id;
 
     let secrets = state
         .http
-        .request::<Base<Secrets>>(
+        .request::<Secrets>(
             "GET",
             format!("/projects/{}/secrets", project_id).as_str(),
             None,
@@ -19,10 +19,9 @@ pub async fn handle_list(_options: ListOptions, state: State) -> Result<(), std:
         .await
         .expect("Error while getting project info")
         .unwrap()
-        .data
         .secrets;
 
-    if secrets.len() == 0 {
+    if secrets.is_empty() {
         panic!("No secrets found in this project");
     }
 

@@ -6,7 +6,7 @@ mod switch;
 
 use self::create::{handle_create, CreateOptions};
 use self::delete::{handle_delete, DeleteOptions};
-use self::info::{handle_command as handle_info, InfoOptions};
+use self::info::{handle_info, InfoOptions};
 use self::list::{handle_list, ListOptions};
 use self::switch::{handle_switch, SwitchOptions};
 use crate::state::State;
