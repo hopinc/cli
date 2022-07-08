@@ -8,12 +8,15 @@ edition = "2021"
 [dependencies]
 dirs = { version = "4.0" }
 regex = { version = "1.5" }
+futures = { version = "0.3" }
+tokio-tar = { version = "0.3" }
 structopt = { version = "0.3" }
 dialoguer = { version = "0.10" }
 webbrowser = { version = "0.7" }
 portpicker = { version = "0.1" }
-querystring = { version = "1.1" }
 serde_json = { version = "1.0" }
+querystring = { version = "1.1" }
+async-walkdir = { version = "0.2" }
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 hyper = { version = "0.14", features = ["server"] }
