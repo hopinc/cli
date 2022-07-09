@@ -1,10 +1,10 @@
 use std::env::temp_dir;
 use std::path::PathBuf;
 
-use futures::stream::StreamExt;
+use async_compression::tokio::write::GzipEncoder;
 use serde::{Deserialize, Serialize};
 use tokio::fs::{self, File};
-use tokio::io::AsyncReadExt;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio_tar::Builder as TarBuilder;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -91,6 +91,8 @@ static DEFAULT_IGNORE: &[&str] = &[
     ".vscode",
 ];
 
+static VALID_IGNORE_FILES: &[&str] = &[".gitignore", ".hopignore"];
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct HopFileContent {
     pub project_id: String,
@@ -136,37 +138,119 @@ pub async fn find_hop_file(path: PathBuf) -> Option<HopFileContent> {
     None
 }
 
-// semi brokey :/
-pub async fn compress(
-    id: String,
-    base_dir: PathBuf,
-    ignore: Vec<&str>,
-) -> Result<String, std::io::Error> {
-    let archive_path = temp_dir().join(format!("hop_{}.tar.gz", id));
-    let tar_file = File::create(&archive_path).await?;
-    let ignore_list = [DEFAULT_IGNORE, FILENAMES, &ignore].concat();
+async fn find_ignore_files(path: PathBuf) -> Vec<String> {
+    let mut ignore_list: Vec<String> = vec![];
 
-    let mut archive = TarBuilder::new(tar_file);
-    archive.follow_symlinks(true);
+    let mut dir = fs::read_dir(path.clone())
+        .await
+        .expect("Could not read directory");
 
-    // TODO: make custom implementation of walkdir
-    let mut walker = async_walkdir::WalkDir::new(base_dir.clone());
-
-    while let Some(entry) = walker.next().await {
-        if let Ok(file) = entry {
-            let relative = file.path().strip_prefix(&base_dir).unwrap().to_owned();
-
-            if ignore_list.contains(&relative.to_str().unwrap().split("/").nth(0).unwrap()) {
+    while let Some(entry) = dir.next_entry().await.expect("Could not read directory") {
+        if let Some(filename) = entry.file_name().to_str() {
+            if !VALID_IGNORE_FILES.contains(&filename) {
                 continue;
             }
 
-            println!("{:?}", relative);
+            if entry
+                .file_type()
+                .await
+                .expect("Could not get file type")
+                .is_file()
+            {
+                let path = entry.path();
 
-            archive.append_path(relative).await?;
+                // debug
+                println!("Found ignore file: {}", path.display());
+
+                let mut file = File::open(path).await.expect("Could not open file");
+                let mut buffer = String::new();
+
+                file.read_to_string(&mut buffer)
+                    .await
+                    .expect("Could not read file");
+
+                ignore_list.extend(buffer.lines().map(|line| line.to_string()));
+            }
         }
     }
 
-    archive.finish().await?;
+    ignore_list
+}
+
+fn walk(base: &PathBuf, ignore: &[&str], prefix: Option<PathBuf>) -> Vec<PathBuf> {
+    let mut paths = Vec::new();
+
+    let dir = std::fs::read_dir(base.clone()).expect("Could not read directory");
+
+    for entry in dir {
+        let entry = entry.expect("Could not read directory entry");
+
+        let path = &entry.path();
+
+        let filename = path.file_name().unwrap().to_str().unwrap();
+
+        // FIXME: find a better way to handle patters / matching
+        if ignore.contains(&filename.clone()) {
+            continue;
+        }
+        if ignore.contains(&format!("/{}", filename).as_str()) {
+            continue;
+        }
+
+        if path.is_dir() {
+            let mut subpaths = walk(
+                path,
+                ignore,
+                Some(path.strip_prefix(base).unwrap().to_path_buf()),
+            );
+            paths.append(&mut subpaths);
+        } else {
+            let mut path = path.clone();
+            if let Some(ref prefix) = prefix {
+                path = prefix.join(path);
+            }
+            paths.push(path);
+        }
+    }
+
+    paths
+}
+
+// semi brokey :/
+pub async fn compress<'a>(id: String, base_dir: PathBuf) -> Result<String, std::io::Error> {
+    let archive_path = temp_dir().join(format!("hop_{}.tar.gz", id));
+
+    // tarball gunzip stuff
+    let writer = File::create(archive_path.clone()).await?;
+    let writer = GzipEncoder::new(writer);
+    let mut archive = TarBuilder::new(writer);
+    archive.follow_symlinks(true);
+
+    // .gitignore / .hopignore
+    let found_ignore = &find_ignore_files(base_dir.clone()).await;
+    let found_ignore = found_ignore
+        .iter()
+        .map(|s| s.as_str())
+        .collect::<Vec<&str>>();
+    let ignore_list = [DEFAULT_IGNORE, FILENAMES, &found_ignore].concat();
+
+    // debug
+    println!("Ignoring: {:?}", ignore_list);
+
+    // add all found files to the tarball
+    for entry in walk(&base_dir.clone(), &ignore_list, None) {
+        let relative = entry.as_path().strip_prefix(&base_dir).unwrap().to_owned();
+
+        // debug
+        println!("{:?}", relative);
+
+        archive.append_path(relative).await?;
+    }
+
+    let mut buff = archive.into_inner().await?;
+    buff.shutdown().await?;
+    let mut buff = buff.into_inner();
+    buff.shutdown().await?;
 
     Ok(archive_path.to_str().unwrap().into())
 }

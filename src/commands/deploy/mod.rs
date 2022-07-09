@@ -22,11 +22,11 @@ pub async fn handle_deploy(_options: DeployOptions, _state: State) -> Result<(),
         }
     };
 
-    let packed = compress(hopfile.deployment, path, vec!["target"])
+    let packed = compress(hopfile.deployment, path)
         .await
         .expect("Could not compress files");
 
     println!("Packed to: {}", packed);
 
-    todo!()
+    todo!("push packed to remote server");
 }

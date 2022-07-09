@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 dirs = { version = "4.0" }
+glob = { version = "0.3" }
 regex = { version = "1.5" }
 futures = { version = "0.3" }
 tokio-tar = { version = "0.3" }
@@ -22,3 +23,4 @@ tokio = { version = "1", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 hyper = { version = "0.14", features = ["server"] }
 reqwest = { version = "0.11", features = ["json"] }
+async-compression = { version = "0.3", features = ["tokio", "gzip"] }

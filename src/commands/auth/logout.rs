@@ -20,7 +20,7 @@ pub async fn hanndle_logout(
 
     // clear all state
     state.ctx = Context::default();
-    state.ctx.clone().save().await?;
+    state.ctx.save().await?;
 
     // remove the user from the store
     state.auth.authorized.remove(&user_id.unwrap());
