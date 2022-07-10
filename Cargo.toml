@@ -7,10 +7,10 @@ edition = "2021"
 
 [dependencies]
 dirs = { version = "4.0" }
-glob = { version = "0.3" }
 regex = { version = "1.5" }
 tokio-tar = { version = "0.3" }
 structopt = { version = "0.3" }
+gitignore = { version = "1.0" }
 dialoguer = { version = "0.10" }
 webbrowser = { version = "0.7" }
 portpicker = { version = "0.1" }

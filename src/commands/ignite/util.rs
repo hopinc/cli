@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use async_compression::tokio::write::GzipEncoder;
 use serde::{Deserialize, Serialize};
 use tokio::fs::{self, File};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::AsyncWriteExt;
 use tokio_tar::Builder as TarBuilder;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -70,7 +70,7 @@ pub struct MultipleDeployments {
     pub deployments: Vec<Deployment>,
 }
 
-pub static FILENAMES: &[&str] = &[
+pub static VALID_HOP_FILENAMES: &[&str] = &[
     "hop.yml",
     "hop.yaml",
     "hop.json",
@@ -81,143 +81,131 @@ pub static FILENAMES: &[&str] = &[
 ];
 
 // default ignore list for tar files
-static DEFAULT_IGNORE: &[&str] = &[
-    ".git",
+static DEFAULT_IGNORE_LIST: &[&str] = &[
+    "/.github",
     ".gitignore",
     ".gitmodules",
-    ".github",
     ".DS_Store",
-    ".idea",
-    ".vscode",
+    "/.idea",
+    "/.vscode",
 ];
 
-static VALID_IGNORE_FILES: &[&str] = &[".gitignore", ".hopignore"];
+static VALID_IGNORE_FILENAMES: &[&str] = &[".hopignore", ".gitignore"];
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct HopFileContent {
-    pub project_id: String,
+pub struct HopFile {
+    pub version: u64,
+    pub config: HopFileConfigV1,
+    #[serde(skip)]
+    pub path: Option<PathBuf>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+enum HopFileVersion {
+    #[serde(rename = "1")]
+    V1(HopFileConfigV1),
+    #[serde(rename = "2")]
+    V2(HopFileConfigV2),
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct HopFileConfigV1 {
+    pub project: String,
     pub deployment: String,
 }
 
-pub async fn find_hop_file(path: PathBuf) -> Option<HopFileContent> {
-    let mut dir = fs::read_dir(path.clone())
-        .await
-        .expect("Could not read directory");
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct HopFileConfigV2 {
+    pub project: String,
+    pub deployment: String,
+}
 
-    while let Some(entry) = dir.next_entry().await.expect("Could not read directory") {
-        if let Some(filename) = entry.file_name().to_str() {
-            if !FILENAMES.contains(&filename) {
-                continue;
-            }
+impl HopFile {
+    pub fn new(path: PathBuf, project: String, deployment: String) -> HopFile {
+        HopFile {
+            version: 1,
+            config: HopFileConfigV1 {
+                project,
+                deployment,
+            },
+            path: Some(path),
+        }
+    }
 
-            if entry
-                .file_type()
-                .await
-                .expect("Could not get file type")
-                .is_file()
-            {
-                let path = entry.path();
-
-                println!("Found hop file: {}", path.display());
-
-                let mut file = File::open(path).await.expect("Could not open file");
-                let mut buffer = String::new();
-
-                file.read_to_string(&mut buffer)
-                    .await
-                    .expect("Could not read file");
-
-                let content: HopFileContent = serde_yaml::from_str(&buffer)
-                    .unwrap_or_else(|_| serde_json::from_str(&buffer).unwrap());
-
-                return Some(content);
+    fn deserialize(path: PathBuf, content: Self) -> Option<String> {
+        match path.clone().extension() {
+            Some(ext) => match ext.to_str() {
+                Some("yml") | Some("yaml") => serde_yaml::to_string(&content).ok(),
+                Some("json") => serde_json::to_string(&content).ok(),
+                _ => None,
+            },
+            None => {
+                if let Ok(s) = serde_yaml::to_string(&content) {
+                    Some(s)
+                } else if let Ok(s) = serde_json::to_string(&content) {
+                    Some(s)
+                } else {
+                    None
+                }
             }
         }
     }
 
-    None
-}
-
-async fn find_ignore_files(path: PathBuf) -> Vec<String> {
-    let mut ignore_list: Vec<String> = vec![];
-
-    let mut dir = fs::read_dir(path.clone())
-        .await
-        .expect("Could not read directory");
-
-    while let Some(entry) = dir.next_entry().await.expect("Could not read directory") {
-        if let Some(filename) = entry.file_name().to_str() {
-            if !VALID_IGNORE_FILES.contains(&filename) {
-                continue;
-            }
-
-            if entry
-                .file_type()
-                .await
-                .expect("Could not get file type")
-                .is_file()
-            {
-                let path = entry.path();
-
-                // debug
-                println!("Found ignore file: {}", path.display());
-
-                let mut file = File::open(path).await.expect("Could not open file");
-                let mut buffer = String::new();
-
-                file.read_to_string(&mut buffer)
-                    .await
-                    .expect("Could not read file");
-
-                ignore_list.extend(buffer.lines().map(|line| line.to_string()));
+    fn serialize(path: PathBuf, content: &str) -> Option<Self> {
+        match path.clone().extension() {
+            Some(ext) => match ext.to_str() {
+                Some("yml") | Some("yaml") => serde_yaml::from_str(content).ok(),
+                Some("json") => serde_json::from_str(content).ok(),
+                _ => None,
+            },
+            None => {
+                if let Ok(s) = serde_yaml::from_str(content) {
+                    Some(s)
+                } else if let Ok(s) = serde_json::from_str(content) {
+                    Some(s)
+                } else {
+                    None
+                }
             }
         }
     }
 
-    ignore_list
-}
+    pub async fn find(path: PathBuf) -> Option<Self> {
+        for filename in VALID_HOP_FILENAMES {
+            let path = path.clone().join(filename);
 
-fn walk(base: &PathBuf, ignore: &[&str], prefix: Option<PathBuf>) -> Vec<PathBuf> {
-    let mut paths = Vec::new();
+            if fs::metadata(&path).await.is_ok() {
+                let content = fs::read_to_string(&path).await.ok()?;
 
-    let dir = std::fs::read_dir(base.clone()).expect("Could not read directory");
+                let mut hop_file_content: Self = Self::serialize(path.clone(), content.as_str())
+                    .expect("Failed to serialize hop file");
 
-    for entry in dir {
-        let entry = entry.expect("Could not read directory entry");
+                hop_file_content.path = Some(path);
 
-        let path = &entry.path();
-
-        let filename = path.file_name().unwrap().to_str().unwrap();
-
-        // FIXME: find a better way to handle patters / matching
-        if ignore.contains(&filename.clone()) {
-            continue;
-        }
-        if ignore.contains(&format!("/{}", filename).as_str()) {
-            continue;
-        }
-
-        if path.is_dir() {
-            let mut subpaths = walk(
-                path,
-                ignore,
-                Some(path.strip_prefix(base).unwrap().to_path_buf()),
-            );
-            paths.append(&mut subpaths);
-        } else {
-            let mut path = path.clone();
-            if let Some(ref prefix) = prefix {
-                path = prefix.join(path);
+                return Some(hop_file_content);
             }
-            paths.push(path);
         }
+
+        None
     }
 
-    paths
+    pub async fn save(self) -> Option<Self> {
+        let path = self.path.clone().expect("HopFile::save: path is None");
+
+        let content =
+            Self::deserialize(path.clone(), self.clone()).expect("Failed to deserialize hop file");
+
+        let mut file = File::create(&path).await.ok()?;
+
+        file.write_all(content.as_bytes()).await.ok()?;
+
+        Some(self)
+    }
 }
 
-// semi brokey :/
-pub async fn compress<'a>(id: String, base_dir: PathBuf) -> Result<String, std::io::Error> {
+// compress stuff
+
+pub async fn compress(id: String, base_dir: PathBuf) -> Result<String, std::io::Error> {
     let archive_path = temp_dir().join(format!("hop_{}.tar.gz", id));
 
     // tarball gunzip stuff
@@ -228,17 +216,30 @@ pub async fn compress<'a>(id: String, base_dir: PathBuf) -> Result<String, std::
 
     // .gitignore / .hopignore
     let found_ignore = &find_ignore_files(base_dir.clone()).await;
-    let found_ignore = found_ignore
-        .iter()
-        .map(|s| s.as_str())
-        .collect::<Vec<&str>>();
-    let ignore_list = [DEFAULT_IGNORE, FILENAMES, &found_ignore].concat();
 
-    // debug
-    println!("Ignoring: {:?}", ignore_list);
+    let files = match found_ignore {
+        Some(ignore_path) => gitignore::File::new(ignore_path)
+            .unwrap()
+            .included_files()
+            .unwrap(),
+        None => {
+            println!("No ignore file found, creating a .hopignore file");
+
+            // create a new .hopignore file and add some default ignore patterns
+            let mut file = File::create(base_dir.join(".hopignore")).await?;
+            file.write_all(DEFAULT_IGNORE_LIST.join("\n").as_bytes())
+                .await?;
+            file.shutdown().await?;
+
+            gitignore::File::new(&base_dir.join(".hopignore").to_path_buf())
+                .unwrap()
+                .included_files()
+                .unwrap()
+        }
+    };
 
     // add all found files to the tarball
-    for entry in walk(&base_dir.clone(), &ignore_list, None) {
+    for entry in files {
         let relative = entry.as_path().strip_prefix(&base_dir).unwrap().to_owned();
 
         // debug
@@ -253,4 +254,16 @@ pub async fn compress<'a>(id: String, base_dir: PathBuf) -> Result<String, std::
     buff.shutdown().await?;
 
     Ok(archive_path.to_str().unwrap().into())
+}
+
+async fn find_ignore_files(path: PathBuf) -> Option<PathBuf> {
+    for filename in VALID_IGNORE_FILENAMES {
+        let path = path.clone().join(filename);
+
+        if fs::metadata(&path).await.is_ok() {
+            return Some(path);
+        }
+    }
+
+    None
 }
