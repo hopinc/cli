@@ -16,7 +16,7 @@ pub struct HttpClient {
 }
 
 impl HttpClient {
-    pub fn new(token: Option<String>) -> Self {
+    pub fn new(token: Option<String>, api_url: Option<String>) -> Self {
         let mut headers = HeaderMap::new();
 
         headers.insert("Accept", "application/json".parse().unwrap());
@@ -27,15 +27,20 @@ impl HttpClient {
 
         let ua = format!("hop_cli/{} on {}", VERSION, PLATFORM);
 
+        let base_url = match api_url {
+            Some(url) => url,
+            None => HOP_API_BASE_URL.to_string(),
+        };
+
         Self {
-            headers: headers.clone(),
-            ua: ua.clone(),
             client: AsyncClient::builder()
                 .user_agent(ua.clone())
                 .default_headers(headers.clone())
                 .build()
                 .unwrap(),
-            base_url: HOP_API_BASE_URL.to_string(),
+            base_url,
+            headers,
+            ua,
         }
     }
 

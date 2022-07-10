@@ -9,7 +9,6 @@ pub async fn handle_list(_options: ListOptions, state: State) -> Result<(), std:
     let projects = state
         .ctx
         .me
-        .clone()
         .expect("You are not logged in. Please run `hop auth login` first.")
         .projects;
 

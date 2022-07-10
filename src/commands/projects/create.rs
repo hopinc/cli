@@ -58,12 +58,12 @@ pub async fn handle_create(options: CreateOptions, mut state: State) -> Result<(
 
     let res = create_project(params, state.clone()).await?;
 
-    done!("Created project `{}` ({})", options.name, options.namespace);
-
     if options.default {
         state.ctx.default_project = Some(res.id.clone());
         state.ctx.save().await?;
     }
+
+    done!("Created project `{}` ({})", options.name, options.namespace);
 
     Ok(())
 }

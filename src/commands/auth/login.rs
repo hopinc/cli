@@ -121,7 +121,7 @@ pub async fn handle_login(options: LoginOptions, mut state: State) -> Result<(),
     // for sanity fetch the user info
     state.login().await;
 
-    let me = state.clone().ctx.me.unwrap();
+    let me = state.ctx.me.clone().unwrap();
 
     // save the state
     state.auth.authorized.insert(me.user.id.clone(), token);

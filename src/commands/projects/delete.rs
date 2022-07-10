@@ -78,12 +78,12 @@ pub async fn handle_delete(options: DeleteOptions, mut state: State) -> Result<(
         .await
         .expect("Error while deleting project");
 
-    done!("Project `{}` ({}) deleted", project.name, project.namespace);
-
     if state.ctx.default_project == Some(project.id.to_string()) {
         state.ctx.default_project = None;
         state.ctx.save().await?;
     }
+
+    done!("Project `{}` ({}) deleted", project.name, project.namespace);
 
     Ok(())
 }

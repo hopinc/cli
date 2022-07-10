@@ -16,6 +16,8 @@ pub struct Context {
     pub default_project: Option<String>,
     /// stored in the context store file
     pub default_user: Option<String>,
+    /// api url override
+    pub override_api_url: Option<String>,
 
     /// runtime context
     #[serde(skip)]
@@ -65,8 +67,9 @@ impl Context {
     pub fn default() -> Context {
         Context {
             me: None,
-            default_project: None,
             project: None,
+            override_api_url: None,
+            default_project: None,
             default_user: None,
         }
     }

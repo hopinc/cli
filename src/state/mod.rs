@@ -43,7 +43,7 @@ impl State {
             }
         };
 
-        let client = HttpClient::new(token);
+        let client = HttpClient::new(token, ctx.override_api_url.clone());
 
         Ok(State {
             ctx,
@@ -54,7 +54,7 @@ impl State {
 
     /// Rebuilds the http client with the current auth token.
     pub fn update_http_token(&mut self, token: String) {
-        self.http = HttpClient::new(Some(token));
+        self.http = HttpClient::new(Some(token), self.ctx.override_api_url.clone());
     }
 
     pub async fn login(&mut self) {

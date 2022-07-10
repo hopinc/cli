@@ -20,10 +20,10 @@ pub async fn handle_switch(
         panic!("No projects found");
     }
 
-    let idx = match state.ctx.project.clone() {
+    let idx = match state.ctx.clone().current_project() {
         Some(project) => projects
             .iter()
-            .position(|p| p.id == project)
+            .position(|p| p.id == project.id)
             .expect("Project not found"),
         None => {
             let projects_fmt = projects
@@ -49,15 +49,15 @@ pub async fn handle_switch(
 
     let project = &projects[idx];
 
+    state.ctx.default_project = Some(project.id.clone());
+    state.ctx.save().await?;
+
     done!(
         "Switched to project {} @{} ({})",
         project.name,
         project.namespace,
         project.id
     );
-
-    state.ctx.default_project = Some(project.id.clone());
-    state.ctx.save().await?;
 
     Ok(())
 }
