@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::env::current_dir;
 use std::path::PathBuf;
 
-use super::ignite::types::{ContainerStrategy, ContainerType, CreateDeployment};
-use super::ignite::util::HopFile;
-use crate::commands::ignite::types::{Image, Resources, SingleDeployment};
-use crate::commands::ignite::util::compress;
+use crate::commands::ignite::types::{
+    ContainerStrategy, ContainerType, CreateDeployment, Image, Resources, SingleDeployment,
+};
+use crate::commands::ignite::util::{compress, HopFile};
 use crate::config::HOP_BUILD_BASE_URL;
 use crate::state::State;
 use hyper::Method;
@@ -32,9 +32,9 @@ pub struct DeployOptions {
     #[structopt(
         short = "t",
         long = "type",
-        help = "Type of the deployment, defaults to `ephemeral`"
+        help = "Type of the container, defaults to `ephemeral`"
     )]
-    c_type: Option<ContainerType>,
+    container_type: Option<ContainerType>,
 
     #[structopt(
         short = "c",
@@ -105,7 +105,7 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
 
             let deployment_config = CreateDeployment {
                 container_strategy: ContainerStrategy::Manual,
-                d_type: options.c_type.unwrap_or(ContainerType::Ephemeral),
+                d_type: options.container_type.unwrap_or(ContainerType::Ephemeral),
                 name: name.clone(),
                 env: options
                     .env
