@@ -7,69 +7,6 @@ use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
 use tokio_tar::Builder as TarBuilder;
 
-#[derive(Debug, Deserialize, Clone)]
-pub struct Vgpu {
-    #[serde(rename = "type")]
-    pub g_type: String,
-    pub count: u32,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct Resources {
-    pub cpu: u64,
-    pub ram: String,
-    #[serde(skip)]
-    pub vgpu: Vec<Vgpu>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub enum ContainerStrategy {
-    #[serde(rename = "manual")]
-    Manual,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct Image {
-    pub name: String,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub enum ContainerType {
-    #[serde(rename = "ephemeral")]
-    Ephemeral,
-    #[serde(rename = "persistent")]
-    Persistent,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct Config {
-    pub version: String,
-    #[serde(rename = "type")]
-    pub d_type: ContainerType,
-    pub image: Image,
-    pub container_strategy: ContainerStrategy,
-    pub resources: Resources,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct Deployment {
-    pub id: String,
-    pub name: String,
-    pub created_at: String,
-    pub container_count: u32,
-    pub config: Config,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct SingleDeployment {
-    pub deployment: Deployment,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct MultipleDeployments {
-    pub deployments: Vec<Deployment>,
-}
-
 pub static VALID_HOP_FILENAMES: &[&str] = &[
     "hop.yml",
     "hop.yaml",
@@ -97,27 +34,19 @@ pub struct HopFile {
     pub version: u64,
     pub config: HopFileConfigV1,
     #[serde(skip)]
-    pub path: Option<PathBuf>,
+    pub path: PathBuf,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 enum HopFileVersion {
     #[serde(rename = "1")]
     V1(HopFileConfigV1),
-    #[serde(rename = "2")]
-    V2(HopFileConfigV2),
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct HopFileConfigV1 {
-    pub project: String,
-    pub deployment: String,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct HopFileConfigV2 {
-    pub project: String,
-    pub deployment: String,
+    pub project_id: String,
+    pub deployment_id: String,
 }
 
 impl HopFile {
@@ -125,10 +54,10 @@ impl HopFile {
         HopFile {
             version: 1,
             config: HopFileConfigV1 {
-                project,
-                deployment,
+                project_id: project,
+                deployment_id: deployment,
             },
-            path: Some(path),
+            path,
         }
     }
 
@@ -180,7 +109,7 @@ impl HopFile {
                 let mut hop_file_content: Self = Self::serialize(path.clone(), content.as_str())
                     .expect("Failed to serialize hop file");
 
-                hop_file_content.path = Some(path);
+                hop_file_content.path = path;
 
                 return Some(hop_file_content);
             }
@@ -190,7 +119,7 @@ impl HopFile {
     }
 
     pub async fn save(self) -> Option<Self> {
-        let path = self.path.clone().expect("HopFile::save: path is None");
+        let path = self.path.clone();
 
         let content =
             Self::deserialize(path.clone(), self.clone()).expect("Failed to deserialize hop file");
@@ -242,8 +171,8 @@ pub async fn compress(id: String, base_dir: PathBuf) -> Result<String, std::io::
     for entry in files {
         let relative = entry.as_path().strip_prefix(&base_dir).unwrap().to_owned();
 
-        // debug
-        println!("{:?}", relative);
+        // // debug
+        //println!("{:?}", relative);
 
         archive.append_path(relative).await?;
     }

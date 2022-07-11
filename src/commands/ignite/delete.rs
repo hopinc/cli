@@ -1,4 +1,4 @@
-use super::util::MultipleDeployments;
+use super::types::MultipleDeployments;
 use crate::{done, state::State};
 use structopt::StructOpt;
 
