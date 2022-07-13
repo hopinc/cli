@@ -1,9 +1,8 @@
-use crate::commands::secrets::util::Secrets;
-use crate::state::State;
+use crate::{commands::secrets::types::Secrets, state::State};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(about = "List all secrets names")]
+#[structopt(about = "List all secrets")]
 pub struct ListOptions {}
 
 pub async fn handle_list(_options: ListOptions, state: State) -> Result<(), std::io::Error> {
@@ -30,7 +29,7 @@ pub async fn handle_list(_options: ListOptions, state: State) -> Result<(), std:
         .map(|s| format!(" {} ({})", s.name, s.id))
         .collect::<Vec<_>>();
 
-    println!("Available secrets:");
+    println!("Secrets:");
     println!("{}", secrets_fmt.join("\n"));
 
     Ok(())

@@ -1,4 +1,5 @@
-use crate::commands::secrets::util::{validate_name, SecretResponse};
+use crate::commands::secrets::types::SecretResponse;
+use crate::commands::secrets::util::validate_name;
 use crate::done;
 use crate::state::State;
 use structopt::StructOpt;

@@ -146,6 +146,7 @@ pub async fn compress(id: String, base_dir: PathBuf) -> Result<String, std::io::
     // .gitignore / .hopignore
     let found_ignore = &find_ignore_files(base_dir.clone()).await;
 
+    println!("Finding files to compress...");
     let files = match found_ignore {
         Some(ignore_path) => gitignore::File::new(ignore_path)
             .unwrap()
@@ -169,12 +170,13 @@ pub async fn compress(id: String, base_dir: PathBuf) -> Result<String, std::io::
 
     // add all found files to the tarball
     for entry in files {
-        let relative = entry.as_path().strip_prefix(&base_dir).unwrap().to_owned();
+        if VALID_HOP_FILENAMES.contains(&entry.file_name().unwrap().to_str().unwrap()) {
+            continue;
+        }
 
-        // // debug
-        //println!("{:?}", relative);
+        let path = entry.as_path().strip_prefix(&base_dir).unwrap().to_owned();
 
-        archive.append_path(relative).await?;
+        archive.append_path_with_name(entry.as_path(), path).await?;
     }
 
     let mut buff = archive.into_inner().await?;

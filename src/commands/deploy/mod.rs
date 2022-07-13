@@ -6,7 +6,8 @@ use crate::commands::ignite::types::{
     ContainerStrategy, ContainerType, CreateDeployment, Image, Resources, SingleDeployment,
 };
 use crate::commands::ignite::util::{compress, HopFile};
-use crate::config::HOP_BUILD_BASE_URL;
+use crate::config::{HOP_BUILD_BASE_URL, HOP_REGISTRY_URL};
+use crate::done;
 use crate::state::State;
 use hyper::Method;
 use reqwest::multipart::{Form, Part};
@@ -68,6 +69,8 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
             .expect("Could not get canonical path");
     }
 
+    println!("Attempting to deploy {}", dir.display());
+
     let (_hopfile, deployment) = match HopFile::find(dir.clone()).await {
         Some(hopfile) => {
             println!("Found hopfile: {}", hopfile.path.display());
@@ -85,15 +88,19 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
                 .unwrap()
                 .deployment;
 
+            println!("Deployment exists, skipping arguments");
+            
             (hopfile, deployment)
         }
 
         None => {
             println!("No hopfile found, creating one");
 
+            let project = state.ctx.current_project_error();
+
             let mut hopfile = HopFile::new(
                 dir.clone().join("hop.yml"),
-                state.ctx.current_project_error().id,
+                project.clone().id,
                 // override later when created in the API
                 String::new(),
             );
@@ -105,7 +112,7 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
 
             let deployment_config = CreateDeployment {
                 container_strategy: ContainerStrategy::Manual,
-                d_type: options.container_type.unwrap_or(ContainerType::Ephemeral),
+                d_type: options.container_type.unwrap_or(ContainerType::Persistent),
                 name: name.clone(),
                 env: options
                     .env
@@ -122,7 +129,12 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
                     })
                     .unwrap_or(HashMap::new()),
                 image: Image {
-                    name: format!("registry.hop.io/{}/{}", name, name),
+                    name: format!(
+                        "{}/{}/{}",
+                        HOP_REGISTRY_URL,
+                        project.namespace.clone(),
+                        name
+                    ),
                 },
                 resources: Resources {
                     cpu: options.cpu.unwrap_or(1),
@@ -167,31 +179,42 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
         .await
         .expect("Could not compress");
 
-    println!("Packed to: {:?}", packed);
+    println!("Packed to: {}", packed);
 
-    let bytes = fs::read(packed).await.expect("Could not read packed file");
+    let bytes = fs::read(packed.clone())
+        .await
+        .expect("Could not read packed file");
     let multipart = Form::new().part("file", Part::bytes(bytes).file_name("deployment.tar.gz"));
 
-    let _request = state
+    println!("Uploading...");
+
+    let response = state
         .http
         .client
         .request(
             Method::POST,
-            format!("{}/deployments/{}/build", HOP_BUILD_BASE_URL, deployment.id).as_str(),
+            format!(
+                "{}/deployments/{}/builds",
+                HOP_BUILD_BASE_URL, deployment.id
+            )
+            .as_str(),
         )
+        .header("content_type", "multipart/form-data".to_string())
         .multipart(multipart)
         .send()
         .await
         .expect("Failed to send data to build endpoint");
 
-    // TODO: do smthng with the response, maybe ws connection
+    state
+        .http
+        .handle_response::<()>(response)
+        .await
+        .expect("Failed to handle response");
 
-    todo!("upload to build server");
+    println!("Deleting archive...");
+    fs::remove_file(packed).await?;
 
-    // println!("Deleting packed archive");
-    // fs::remove_file(packed).await?;
+    done!("Pushed deployment `{}`", deployment.name);
 
-    // done!("Pushed deployment `{}`", deployment.name);
-
-    // Ok(())
+    Ok(())
 }

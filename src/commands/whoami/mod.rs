@@ -2,12 +2,7 @@ use crate::state::State;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(
-    name = "whoami",
-    about = "Get information about the current user",
-    alias = "info",
-    alias = "ctx"
-)]
+#[structopt(about = "Get information about the current user")]
 pub struct WhoamiOptions {}
 
 pub async fn handle_whoami(_options: WhoamiOptions, state: State) -> Result<(), std::io::Error> {

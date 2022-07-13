@@ -3,7 +3,7 @@ use crate::state::State;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(about = "List all available projects")]
+#[structopt(about = "List all deployments")]
 pub struct ListOptions {}
 
 pub async fn handle_list(_options: ListOptions, state: State) -> Result<(), std::io::Error> {
@@ -35,7 +35,7 @@ pub async fn handle_list(_options: ListOptions, state: State) -> Result<(), std:
         })
         .collect::<Vec<_>>();
 
-    println!("Available deployments:");
+    println!("Deployments:");
     println!("{}", deployments_fmt.join("\n"));
 
     Ok(())

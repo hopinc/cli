@@ -44,27 +44,10 @@ impl HttpClient {
         }
     }
 
-    pub async fn request<T>(
-        &self,
-        method: &str,
-        path: &str,
-        data: Option<RequestData<'_>>,
-    ) -> Result<Option<T>, String>
+    pub async fn handle_response<T>(&self, response: reqwest::Response) -> Result<Option<T>, String>
     where
         T: serde::de::DeserializeOwned + std::fmt::Debug,
     {
-        let mut request = self.client.request(
-            method.parse().unwrap(),
-            &format!("{}{}", self.base_url, path),
-        );
-
-        if let Some((body, content_type)) = data {
-            request = request.body(body);
-            request = request.header("Content-Type", content_type);
-        }
-
-        let response = request.send().await.expect("Error sending request");
-
         let response = match response.status() {
             reqwest::StatusCode::OK => response,
             reqwest::StatusCode::CREATED => return Ok(None),
@@ -87,5 +70,29 @@ impl HttpClient {
             .expect("Failed to parse response");
 
         Ok(Some(response.data))
+    }
+
+    pub async fn request<T>(
+        &self,
+        method: &str,
+        path: &str,
+        data: Option<RequestData<'_>>,
+    ) -> Result<Option<T>, String>
+    where
+        T: serde::de::DeserializeOwned + std::fmt::Debug,
+    {
+        let mut request = self.client.request(
+            method.parse().unwrap(),
+            &format!("{}{}", self.base_url, path),
+        );
+
+        if let Some((body, content_type)) = data {
+            request = request.body(body);
+            request = request.header("Content-Type", content_type);
+        }
+
+        let response = request.send().await.expect("Error sending request");
+
+        self.handle_response(response).await
     }
 }
