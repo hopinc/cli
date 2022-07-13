@@ -1,5 +1,3 @@
-
-
 pub fn validate_name(name: &str) -> Result<(), String> {
     let regex = regex::Regex::new(r"^[a-zA-Z0-9_]{1,64}$").unwrap();
 

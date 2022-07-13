@@ -1,8 +1,8 @@
 use std::convert::Infallible;
 
 use crate::config::{PAT_FALLBACK_URL, WEB_AUTH_URL};
-use crate::done;
 use crate::state::State;
+use crate::{done, info};
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server};
 use structopt::StructOpt;
@@ -96,16 +96,16 @@ pub async fn handle_login(options: LoginOptions, mut state: State) -> Result<(),
 
     // lunch a web server to handle the auth request
     let token = if !options.browserless && webbrowser::open(&auth_url).is_ok() {
-        println!("Opening browser to: {}", auth_url);
+        info!("Opening browser to: {}", auth_url);
 
         web_auth(port)
             .await
             .expect("Error while starting web auth server")
     } else {
         if !options.browserless {
-            println!("Could not open web a browser.");
-            println!("Please provide a personal access token manually.");
-            println!("You can create one at {}", PAT_FALLBACK_URL);
+            info!("Could not open web a browser.");
+            info!("Please provide a personal access token manually.");
+            info!("You can create one at {}", PAT_FALLBACK_URL);
         }
 
         // falback to simpe input

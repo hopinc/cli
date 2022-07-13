@@ -1,9 +1,9 @@
-mod auth;
-mod deploy;
-mod ignite;
-mod projects;
-mod secrets;
-mod whoami;
+pub mod auth;
+pub mod deploy;
+pub mod ignite;
+pub mod projects;
+pub mod secrets;
+pub mod whoami;
 
 use self::auth::{handle_auth, AuthOptions};
 use self::deploy::{handle_deploy, DeployOptions};

@@ -17,10 +17,29 @@ pub struct Resources {
     pub vgpu: Vec<Vgpu>,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub enum ContainerStrategy {
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+pub enum ScalingStrategy {
     #[serde(rename = "manual")]
     Manual,
+    #[serde(rename = "stateful")]
+    Stateful,
+    #[serde(rename = "autoscaled")]
+    Autoscaled,
+}
+
+impl FromStr for ScalingStrategy {
+    type Err = String;
+    fn from_str(day: &str) -> Result<Self, Self::Err> {
+        match day {
+            "manual" => Ok(ScalingStrategy::Manual),
+            "stateful" => Ok(ScalingStrategy::Stateful),
+            "autoscaled" => Ok(ScalingStrategy::Autoscaled),
+            _ => Err(
+                "Invalid scaling strategy, has to be one of `manual` or `stateful` or `autoscaled`"
+                    .to_string(),
+            ),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -28,7 +47,7 @@ pub struct Image {
     pub name: String,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub enum ContainerType {
     #[serde(rename = "ephemeral")]
     Ephemeral,
@@ -42,7 +61,9 @@ impl FromStr for ContainerType {
         match day {
             "ephemeral" => Ok(ContainerType::Ephemeral),
             "persistent" => Ok(ContainerType::Persistent),
-            _ => Err("Invalid container type".to_string()),
+            _ => Err(
+                "Invalid container type, has to be one of `ephemeral` or `persistent`".to_string(),
+            ),
         }
     }
 }
@@ -53,7 +74,7 @@ pub struct Config {
     #[serde(rename = "type")]
     pub d_type: ContainerType,
     pub image: Image,
-    pub container_strategy: ContainerStrategy,
+    pub container_strategy: ScalingStrategy,
     pub resources: Resources,
 }
 
@@ -78,11 +99,11 @@ pub struct MultipleDeployments {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct CreateDeployment {
-    pub container_strategy: ContainerStrategy,
+    pub container_strategy: ScalingStrategy,
     pub env: HashMap<String, String>,
     pub image: Image,
     pub name: String,
     pub resources: Resources,
     #[serde(rename = "type")]
-    pub d_type: ContainerType,
+    pub container_type: ContainerType,
 }

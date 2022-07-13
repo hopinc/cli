@@ -1,8 +1,6 @@
 mod delete;
 mod list;
-/// Re export of the `deploy` command.
 pub mod types;
-pub mod util;
 
 use self::delete::{handle_delete, DeleteOptions};
 use self::list::{handle_list, ListOptions};

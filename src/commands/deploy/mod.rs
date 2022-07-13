@@ -1,28 +1,24 @@
+mod util;
+
 use std::collections::HashMap;
 use std::env::current_dir;
 use std::path::PathBuf;
 
+use self::util::compress;
 use crate::commands::ignite::types::{
-    ContainerStrategy, ContainerType, CreateDeployment, Image, Resources, SingleDeployment,
+    ContainerType, CreateDeployment, Image, Resources, ScalingStrategy, SingleDeployment,
 };
-use crate::commands::ignite::util::{compress, HopFile};
 use crate::config::{HOP_BUILD_BASE_URL, HOP_REGISTRY_URL};
-use crate::done;
 use crate::state::State;
+use crate::store::hopfile::HopFile;
+use crate::{done, info, warn};
 use hyper::Method;
 use reqwest::multipart::{Form, Part};
 use structopt::StructOpt;
 use tokio::fs;
 
-#[derive(Debug, StructOpt)]
-#[structopt(about = "Deploy a new container")]
-pub struct DeployOptions {
-    #[structopt(
-        name = "dir",
-        help = "Directory to deploy, defaults to current directory"
-    )]
-    path: Option<PathBuf>,
-
+#[derive(Debug, StructOpt, Default, PartialEq)]
+pub struct DeploymentConfig {
     #[structopt(
         short = "n",
         long = "name",
@@ -57,6 +53,34 @@ pub struct DeployOptions {
         help = "Environment variables to set, in the form of KEY=VALUE"
     )]
     env: Option<Vec<String>>,
+
+    #[structopt(
+        short = "s",
+        long = "scaling",
+        help = "Scaling strategy, defaults to `manual`"
+    )]
+    scaling_strategy: Option<ScalingStrategy>,
+
+    #[structopt(
+        short = "i",
+        long = "containers",
+        help = "Number of containers to use, defaults to 1 if `scaling` is manual",
+        required_if("scaling", "manual")
+    )]
+    _containers: Option<u64>,
+}
+
+#[derive(Debug, StructOpt)]
+#[structopt(about = "Deploy a new container")]
+pub struct DeployOptions {
+    #[structopt(
+        name = "dir",
+        help = "Directory to deploy, defaults to current directory"
+    )]
+    path: Option<PathBuf>,
+
+    #[structopt(flatten)]
+    config: DeploymentConfig,
 }
 
 pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), std::io::Error> {
@@ -69,11 +93,11 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
             .expect("Could not get canonical path");
     }
 
-    println!("Attempting to deploy {}", dir.display());
+    info!("Attempting to deploy {}", dir.display());
 
     let (_hopfile, deployment) = match HopFile::find(dir.clone()).await {
         Some(hopfile) => {
-            println!("Found hopfile: {}", hopfile.path.display());
+            info!("Found hopfile: {}", hopfile.path.display());
 
             // TODO: possible update of deployment if it already exists?
             let deployment = state
@@ -88,13 +112,15 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
                 .unwrap()
                 .deployment;
 
-            println!("Deployment exists, skipping arguments");
-            
+            if options.config != DeploymentConfig::default() {
+                warn!("Deployment exists, skipping arguments");
+            }
+
             (hopfile, deployment)
         }
 
         None => {
-            println!("No hopfile found, creating one");
+            info!("No hopfile found, creating one");
 
             let project = state.ctx.current_project_error();
 
@@ -107,14 +133,22 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
 
             // TODO: run a walkthrough to setup the deployment?
             let name = options
+                .config
                 .name
                 .unwrap_or_else(|| dir.file_name().unwrap().to_str().unwrap().to_string());
 
             let deployment_config = CreateDeployment {
-                container_strategy: ContainerStrategy::Manual,
-                d_type: options.container_type.unwrap_or(ContainerType::Persistent),
+                container_strategy: options
+                    .config
+                    .scaling_strategy
+                    .unwrap_or(ScalingStrategy::Manual),
+                container_type: options
+                    .config
+                    .container_type
+                    .unwrap_or(ContainerType::Persistent),
                 name: name.clone(),
                 env: options
+                    .config
                     .env
                     .map(|env| {
                         env.iter()
@@ -137,8 +171,8 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
                     ),
                 },
                 resources: Resources {
-                    cpu: options.cpu.unwrap_or(1),
-                    ram: options.ram.unwrap_or("512M".to_string()),
+                    cpu: options.config.cpu.unwrap_or(1),
+                    ram: options.config.ram.unwrap_or("512M".to_string()),
                     vgpu: vec![],
                 },
             };
@@ -179,14 +213,14 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
         .await
         .expect("Could not compress");
 
-    println!("Packed to: {}", packed);
+    info!("Packed to: {}", packed);
 
     let bytes = fs::read(packed.clone())
         .await
         .expect("Could not read packed file");
     let multipart = Form::new().part("file", Part::bytes(bytes).file_name("deployment.tar.gz"));
 
-    println!("Uploading...");
+    info!("Uploading...");
 
     let response = state
         .http
@@ -211,7 +245,7 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
         .await
         .expect("Failed to handle response");
 
-    println!("Deleting archive...");
+    info!("Deleting archive...");
     fs::remove_file(packed).await?;
 
     done!("Pushed deployment `{}`", deployment.name);

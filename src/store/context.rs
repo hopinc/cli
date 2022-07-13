@@ -1,11 +1,9 @@
-// TODO: for now both auth and context have the same functions / code
-// until i figure out how to use generics / inheritence in rust
-
 use std::path::PathBuf;
 
 use super::utils::get_path;
+use crate::commands::auth::types::UserMe;
+use crate::commands::projects::types::Project;
 use crate::config::CONTEXT_STORE_PATH;
-use crate::types::{Project, UserMe};
 use serde::{Deserialize, Serialize};
 use tokio::fs::{self, File};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};

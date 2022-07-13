@@ -1,6 +1,8 @@
 use crate::{done, state::State};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use structopt::StructOpt;
+
+use super::types::{CreateResponse, ProjectRes};
 
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Create a new project")]
@@ -18,17 +20,6 @@ struct CreateParams {
     icon: Option<String>,
     name: String,
     namespace: String,
-}
-
-// types for the API response
-#[derive(Debug, Deserialize)]
-struct ProjectRes {
-    pub id: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct CreateResponse {
-    pub project: ProjectRes,
 }
 
 async fn create_project(params: CreateParams, state: State) -> Result<ProjectRes, std::io::Error> {

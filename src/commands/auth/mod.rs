@@ -1,5 +1,6 @@
 mod login;
 mod logout;
+pub mod types;
 
 use self::login::{handle_login, LoginOptions};
 use self::logout::{hanndle_logout, LogoutOptions};

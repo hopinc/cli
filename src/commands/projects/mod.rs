@@ -3,6 +3,7 @@ mod delete;
 mod info;
 mod list;
 mod switch;
+pub mod types;
 
 use self::create::{handle_create, CreateOptions};
 use self::delete::{handle_delete, DeleteOptions};

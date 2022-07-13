@@ -3,9 +3,9 @@ mod http;
 use std::io;
 
 use self::http::HttpClient;
+use crate::commands::auth::types::UserMe;
 use crate::store::auth::Auth;
 use crate::store::context::Context;
-use crate::types::UserMe;
 
 #[derive(Debug, Clone)]
 pub struct State {
