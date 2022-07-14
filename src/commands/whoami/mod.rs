@@ -7,9 +7,9 @@ pub struct WhoamiOptions {}
 
 pub async fn handle_whoami(_options: WhoamiOptions, state: State) -> Result<(), std::io::Error> {
     let me = state
-        .clone()
         .ctx
         .me
+        .clone()
         .expect("You are not logged in. Please run `hop auth login` first.");
 
     println!(

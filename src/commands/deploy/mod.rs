@@ -9,12 +9,13 @@ use crate::commands::ignite::types::{
     ContainerType, CreateDeployment, Image, Resources, ScalingStrategy, SingleDeployment,
 };
 use crate::config::{HOP_BUILD_BASE_URL, HOP_REGISTRY_URL};
-use crate::state::ws::WebsocketClient;
 use crate::state::State;
 use crate::store::hopfile::HopFile;
 use crate::{done, info, warn};
 use hyper::Method;
 use reqwest::multipart::{Form, Part};
+use serde::Deserialize;
+use serde_json::Value;
 use structopt::StructOpt;
 use tokio::fs;
 
@@ -94,8 +95,10 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
             .expect("Could not get canonical path");
     }
 
-    // FIXME: for debugging purposes
-    let _connection = WebsocketClient::new("bruh").await;
+    let mut connection = state
+        .ws
+        .connect(state.ctx.me.clone().unwrap().leap_token.as_str())
+        .await;
 
     info!("Attempting to deploy {}", dir.display());
 
@@ -222,7 +225,13 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
     let bytes = fs::read(packed.clone())
         .await
         .expect("Could not read packed file");
-    let multipart = Form::new().part("file", Part::bytes(bytes).file_name("deployment.tar.gz"));
+    let multipart = Form::new().part(
+        "file",
+        Part::bytes(bytes)
+            .file_name("deployment.tar.gz")
+            .mime_str("application/x-gzip")
+            .unwrap(),
+    );
 
     info!("Uploading...");
 
@@ -242,6 +251,39 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
         .send()
         .await
         .expect("Failed to send data to build endpoint");
+
+    #[derive(Debug, Deserialize)]
+    struct Data {
+        d: String,
+        #[serde(rename = "e")]
+        _e: String,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct Message {
+        d: Value,
+        e: String,
+    }
+
+    info!("From Hop builder:");
+    while let Some(data) = connection.recieve_message::<Message>().await {
+        // build logs are sent only in DMs
+        if data.e != "DIRECT_MESSAGE" {
+            continue;
+        }
+
+        let data: Data = serde_json::from_value(data.d).unwrap();
+
+        print!("{}", data.d);
+
+        // TODO: wait for events to have more fields
+
+        if data.d.starts_with("latest") {
+            info!("Build finished");
+            connection.close().await;
+            break;
+        }
+    }
 
     state
         .http

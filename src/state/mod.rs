@@ -4,15 +4,17 @@ pub mod ws;
 use std::io;
 
 use self::http::HttpClient;
+use self::ws::WebsocketClient;
 use crate::commands::auth::types::UserMe;
 use crate::store::auth::Auth;
 use crate::store::context::Context;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct State {
     pub auth: Auth,
     pub ctx: Context,
     pub http: HttpClient,
+    pub ws: WebsocketClient,
 }
 
 pub struct StateOptions {
@@ -44,12 +46,14 @@ impl State {
             }
         };
 
+        let ws = WebsocketClient::new();
         let client = HttpClient::new(token, ctx.override_api_url.clone());
 
         Ok(State {
             ctx,
             http: client,
             auth,
+            ws,
         })
     }
 
