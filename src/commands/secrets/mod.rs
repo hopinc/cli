@@ -4,11 +4,12 @@ mod set;
 mod types;
 mod util;
 
+use structopt::StructOpt;
+
 use self::delete::{handle_delete, DeleteOptions};
 use self::list::{handle_list, ListOptions};
 use self::set::{handle_set, SetOptions};
 use crate::state::State;
-use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 pub enum Commands {

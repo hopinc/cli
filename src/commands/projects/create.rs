@@ -1,11 +1,10 @@
-use crate::{
-    done,
-    state::{http::HttpClient, State},
-};
 use serde::Serialize;
 use structopt::StructOpt;
 
 use super::types::{CreateResponse, ProjectRes};
+use crate::done;
+use crate::state::http::HttpClient;
+use crate::state::State;
 
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Create a new project")]

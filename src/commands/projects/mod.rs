@@ -5,13 +5,14 @@ mod list;
 mod switch;
 pub mod types;
 
+use structopt::StructOpt;
+
 use self::create::{handle_create, CreateOptions};
 use self::delete::{handle_delete, DeleteOptions};
 use self::info::{handle_info, InfoOptions};
 use self::list::{handle_list, ListOptions};
 use self::switch::{handle_switch, SwitchOptions};
 use crate::state::State;
-use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 pub enum Commands {

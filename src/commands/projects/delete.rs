@@ -1,5 +1,7 @@
-use crate::{done, state::State};
 use structopt::StructOpt;
+
+use crate::done;
+use crate::state::State;
 
 static CONFIRM_DELETE_PROJECT_MESSAGE: &str = "I am sure I want to delete the project named ";
 

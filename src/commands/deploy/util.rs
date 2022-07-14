@@ -1,12 +1,13 @@
 use std::env::temp_dir;
 use std::path::PathBuf;
 
-use crate::store::hopfile::VALID_HOP_FILENAMES;
-use crate::{info, warn};
 use async_compression::tokio::write::GzipEncoder;
 use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
 use tokio_tar::Builder as TarBuilder;
+
+use crate::store::hopfile::VALID_HOP_FILENAMES;
+use crate::{info, warn};
 
 // default ignore list for tar files
 static DEFAULT_IGNORE_LIST: &[&str] = &[

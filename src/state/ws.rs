@@ -1,13 +1,20 @@
-use std::{io::Cursor, time::Duration};
+use std::io::Cursor;
+use std::time::Duration;
 
-use crate::config::{HOP_LEAP_EDGE_PROJECT_ID, HOP_LEAP_EDGE_URL};
 use async_compression::tokio::bufread::ZlibDecoder;
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_repr::{Deserialize_repr, Serialize_repr};
-use tokio::{io::AsyncReadExt, spawn, sync::mpsc, task::JoinHandle, time::interval};
-use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
+use tokio::io::AsyncReadExt;
+use tokio::spawn;
+use tokio::sync::mpsc;
+use tokio::task::JoinHandle;
+use tokio::time::interval;
+use tokio_tungstenite::connect_async;
+use tokio_tungstenite::tungstenite::protocol::Message;
+
+use crate::config::{HOP_LEAP_EDGE_PROJECT_ID, HOP_LEAP_EDGE_URL};
 
 #[derive(Debug, Serialize_repr, Deserialize_repr, Clone)]
 #[repr(u8)]
@@ -20,7 +27,6 @@ enum OpCodes {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-
 struct SocketMessage<T> {
     op: OpCodes,
     d: Option<T>,

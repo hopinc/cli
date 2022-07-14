@@ -1,5 +1,6 @@
-use crate::commands::projects::types::Project;
 use serde::Deserialize;
+
+use crate::commands::projects::types::Project;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct User {

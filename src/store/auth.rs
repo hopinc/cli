@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use super::utils::get_path;
-use crate::config::AUTH_STORE_PATH;
 use serde::{Deserialize, Serialize};
 use tokio::fs::{self, File};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+use super::utils::get_path;
+use crate::config::AUTH_STORE_PATH;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Auth {

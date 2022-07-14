@@ -2,10 +2,11 @@ mod delete;
 mod list;
 pub mod types;
 
+use structopt::StructOpt;
+
 use self::delete::{handle_delete, DeleteOptions};
 use self::list::{handle_list, ListOptions};
 use crate::state::State;
-use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 pub enum Commands {

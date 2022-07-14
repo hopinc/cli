@@ -1,5 +1,7 @@
-use crate::{commands::secrets::types::Secrets, state::State};
 use structopt::StructOpt;
+
+use crate::commands::secrets::types::Secrets;
+use crate::state::State;
 
 #[derive(Debug, StructOpt)]
 #[structopt(about = "List all secrets")]

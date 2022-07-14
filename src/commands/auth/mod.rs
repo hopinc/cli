@@ -2,10 +2,11 @@ mod login;
 mod logout;
 pub mod types;
 
+use structopt::StructOpt;
+
 use self::login::{handle_login, LoginOptions};
 use self::logout::{hanndle_logout, LogoutOptions};
 use crate::state::State;
-use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 pub enum Commands {
