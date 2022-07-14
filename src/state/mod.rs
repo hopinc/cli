@@ -1,4 +1,5 @@
-mod http;
+pub mod http;
+pub mod ws;
 
 use std::io;
 

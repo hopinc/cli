@@ -11,6 +11,7 @@ pub struct User {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct UserMe {
+    pub leap_token: String,
     pub user: User,
     pub projects: Vec<Project>,
 }

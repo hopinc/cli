@@ -9,6 +9,7 @@ use crate::commands::ignite::types::{
     ContainerType, CreateDeployment, Image, Resources, ScalingStrategy, SingleDeployment,
 };
 use crate::config::{HOP_BUILD_BASE_URL, HOP_REGISTRY_URL};
+use crate::state::ws::WebsocketClient;
 use crate::state::State;
 use crate::store::hopfile::HopFile;
 use crate::{done, info, warn};
@@ -92,6 +93,9 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
             .canonicalize()
             .expect("Could not get canonical path");
     }
+
+    // FIXME: for debugging purposes
+    let _connection = WebsocketClient::new("bruh").await;
 
     info!("Attempting to deploy {}", dir.display());
 

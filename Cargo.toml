@@ -6,19 +6,21 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dirs = { version = "4.0" }
-regex = { version = "1.5" }
-tokio-tar = { version = "0.3" }
-structopt = { version = "0.3" }
-gitignore = { version = "1.0" }
-dialoguer = { version = "0.10" }
-webbrowser = { version = "0.7" }
-portpicker = { version = "0.1" }
-serde_yaml = { version = "0.8" }
-serde_json = { version = "1.0" }
-querystring = { version = "1.1" }
+dirs = "4.0"
+regex = "1.5"
+tokio-tar = "0.3"
+structopt = "0.3"
+gitignore = "1.0"
+dialoguer = "0.10"
+webbrowser = "0.7"
+portpicker = "0.1"
+serde_yaml = "0.8"
+serde_json = "1.0"
+querystring = "1.1"
+futures-util = "0.3"
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 hyper = { version = "0.14", features = ["server"] }
 reqwest = { version = "0.11", features = ["json", "multipart"] }
+tokio-tungstenite = { version = "0.17", features = ["native-tls"] }
 async-compression = { version = "0.3", features = ["tokio", "gzip"] }
