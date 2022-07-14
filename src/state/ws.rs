@@ -64,7 +64,7 @@ impl WebsocketClient {
     }
 
     pub async fn connect(mut self, token: &str) -> Self {
-        let (sender_outbound, mut reciever_outbound) = mpsc::channel::<String>(1);
+        let (sender_outbound, mut receiver_outbound) = mpsc::channel::<String>(1);
         let (sender_inbound, receiver_inbound) = mpsc::channel::<Value>(1);
 
         // prepare client for sending / receiving messages
@@ -85,10 +85,10 @@ impl WebsocketClient {
                 .await
                 .expect("Error connecting to Hop Leap Edge");
 
-            let (mut sender, mut reciever) = socket.split();
+            let (mut sender, mut receiver) = socket.split();
 
             // the first message has to be server hello so lets wait for it
-            let hello = reciever
+            let hello = receiver
                 .next()
                 .await
                 .expect("Error reading from socket")
@@ -119,7 +119,7 @@ impl WebsocketClient {
             loop {
                 tokio::select! {
                     // gateway receiver
-                    message = reciever.next() => {
+                    message = receiver.next() => {
                         match message {
                             Some(recieved) => match recieved {
                                 Ok(message) => match Self::parse_message::<SocketMessage<Value>>(message).await {
@@ -146,7 +146,7 @@ impl WebsocketClient {
                     },
 
                     // internal rcv thread
-                    internal = reciever_outbound.recv() => {
+                    internal = receiver_outbound.recv() => {
                         match internal {
                             Some(message) => match message.as_str() {
                                 "CLOSE" => {
@@ -173,7 +173,6 @@ impl WebsocketClient {
             }
         });
 
-        // set thread to self to close it later lol!
         self.thread = Some(thread);
 
         self
@@ -213,10 +212,14 @@ impl WebsocketClient {
     where
         T: serde::ser::Serialize + std::fmt::Debug,
     {
+        if self.channels.is_none() {
+            panic!("Client not connected");
+        }
+
         let message = serde_json::to_string(&message).unwrap();
         self.channels
             .as_mut()
-            .expect("not connected bruh")
+            .unwrap()
             .send
             .send(message)
             .await
@@ -224,9 +227,14 @@ impl WebsocketClient {
     }
 
     pub async fn close(&mut self) {
+        if self.channels.is_none() {
+            // do nothing;
+            return ();
+        }
+
         self.channels
             .as_mut()
-            .expect("not connected bruh")
+            .unwrap()
             .send
             .send("CLOSE".to_string())
             .await
