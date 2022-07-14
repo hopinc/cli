@@ -123,13 +123,11 @@ impl WebsocketClient {
                         match message {
                             Some(recieved) => match recieved {
                                 Ok(message) => match Self::parse_message::<SocketMessage<Value>>(message).await {
-                                    SocketMessage { op}
-                                    
-                                    SocketMessage {op: OpCodes::HeartbeatAck, d: _} => {
+                                    SocketMessage { op: OpCodes::HeartbeatAck, d: _ } => {
                                         self.last_heartbeat_acknowledged = true;
                                     }
 
-                                    SocketMessage {op: OpCodes::Dispatch, d: data} => {
+                                    SocketMessage { op: OpCodes::Dispatch, d: data } => {
                                         sender_inbound.send(data.unwrap()).await.unwrap();
                                     }
 
