@@ -1,13 +1,14 @@
 use std::convert::Infallible;
 
-use crate::config::{PAT_FALLBACK_URL, WEB_AUTH_URL};
-use crate::state::State;
-use crate::{done, info};
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server};
 use structopt::StructOpt;
 use tokio::sync::mpsc::{channel, Sender};
 use tokio::task;
+
+use crate::config::{PAT_FALLBACK_URL, WEB_AUTH_URL};
+use crate::state::State;
+use crate::{done, info};
 
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Login to Hop")]

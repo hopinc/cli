@@ -1,5 +1,6 @@
-use crate::state::State;
 use structopt::StructOpt;
+
+use crate::state::State;
 
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Get information about the current user")]

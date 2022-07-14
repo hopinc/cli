@@ -5,6 +5,8 @@ pub mod projects;
 pub mod secrets;
 pub mod whoami;
 
+use structopt::StructOpt;
+
 use self::auth::{handle_auth, AuthOptions};
 use self::deploy::{handle_deploy, DeployOptions};
 use self::ignite::{handle_deployments, IgniteOptions};
@@ -12,7 +14,6 @@ use self::projects::{handle_projects, ProjectsOptions};
 use self::secrets::{handle_secrets, SecretsOptions};
 use self::whoami::{handle_whoami, WhoamiOptions};
 use crate::state::State;
-use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 pub enum Commands {

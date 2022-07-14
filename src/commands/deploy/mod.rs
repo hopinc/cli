@@ -4,6 +4,13 @@ use std::collections::HashMap;
 use std::env::current_dir;
 use std::path::PathBuf;
 
+use hyper::Method;
+use reqwest::multipart::{Form, Part};
+use serde::Deserialize;
+use serde_json::Value;
+use structopt::StructOpt;
+use tokio::fs;
+
 use self::util::compress;
 use crate::commands::ignite::types::{
     ContainerType, CreateDeployment, Image, Resources, ScalingStrategy, SingleDeployment,
@@ -12,12 +19,6 @@ use crate::config::{HOP_BUILD_BASE_URL, HOP_REGISTRY_URL};
 use crate::state::State;
 use crate::store::hopfile::HopFile;
 use crate::{done, info, warn};
-use hyper::Method;
-use reqwest::multipart::{Form, Part};
-use serde::Deserialize;
-use serde_json::Value;
-use structopt::StructOpt;
-use tokio::fs;
 
 #[derive(Debug, StructOpt, Default, PartialEq)]
 pub struct DeploymentConfig {

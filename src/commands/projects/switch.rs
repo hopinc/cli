@@ -1,5 +1,7 @@
-use crate::{done, state::State};
 use structopt::StructOpt;
+
+use crate::done;
+use crate::state::State;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "switch", about = "Switch to a different project")]

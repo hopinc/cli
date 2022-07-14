@@ -1,8 +1,9 @@
+use structopt::StructOpt;
+
 use crate::commands::secrets::types::SecretResponse;
 use crate::commands::secrets::util::validate_name;
 use crate::done;
 use crate::state::State;
-use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Set a secret")]

@@ -1,7 +1,8 @@
-use crate::config::{HOP_API_BASE_URL, PLATFORM, VERSION};
-use crate::types::{Base, ErrorResponse};
 use reqwest::header::HeaderMap;
 use reqwest::Client as AsyncClient;
+
+use crate::config::{HOP_API_BASE_URL, PLATFORM, VERSION};
+use crate::types::{Base, ErrorResponse};
 
 /// Request data for the API
 /// body, content_type

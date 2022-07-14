@@ -1,6 +1,7 @@
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::str::FromStr;
+
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Vgpu {
@@ -29,6 +30,7 @@ pub enum ScalingStrategy {
 
 impl FromStr for ScalingStrategy {
     type Err = String;
+
     fn from_str(day: &str) -> Result<Self, Self::Err> {
         match day {
             "manual" => Ok(ScalingStrategy::Manual),
@@ -57,6 +59,7 @@ pub enum ContainerType {
 
 impl FromStr for ContainerType {
     type Err = String;
+
     fn from_str(day: &str) -> Result<Self, Self::Err> {
         match day {
             "ephemeral" => Ok(ContainerType::Ephemeral),

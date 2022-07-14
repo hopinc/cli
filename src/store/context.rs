@@ -1,12 +1,13 @@
 use std::path::PathBuf;
 
+use serde::{Deserialize, Serialize};
+use tokio::fs::{self, File};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
 use super::utils::get_path;
 use crate::commands::auth::types::UserMe;
 use crate::commands::projects::types::Project;
 use crate::config::CONTEXT_STORE_PATH;
-use serde::{Deserialize, Serialize};
-use tokio::fs::{self, File};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Context {

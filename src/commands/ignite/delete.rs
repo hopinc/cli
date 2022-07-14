@@ -1,6 +1,8 @@
-use super::types::MultipleDeployments;
-use crate::{done, state::State};
 use structopt::StructOpt;
+
+use super::types::MultipleDeployments;
+use crate::done;
+use crate::state::State;
 
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Delete a deployments")]
