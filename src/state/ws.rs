@@ -118,7 +118,7 @@ impl WebsocketClient {
 
             loop {
                 tokio::select! {
-                    // gateway reciever
+                    // gateway receiver
                     message = reciever.next() => {
                         match message {
                             Some(recieved) => match recieved {
