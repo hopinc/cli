@@ -155,58 +155,83 @@ pub fn create_deployment_config(
 
     info!("No config provided, running interactive mode");
 
+    let name = dialoguer::Input::<String>::new()
+        .with_prompt("Deployment name")
+        .default(default.name)
+        .validate_with(|name: &String| -> Result<(), &str> {
+            if validate_deployment_name(name.to_string()) {
+                Ok(())
+            } else {
+                Err("Invalid deployment name, must be alphanumeric and hyphens only")
+            }
+        })
+        .interact()
+        .unwrap();
+
+    let container_strategy = ask_question_iter(
+        "Scaling strategy",
+        vec![ScalingStrategy::Manual, ScalingStrategy::Autoscaled],
+        default.container_strategy,
+    );
+
+    let cpu = dialoguer::Input::<u64>::new()
+        .with_prompt("CPUs")
+        .default(default.resources.cpu)
+        .validate_with(|cpu: &u64| -> Result<(), &str> {
+            if *cpu > 0 && *cpu <= 64 {
+                Ok(())
+            } else {
+                Err("CPUs must be greater than 0 and less than or equal to 64")
+            }
+        })
+        .interact()
+        .unwrap();
+
+    let ram = serde_json::to_string(&ask_question_iter(
+        "RAM",
+        vec![
+            RamSizes::M128,
+            RamSizes::M256,
+            RamSizes::M512,
+            RamSizes::G1,
+            RamSizes::G2,
+            RamSizes::G4,
+            RamSizes::G8,
+            RamSizes::G16,
+            RamSizes::G32,
+            RamSizes::G64,
+        ],
+        RamSizes::from_str(&default.resources.ram).unwrap_or(RamSizes::M512),
+    ))
+    .unwrap()
+    .replace("\"", "");
+
+    let container_type = ask_question_iter(
+        "Container type",
+        vec![ContainerType::Ephemeral, ContainerType::Persistent],
+        default.container_type,
+    );
+
     CreateDeployment {
-        name: dialoguer::Input::<String>::new()
-            .with_prompt("Deployment name")
-            .default(default.name)
-            .validate_with(|name: &String| -> Result<(), &str> {
-                if validate_deployment_name(name.to_string()) {
-                    Ok(())
-                } else {
-                    Err("Invalid deployment name, must be alphanumeric and hyphens only")
-                }
-            })
-            .interact()
-            .unwrap(),
-        container_strategy: ask_question_iter(
-            "Scaling strategy",
-            vec![ScalingStrategy::Manual, ScalingStrategy::Autoscaled],
-            default.container_strategy,
-        ),
+        image: Image {
+            name: format!(
+                "{}/{}/{}",
+                HOP_REGISTRY_URL,
+                namespace.clone(),
+                name.clone()
+            ),
+        },
+        name,
+        container_strategy,
         // TODO: ask for env kvs
         env: HashMap::new(),
-        image: default.image,
+
         resources: Resources {
-            cpu: dialoguer::Input::<u64>::new()
-                .with_prompt("CPUs")
-                .default(default.resources.cpu)
-                .interact()
-                .unwrap(),
-            ram: serde_json::to_string(&ask_question_iter(
-                "RAM",
-                vec![
-                    RamSizes::M128,
-                    RamSizes::M256,
-                    RamSizes::M512,
-                    RamSizes::G1,
-                    RamSizes::G2,
-                    RamSizes::G4,
-                    RamSizes::G8,
-                    RamSizes::G16,
-                    RamSizes::G32,
-                    RamSizes::G64,
-                ],
-                RamSizes::from_str(&default.resources.ram).unwrap_or(RamSizes::M512),
-            ))
-            .unwrap()
-            .replace("\"", ""),
+            cpu,
+            ram,
             vgpu: vec![],
         },
-        container_type: ask_question_iter(
-            "Container type",
-            vec![ContainerType::Ephemeral, ContainerType::Persistent],
-            default.container_type,
-        ),
+        container_type,
     }
 }
 
