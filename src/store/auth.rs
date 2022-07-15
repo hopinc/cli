@@ -7,6 +7,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use super::utils::get_path;
 use crate::config::AUTH_STORE_PATH;
+use crate::info;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Auth {
@@ -66,9 +67,7 @@ impl Auth {
         .await
         .expect("Failed to write auth store");
 
-        if !self.authorized.is_empty() {
-            println!("Saved credentials to {}", path.display());
-        }
+        info!("Saved credentials to {}", path.display());
 
         Ok(self)
     }

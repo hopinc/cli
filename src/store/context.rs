@@ -8,6 +8,7 @@ use super::utils::get_path;
 use crate::commands::auth::types::UserMe;
 use crate::commands::projects::types::Project;
 use crate::config::CONTEXT_STORE_PATH;
+use crate::info;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Context {
@@ -119,9 +120,7 @@ impl Context {
         .await
         .expect("Failed to write auth store");
 
-        if !self.default_user.is_none() || !self.project.is_none() {
-            println!("Saved context to {}", path.display());
-        }
+        info!("Saved context to {}", path.display());
 
         Ok(self)
     }
