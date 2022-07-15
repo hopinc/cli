@@ -1,6 +1,5 @@
 mod util;
 
-use std::collections::HashMap;
 use std::env::current_dir;
 use std::path::PathBuf;
 
@@ -12,10 +11,10 @@ use structopt::StructOpt;
 use tokio::fs;
 
 use self::util::compress;
-use crate::commands::ignite::types::{
-    ContainerType, CreateDeployment, Image, Resources, ScalingStrategy, SingleDeployment,
-};
-use crate::config::{HOP_BUILD_BASE_URL, HOP_REGISTRY_URL};
+use super::ignite::types::RamSizes;
+use crate::commands::deploy::util::create_deployment_config;
+use crate::commands::ignite::types::{ContainerType, ScalingStrategy, SingleDeployment};
+use crate::config::HOP_BUILD_BASE_URL;
 use crate::state::State;
 use crate::store::hopfile::HopFile;
 use crate::{done, info, warn};
@@ -48,7 +47,7 @@ pub struct DeploymentConfig {
         long = "ram",
         help = "Amount of RAM to use, defaults to 512MB"
     )]
-    ram: Option<String>,
+    ram: Option<RamSizes>,
 
     #[structopt(
         short = "e",
@@ -70,7 +69,7 @@ pub struct DeploymentConfig {
         help = "Number of containers to use, defaults to 1 if `scaling` is manual",
         required_if("scaling", "manual")
     )]
-    _containers: Option<u64>,
+    containers: Option<u64>,
 }
 
 #[derive(Debug, StructOpt)]
@@ -143,47 +142,11 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
             let name = options
                 .config
                 .name
+                .clone()
                 .unwrap_or_else(|| dir.file_name().unwrap().to_str().unwrap().to_string());
 
-            let deployment_config = CreateDeployment {
-                container_strategy: options
-                    .config
-                    .scaling_strategy
-                    .unwrap_or(ScalingStrategy::Manual),
-                container_type: options
-                    .config
-                    .container_type
-                    .unwrap_or(ContainerType::Persistent),
-                name: name.clone(),
-                env: options
-                    .config
-                    .env
-                    .map(|env| {
-                        env.iter()
-                            .map(|env| {
-                                let mut split = env.split("=");
-                                let key = split.next().unwrap_or("");
-                                let value = split.next().unwrap_or("");
-
-                                (key.to_string(), value.to_string())
-                            })
-                            .collect()
-                    })
-                    .unwrap_or(HashMap::new()),
-                image: Image {
-                    name: format!(
-                        "{}/{}/{}",
-                        HOP_REGISTRY_URL,
-                        project.namespace.clone(),
-                        name
-                    ),
-                },
-                resources: Resources {
-                    cpu: options.config.cpu.unwrap_or(1),
-                    ram: options.config.ram.unwrap_or("512M".to_string()),
-                    vgpu: vec![],
-                },
-            };
+            let deployment_config =
+                create_deployment_config(options.config, name, project.namespace);
 
             let deployment = state
                 .http
@@ -253,39 +216,6 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
         .await
         .expect("Failed to send data to build endpoint");
 
-    #[derive(Debug, Deserialize)]
-    struct Data {
-        d: String,
-        #[serde(rename = "e")]
-        _e: String,
-    }
-
-    #[derive(Debug, Deserialize)]
-    struct Message {
-        d: Value,
-        e: String,
-    }
-
-    info!("From Hop builder:");
-    while let Some(data) = connection.recieve_message::<Message>().await {
-        // build logs are sent only in DMs
-        if data.e != "DIRECT_MESSAGE" {
-            continue;
-        }
-
-        let data: Data = serde_json::from_value(data.d).unwrap();
-
-        print!("{}", data.d);
-
-        // TODO: wait for events to have more fields
-
-        if data.d.starts_with("latest") {
-            info!("Build finished");
-            connection.close().await;
-            break;
-        }
-    }
-
     state
         .http
         .handle_response::<()>(response)
@@ -295,7 +225,54 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
     info!("Deleting archive...");
     fs::remove_file(packed).await?;
 
+    #[derive(Debug, Deserialize)]
+    struct Data {
+        d: Option<String>,
+        e: String,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct Message {
+        d: Value,
+        e: String,
+    }
+
+    info!("From Hop builder:");
+
+    while let Some(data) = connection.recieve_message::<Message>().await {
+        // build logs are sent only in DMs
+        if data.e != "DIRECT_MESSAGE" {
+            continue;
+        }
+
+        let data: Data = serde_json::from_value(data.d).unwrap();
+
+        if let Some(data) = data.d {
+            print!("{}", data);
+        }
+
+        match data.e.as_str() {
+            "PUSH_SUCCESS" => {
+                connection.close().await;
+                println!("");
+                info!("Pushed successfully");
+                break;
+            }
+
+            "PUSH_FAILURE" => {
+                connection.close().await;
+                println!("");
+                panic!("Push failed, for help contact us on https://discord.gg/hop and mention the deployment id: {}", deployment.id);
+            }
+
+            // ignore rest
+            _ => {}
+        }
+    }
+
     done!("Pushed deployment `{}`", deployment.name);
+
+    // TODO: ask to deploy containers
 
     Ok(())
 }

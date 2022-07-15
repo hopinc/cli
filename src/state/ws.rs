@@ -134,20 +134,25 @@ impl WebsocketClient {
                                     }
 
                                     SocketMessage { op: OpCodes::Dispatch, d: data } => {
-                                        sender_inbound.send(data.unwrap()).await.unwrap();
+                                        match sender_inbound.send(data.unwrap()).await {
+                                            Ok(_) => {}
+                                            // channel was closed before the message was delievered
+                                            // no need to panic here
+                                            Err(_) => {}
+                                        }
                                     }
 
                                     // ignore other messages
                                     _ => {}
-
                                 },
-                                Err(_) => {
-                                    panic!("type chec")
+                                // message recieved was not valid json / packed incorrectly
+                                Err(err) => {
+                                    panic!("Message error: {}", err)
                                 }
                             },
-                            None => {
-                                println!("type check");
-                            }
+
+                            // no idea why this would happen
+                            None => {}
                         }
                     },
 
@@ -161,7 +166,8 @@ impl WebsocketClient {
 
                                 message => sender.send(message.into()).await.expect("Error sending message")
                             },
-                            None => panic!("type check")
+                            // no idea why this would happen
+                            None => {}
                         }
                     },
 

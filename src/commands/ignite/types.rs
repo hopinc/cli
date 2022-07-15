@@ -10,10 +10,55 @@ pub struct Vgpu {
     pub count: u32,
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[repr(u32)]
+pub enum RamSizes {
+    #[serde(rename = "128M")]
+    M128 = 128,
+    #[serde(rename = "256M")]
+    M256 = 256,
+    #[serde(rename = "512M")]
+    M512 = 512,
+    #[serde(rename = "1G")]
+    G1 = 1024,
+    #[serde(rename = "2G")]
+    G2 = 2048,
+    #[serde(rename = "4G")]
+    G4 = 4096,
+    #[serde(rename = "8G")]
+    G8 = 8192,
+    #[serde(rename = "16G")]
+    G16 = 16384,
+    #[serde(rename = "32G")]
+    G32 = 32768,
+    #[serde(rename = "64G")]
+    G64 = 65536,
+}
+
+impl FromStr for RamSizes {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "128MB" => Ok(RamSizes::M128),
+            "256MB" => Ok(RamSizes::M256),
+            "512MB" => Ok(RamSizes::M512),
+            "1GB" => Ok(RamSizes::G1),
+            "2GB" => Ok(RamSizes::G2),
+            "4GB" => Ok(RamSizes::G4),
+            "8GB" => Ok(RamSizes::G8),
+            "16GB" => Ok(RamSizes::G16),
+            "32GB" => Ok(RamSizes::G32),
+            "64GB" => Ok(RamSizes::G64),
+            _ => Err("Invalid RAM size, has to be one of `128MB`, `256MB`, `512MB`, `1GB`, `2GB`, `4GB`, `8GB`, `16GB`, `32GB`, `64GB`".to_string()),
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Resources {
     pub cpu: u64,
-    pub ram: String,
+    pub ram: RamSizes,
     #[serde(skip)]
     pub vgpu: Vec<Vgpu>,
 }
