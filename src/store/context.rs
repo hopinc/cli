@@ -24,7 +24,7 @@ pub struct Context {
     pub me: Option<UserMe>,
     /// runtime context
     #[serde(skip)]
-    pub project: Option<String>,
+    pub project_override: Option<String>,
 }
 
 impl Context {
@@ -45,7 +45,7 @@ impl Context {
     }
 
     pub fn current_project(self) -> Option<Project> {
-        match self.project.clone() {
+        match self.project_override.clone() {
             Some(project) => Some(
                 self.find_project_by_id_or_namespace(project.clone())
                     .expect(format!("Could not find project `{}`", project).as_str()),
@@ -67,7 +67,7 @@ impl Context {
     pub fn default() -> Context {
         Context {
             me: None,
-            project: None,
+            project_override: None,
             override_api_url: None,
             default_project: None,
             default_user: None,

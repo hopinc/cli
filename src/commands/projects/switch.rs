@@ -22,10 +22,10 @@ pub async fn handle_switch(
         panic!("No projects found");
     }
 
-    let idx = match state.ctx.clone().current_project() {
+    let idx = match state.ctx.clone().project_override {
         Some(project) => projects
             .iter()
-            .position(|p| p.id == project.id)
+            .position(|p| p.id == project)
             .expect("Project not found"),
         None => {
             let projects_fmt = projects

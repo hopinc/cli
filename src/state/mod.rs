@@ -30,7 +30,7 @@ impl State {
 
         // override the project id if provided
         if options.override_project_id.is_some() {
-            ctx.project = Some(options.override_project_id.unwrap());
+            ctx.project_override = Some(options.override_project_id.unwrap());
         }
 
         // preffer the override token over the auth token
