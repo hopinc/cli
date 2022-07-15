@@ -5,7 +5,7 @@ use crate::done;
 use crate::state::State;
 
 #[derive(Debug, StructOpt)]
-#[structopt(about = "Delete a deployments")]
+#[structopt(about = "Delete a deployment")]
 pub struct DeleteOptions {
     #[structopt(name = "name", help = "Name of the deployment")]
     name: Option<String>,
