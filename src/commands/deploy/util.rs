@@ -170,11 +170,7 @@ pub fn create_deployment_config(
             .unwrap(),
         container_strategy: ask_question_iter(
             "Scaling strategy",
-            vec![
-                ScalingStrategy::Manual,
-                ScalingStrategy::Stateful,
-                ScalingStrategy::Autoscaled,
-            ],
+            vec![ScalingStrategy::Manual, ScalingStrategy::Autoscaled],
             default.container_strategy,
         ),
         // TODO: ask for env kvs

@@ -67,8 +67,6 @@ pub struct Resources {
 pub enum ScalingStrategy {
     #[serde(rename = "manual")]
     Manual,
-    #[serde(rename = "stateful")]
-    Stateful,
     #[serde(rename = "autoscaled")]
     Autoscaled,
 }
@@ -79,11 +77,9 @@ impl FromStr for ScalingStrategy {
     fn from_str(day: &str) -> Result<Self, Self::Err> {
         match day {
             "manual" => Ok(ScalingStrategy::Manual),
-            "stateful" => Ok(ScalingStrategy::Stateful),
             "autoscaled" => Ok(ScalingStrategy::Autoscaled),
             _ => Err(
-                "Invalid scaling strategy, has to be one of `manual` or `stateful` or `autoscaled`"
-                    .to_string(),
+                "Invalid scaling strategy, has to be one of `manual` or `autoscaled`".to_string(),
             ),
         }
     }
