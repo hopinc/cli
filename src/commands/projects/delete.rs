@@ -41,7 +41,7 @@ pub async fn handle_delete(options: DeleteOptions, mut state: State) -> Result<(
                 .collect::<Vec<_>>();
 
             let idx = dialoguer::Select::new()
-                .with_prompt("Select a project to delete (use arrow keys and enter to select)")
+                .with_prompt("Select a project to delete")
                 .items(&projects_fmt)
                 .default(if let Some(current) = state.ctx.clone().current_project() {
                     projects

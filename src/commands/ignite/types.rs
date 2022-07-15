@@ -58,7 +58,7 @@ impl FromStr for RamSizes {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Resources {
     pub cpu: u64,
-    pub ram: RamSizes,
+    pub ram: String,
     #[serde(skip)]
     pub vgpu: Vec<Vgpu>,
 }

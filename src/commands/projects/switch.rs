@@ -34,9 +34,7 @@ pub async fn handle_switch(
                 .collect::<Vec<_>>();
 
             dialoguer::Select::new()
-                .with_prompt(
-                    "Select a project to set as default (use arrow keys and enter to select)",
-                )
+                .with_prompt("Select a project to set as default")
                 .items(&projects_fmt)
                 .default(if let Some(id) = state.ctx.default_project {
                     projects.iter().position(|p| p.id == id).unwrap_or(0)

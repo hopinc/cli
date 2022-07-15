@@ -47,7 +47,7 @@ pub async fn handle_delete(options: DeleteOptions, state: State) -> Result<(), s
                 .collect::<Vec<_>>();
 
             let idx = dialoguer::Select::new()
-                .with_prompt("Select a deployment to delete (use arrow keys and enter to select)")
+                .with_prompt("Select a deployment to delete")
                 .items(&deployments_fmt)
                 .default(0)
                 .interact_opt()

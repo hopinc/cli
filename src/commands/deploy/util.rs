@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::env::temp_dir;
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::vec;
 
 use async_compression::tokio::write::GzipEncoder;
@@ -137,7 +138,9 @@ pub fn create_deployment_config(
         },
         resources: Resources {
             cpu: config.cpu.clone().unwrap_or(1),
-            ram: config.ram.clone().unwrap_or(RamSizes::M512),
+            ram: serde_json::to_string(&config.ram.clone().unwrap_or(RamSizes::M512))
+                .unwrap()
+                .replace("\"", ""),
             vgpu: vec![],
         },
     };
@@ -183,7 +186,7 @@ pub fn create_deployment_config(
                 .default(default.resources.cpu)
                 .interact()
                 .unwrap(),
-            ram: ask_question_iter(
+            ram: serde_json::to_string(&ask_question_iter(
                 "RAM",
                 vec![
                     RamSizes::M128,
@@ -197,8 +200,10 @@ pub fn create_deployment_config(
                     RamSizes::G32,
                     RamSizes::G64,
                 ],
-                default.resources.ram,
-            ),
+                RamSizes::from_str(&default.resources.ram).unwrap_or(RamSizes::M512),
+            ))
+            .unwrap()
+            .replace("\"", ""),
             vgpu: vec![],
         },
         container_type: ask_question_iter(

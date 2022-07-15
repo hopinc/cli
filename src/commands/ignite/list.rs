@@ -30,8 +30,11 @@ pub async fn handle_list(_options: ListOptions, state: State) -> Result<(), std:
         .iter()
         .map(|d| {
             format!(
-                " {} ({}) - {} container(s)",
-                d.name, d.id, d.container_count
+                " {} ({}) - {} container{}",
+                d.name,
+                d.id,
+                d.container_count,
+                if d.container_count == 1 { "" } else { "s" }
             )
         })
         .collect::<Vec<_>>();
