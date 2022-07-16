@@ -1,6 +1,7 @@
 pub mod auth;
 pub mod deploy;
 pub mod ignite;
+pub mod link;
 pub mod projects;
 pub mod secrets;
 pub mod whoami;
@@ -10,6 +11,7 @@ use structopt::StructOpt;
 use self::auth::{handle_auth, AuthOptions};
 use self::deploy::{handle_deploy, DeployOptions};
 use self::ignite::{handle_deployments, IgniteOptions};
+use self::link::{handle_link, LinkOptions};
 use self::projects::{handle_projects, ProjectsOptions};
 use self::secrets::{handle_secrets, SecretsOptions};
 use self::whoami::{handle_whoami, WhoamiOptions};
@@ -24,6 +26,7 @@ pub enum Commands {
     #[structopt(name = "whoami", alias = "info", alias = "ctx")]
     Whoami(WhoamiOptions),
     Ignite(IgniteOptions),
+    Link(LinkOptions),
 }
 
 pub async fn handle_command(command: Commands, mut state: State) -> Result<(), std::io::Error> {
@@ -41,6 +44,7 @@ pub async fn handle_command(command: Commands, mut state: State) -> Result<(), s
                 Commands::Deploy(options) => handle_deploy(options, state).await,
                 Commands::Whoami(options) => handle_whoami(options, state).await,
                 Commands::Ignite(options) => handle_deployments(options, state).await,
+                Commands::Link(options) => handle_link(options, state).await,
             }
         }
     }
