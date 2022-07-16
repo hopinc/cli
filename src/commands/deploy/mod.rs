@@ -102,7 +102,7 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
 
     info!("Attempting to deploy {}", dir.display());
 
-    let (_hopfile, deployment) = match HopFile::find(dir.clone()).await {
+    let deployment = match HopFile::find(dir.clone()).await {
         Some(hopfile) => {
             info!("Found hopfile: {}", hopfile.path.display());
 
@@ -119,17 +119,33 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
                 .unwrap()
                 .deployment;
 
+            // if deployment exists it's safe to unwrap
+            let project = state
+                .ctx
+                .find_project_by_id_or_namespace(hopfile.config.project_id)
+                .unwrap();
+
             if options.config != DeploymentConfig::default() {
                 warn!("Deployment exists, skipping arguments");
             }
 
-            (hopfile, deployment)
+            info!(
+                "Deploying to project {} /{} ({})",
+                project.name, project.namespace, project.id
+            );
+
+            deployment
         }
 
         None => {
             info!("No hopfile found, creating one");
 
             let project = state.ctx.current_project_error();
+
+            info!(
+                "Deploying to project {} /{} ({})",
+                project.name, project.namespace, project.id
+            );
 
             let mut hopfile = HopFile::new(
                 dir.clone().join("hop.yml"),
@@ -146,7 +162,7 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
                 .unwrap_or_else(|| dir.file_name().unwrap().to_str().unwrap().to_string());
 
             let deployment_config =
-                create_deployment_config(options.config, name, project.namespace);
+                create_deployment_config(options.config, name, project.namespace.clone());
 
             let deployment = state
                 .http
@@ -175,7 +191,7 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
                 .await
                 .expect("Could not save hopfile");
 
-            (hopfile, deployment)
+            deployment
         }
     };
 

@@ -19,7 +19,7 @@ pub async fn handle_list(_options: ListOptions, state: State) -> Result<(), std:
 
     let projects_fmt = projects
         .iter()
-        .map(|p| format!(" {} @{} ({})", p.name, p.namespace, p.id))
+        .map(|p| format!(" {} /{} ({})", p.name, p.namespace, p.id))
         .collect::<Vec<_>>();
 
     println!("Projects:");

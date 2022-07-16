@@ -32,7 +32,7 @@ impl Context {
         get_path(CONTEXT_STORE_PATH)
     }
 
-    fn find_project_by_id_or_namespace(self, id_or_namespace: String) -> Option<Project> {
+    pub fn find_project_by_id_or_namespace(self, id_or_namespace: String) -> Option<Project> {
         self.me
             .as_ref()
             .and_then(|me| {

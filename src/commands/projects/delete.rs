@@ -37,7 +37,7 @@ pub async fn handle_delete(options: DeleteOptions, mut state: State) -> Result<(
         None => {
             let projects_fmt = projects
                 .iter()
-                .map(|p| format!("{} @{} ({})", p.name, p.namespace, p.id))
+                .map(|p| format!("{} /{} ({})", p.name, p.namespace, p.id))
                 .collect::<Vec<_>>();
 
             let idx = dialoguer::Select::new()

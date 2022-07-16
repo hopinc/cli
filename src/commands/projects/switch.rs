@@ -30,7 +30,7 @@ pub async fn handle_switch(
         None => {
             let projects_fmt = projects
                 .iter()
-                .map(|p| format!("{} @{} ({})", p.name, p.namespace, p.id))
+                .map(|p| format!("{} /{} ({})", p.name, p.namespace, p.id))
                 .collect::<Vec<_>>();
 
             dialoguer::Select::new()
@@ -53,7 +53,7 @@ pub async fn handle_switch(
     state.ctx.save().await?;
 
     done!(
-        "Switched to project {} @{} ({})",
+        "Switched to project {} /{} ({})",
         project.name,
         project.namespace,
         project.id
