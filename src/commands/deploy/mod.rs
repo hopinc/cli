@@ -95,6 +95,10 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
             .expect("Could not get canonical path");
     }
 
+    if !dir.is_dir() {
+        panic!("{} is not a directory", dir.display());
+    }
+
     let mut connection = state
         .ws
         .connect(state.ctx.me.clone().unwrap().leap_token.as_str())

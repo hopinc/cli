@@ -1,6 +1,7 @@
 mod delete;
 mod list;
 pub mod types;
+pub mod util;
 
 use structopt::StructOpt;
 

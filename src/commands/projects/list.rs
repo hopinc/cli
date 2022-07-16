@@ -1,6 +1,6 @@
 use structopt::StructOpt;
 
-use crate::state::State;
+use crate::{commands::projects::util::format_projects, state::State};
 
 #[derive(Debug, StructOpt)]
 #[structopt(about = "List all projects")]
@@ -17,10 +17,7 @@ pub async fn handle_list(_options: ListOptions, state: State) -> Result<(), std:
         panic!("No projects found");
     }
 
-    let projects_fmt = projects
-        .iter()
-        .map(|p| format!(" {} /{} ({})", p.name, p.namespace, p.id))
-        .collect::<Vec<_>>();
+    let projects_fmt = format_projects(&projects, &state.ctx.default_project);
 
     println!("Projects:");
     println!("{}", projects_fmt.join("\n"));

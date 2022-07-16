@@ -4,6 +4,7 @@ mod info;
 mod list;
 mod switch;
 pub mod types;
+pub mod util;
 
 use structopt::StructOpt;
 

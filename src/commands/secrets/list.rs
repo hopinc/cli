@@ -1,6 +1,7 @@
 use structopt::StructOpt;
 
 use crate::commands::secrets::types::Secrets;
+use crate::commands::secrets::util::format_secrets;
 use crate::state::State;
 
 #[derive(Debug, StructOpt)]
@@ -26,10 +27,7 @@ pub async fn handle_list(_options: ListOptions, state: State) -> Result<(), std:
         panic!("No secrets found in this project");
     }
 
-    let secrets_fmt = secrets
-        .iter()
-        .map(|s| format!(" {} ({})", s.name, s.id))
-        .collect::<Vec<_>>();
+    let secrets_fmt = format_secrets(&secrets);
 
     println!("Secrets:");
     println!("{}", secrets_fmt.join("\n"));

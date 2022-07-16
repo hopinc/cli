@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 dirs = "4.0"
 regex = "1.5"
+console = "0.15"
 tokio-tar = "0.3"
 structopt = "0.3"
 gitignore = "1.0"

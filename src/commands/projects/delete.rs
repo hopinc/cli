@@ -1,5 +1,6 @@
 use structopt::StructOpt;
 
+use crate::commands::projects::util::format_projects;
 use crate::done;
 use crate::state::State;
 
@@ -35,10 +36,7 @@ pub async fn handle_delete(options: DeleteOptions, mut state: State) -> Result<(
             project.to_owned()
         }
         None => {
-            let projects_fmt = projects
-                .iter()
-                .map(|p| format!("{} /{} ({})", p.name, p.namespace, p.id))
-                .collect::<Vec<_>>();
+            let projects_fmt = format_projects(&projects, &state.ctx.default_project);
 
             let idx = dialoguer::Select::new()
                 .with_prompt("Select a project to delete")

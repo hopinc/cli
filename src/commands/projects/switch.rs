@@ -1,5 +1,6 @@
 use structopt::StructOpt;
 
+use crate::commands::projects::util::format_projects;
 use crate::done;
 use crate::state::State;
 
@@ -28,10 +29,7 @@ pub async fn handle_switch(
             .position(|p| p.id == project)
             .expect("Project not found"),
         None => {
-            let projects_fmt = projects
-                .iter()
-                .map(|p| format!("{} /{} ({})", p.name, p.namespace, p.id))
-                .collect::<Vec<_>>();
+            let projects_fmt = format_projects(&projects, &state.ctx.default_project);
 
             dialoguer::Select::new()
                 .with_prompt("Select a project to set as default")

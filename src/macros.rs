@@ -1,3 +1,5 @@
+use console::style;
+
 #[macro_export]
 macro_rules! done {
     () => ({ println!("\x1b[32m\x1b[1mdone\x1b[0m") });
@@ -13,7 +15,7 @@ macro_rules! warn {
 }
 
 #[macro_export]
-macro_rules! info{
+macro_rules! info {
     () => ({ println!("\x1b[34m\x1b[1minfo\x1b[0m") });
     ($fmt:expr) => ({ println!(concat!("\x1b[34m\x1b[1minfo:\x1b[0m ",$fmt)) });
     ($fmt:expr, $($arg:tt)*) => ({ println!(concat!("\x1b[34m\x1b[1minfo:\x1b[0m " ,$fmt), $($arg)*) });
@@ -32,10 +34,10 @@ pub fn set_hook() {
         };
 
         // add some color
-        eprintln!("\x1b[31m\x1b[1merror:\x1b[0m {}", message);
+        eprintln!("{} {}", style("error:").red().bold(), message);
 
         if cfg!(debug_assertions) {
-            eprintln!("Backtrace: {}", panic_info)
+            eprintln!("{} {}", style("Backtrace:").yellow().bold(), panic_info)
         }
 
         std::process::exit(1);
