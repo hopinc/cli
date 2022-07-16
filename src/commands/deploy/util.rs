@@ -165,7 +165,7 @@ pub fn create_deployment_config(
                 Err("Invalid deployment name, must be alphanumeric and hyphens only")
             }
         })
-        .interact()
+        .interact_text()
         .unwrap();
 
     let container_strategy = ask_question_iter(
@@ -184,7 +184,7 @@ pub fn create_deployment_config(
                 Err("CPUs must be greater than 0 and less than or equal to 64")
             }
         })
-        .interact()
+        .interact_text()
         .unwrap();
 
     let ram = serde_json::to_string(&ask_question_iter(
@@ -224,7 +224,7 @@ pub fn create_deployment_config(
         name,
         container_strategy,
         // TODO: ask for env kvs
-        env: HashMap::new(),
+        env: get_multiple_envs(),
 
         resources: Resources {
             cpu,
@@ -233,6 +233,65 @@ pub fn create_deployment_config(
         },
         container_type,
     }
+}
+
+fn get_multiple_envs() -> HashMap<String, String> {
+    let mut env = HashMap::new();
+
+    let confirm_ = dialoguer::Confirm::new()
+        .with_prompt("Add environment variables?")
+        .default(false)
+        .interact_opt()
+        .expect("Failed to ask for environment variables")
+        .unwrap_or(false);
+
+    if !confirm_ {
+        return env;
+    }
+
+    loop {
+        let ekv = get_env_from_input();
+
+        if ekv.is_some() {
+            let (key, value) = ekv.unwrap();
+            env.insert(key, value);
+        } else {
+            break;
+        }
+
+        let continue_ = dialoguer::Confirm::new()
+            .with_prompt("Add another environment variable?")
+            .interact_opt()
+            .expect("Failed to ask for environment variables");
+
+        if continue_.is_none() || !continue_.unwrap() {
+            break;
+        }
+    }
+
+    env
+}
+
+fn get_env_from_input() -> Option<(String, String)> {
+    let key = dialoguer::Input::<String>::new()
+        .with_prompt("Key")
+        .interact_text();
+
+    let key = match key {
+        Ok(key) => key,
+        Err(_) => return None,
+    };
+
+    let value = dialoguer::Input::<String>::new()
+        .with_prompt("Value")
+        .interact_text();
+
+    let value = match value {
+        Ok(value) => value,
+        Err(_) => return None,
+    };
+
+    Some((key, value))
 }
 
 fn ask_question_iter<T>(prompt: &str, choices: Vec<T>, default: T) -> T

@@ -64,7 +64,7 @@ pub async fn handle_delete(options: DeleteOptions, mut state: State) -> Result<(
         );
         let output = dialoguer::Input::<String>::new()
             .with_prompt("Message")
-            .interact()
+            .interact_text()
             .expect("Failed to confirm deletion");
 
         if output != format!("{}{}", CONFIRM_DELETE_PROJECT_MESSAGE, project.name) {
