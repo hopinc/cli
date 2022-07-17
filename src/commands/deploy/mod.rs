@@ -159,14 +159,10 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
             );
 
             // TODO: run a walkthrough to setup the deployment?
-            let name = options
-                .config
-                .name
-                .clone()
-                .unwrap_or_else(|| dir.file_name().unwrap().to_str().unwrap().to_string());
+            let dirname = dir.file_name().unwrap().to_str().unwrap().to_string();
 
             let deployment_config =
-                create_deployment_config(options.config, name, project.namespace.clone());
+                create_deployment_config(options.config, project.namespace.clone(), dirname);
 
             let deployment = state
                 .http

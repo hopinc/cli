@@ -14,44 +14,62 @@ pub struct Vgpu {
 #[repr(u32)]
 pub enum RamSizes {
     #[serde(rename = "128M")]
-    M128 = 128,
+    M128,
     #[serde(rename = "256M")]
-    M256 = 256,
+    M256,
     #[serde(rename = "512M")]
-    M512 = 512,
+    M512,
     #[serde(rename = "1G")]
-    G1 = 1024,
+    G1,
     #[serde(rename = "2G")]
-    G2 = 2048,
+    G2,
     #[serde(rename = "4G")]
-    G4 = 4096,
+    G4,
     #[serde(rename = "8G")]
-    G8 = 8192,
+    G8,
     #[serde(rename = "16G")]
-    G16 = 16384,
+    G16,
     #[serde(rename = "32G")]
-    G32 = 32768,
+    G32,
     #[serde(rename = "64G")]
-    G64 = 65536,
+    G64,
 }
 
 impl FromStr for RamSizes {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "128MB" => Ok(RamSizes::M128),
-            "256MB" => Ok(RamSizes::M256),
-            "512MB" => Ok(RamSizes::M512),
-            "1GB" => Ok(RamSizes::G1),
-            "2GB" => Ok(RamSizes::G2),
-            "4GB" => Ok(RamSizes::G4),
-            "8GB" => Ok(RamSizes::G8),
-            "16GB" => Ok(RamSizes::G16),
-            "32GB" => Ok(RamSizes::G32),
-            "64GB" => Ok(RamSizes::G64),
-            _ => Err("Invalid RAM size, has to be one of `128MB`, `256MB`, `512MB`, `1GB`, `2GB`, `4GB`, `8GB`, `16GB`, `32GB`, `64GB`".to_string()),
-        }
+        serde_json::from_str(format!("\"{}\"", s.to_uppercase()).as_str())
+            .map_err(|e| e.to_string())
+    }
+}
+
+impl ToString for RamSizes {
+    fn to_string(&self) -> String {
+        serde_json::to_string(self).unwrap().replace("\"", "")
+    }
+}
+
+impl Default for RamSizes {
+    fn default() -> Self {
+        RamSizes::M512
+    }
+}
+
+impl RamSizes {
+    pub fn values() -> Vec<RamSizes> {
+        vec![
+            RamSizes::M128,
+            RamSizes::M256,
+            RamSizes::M512,
+            RamSizes::G1,
+            RamSizes::G2,
+            RamSizes::G4,
+            RamSizes::G8,
+            RamSizes::G16,
+            RamSizes::G32,
+            RamSizes::G64,
+        ]
     }
 }
 
@@ -61,6 +79,16 @@ pub struct Resources {
     pub ram: String,
     #[serde(skip)]
     pub vgpu: Vec<Vgpu>,
+}
+
+impl Default for Resources {
+    fn default() -> Self {
+        Resources {
+            cpu: 1,
+            ram: RamSizes::default().to_string(),
+            vgpu: vec![],
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -74,20 +102,41 @@ pub enum ScalingStrategy {
 impl FromStr for ScalingStrategy {
     type Err = String;
 
-    fn from_str(day: &str) -> Result<Self, Self::Err> {
-        match day {
-            "manual" => Ok(ScalingStrategy::Manual),
-            "autoscaled" => Ok(ScalingStrategy::Autoscaled),
-            _ => Err(
-                "Invalid scaling strategy, has to be one of `manual` or `autoscaled`".to_string(),
-            ),
-        }
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        serde_json::from_str(format!("\"{}\"", s.to_uppercase()).as_str())
+            .map_err(|e| e.to_string())
+    }
+}
+
+impl ToString for ScalingStrategy {
+    fn to_string(&self) -> String {
+        serde_json::to_string(self).unwrap().replace("\"", "")
+    }
+}
+
+impl Default for ScalingStrategy {
+    fn default() -> Self {
+        ScalingStrategy::Manual
+    }
+}
+
+impl ScalingStrategy {
+    pub fn values() -> Vec<ScalingStrategy> {
+        vec![ScalingStrategy::Manual, ScalingStrategy::Autoscaled]
     }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Image {
     pub name: String,
+}
+
+impl Default for Image {
+    fn default() -> Self {
+        Image {
+            name: String::default(),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -101,14 +150,27 @@ pub enum ContainerType {
 impl FromStr for ContainerType {
     type Err = String;
 
-    fn from_str(day: &str) -> Result<Self, Self::Err> {
-        match day {
-            "ephemeral" => Ok(ContainerType::Ephemeral),
-            "persistent" => Ok(ContainerType::Persistent),
-            _ => Err(
-                "Invalid container type, has to be one of `ephemeral` or `persistent`".to_string(),
-            ),
-        }
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        serde_json::from_str(format!("\"{}\"", s.to_uppercase()).as_str())
+            .map_err(|e| e.to_string())
+    }
+}
+
+impl ToString for ContainerType {
+    fn to_string(&self) -> String {
+        serde_json::to_string(self).unwrap().replace("\"", "")
+    }
+}
+
+impl Default for ContainerType {
+    fn default() -> Self {
+        ContainerType::Persistent
+    }
+}
+
+impl ContainerType {
+    pub fn values() -> Vec<ContainerType> {
+        vec![ContainerType::Ephemeral, ContainerType::Persistent]
     }
 }
 
@@ -150,4 +212,17 @@ pub struct CreateDeployment {
     pub resources: Resources,
     #[serde(rename = "type")]
     pub container_type: ContainerType,
+}
+
+impl Default for CreateDeployment {
+    fn default() -> Self {
+        Self {
+            container_strategy: ScalingStrategy::default(),
+            env: HashMap::new(),
+            image: Image::default(),
+            name: String::default(),
+            resources: Resources::default(),
+            container_type: ContainerType::default(),
+        }
+    }
 }

@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::env::temp_dir;
 use std::path::PathBuf;
-use std::str::FromStr;
 use std::vec;
 
 use async_compression::tokio::write::GzipEncoder;
@@ -105,59 +104,57 @@ pub fn validate_deployment_name(name: String) -> bool {
 
 pub fn create_deployment_config(
     config: DeploymentConfig,
-    name: String,
     namespace: String,
+    dirname: String,
 ) -> CreateDeployment {
-    let default = CreateDeployment {
-        container_strategy: config
-            .scaling_strategy
-            .clone()
-            .unwrap_or(ScalingStrategy::Manual),
-        container_type: config
-            .container_type
-            .clone()
-            .unwrap_or(ContainerType::Persistent),
-        name: name.clone(),
-        env: config
-            .env
-            .clone()
-            .map(|env| {
-                env.iter()
-                    .map(|env| {
-                        let mut split = env.split("=");
-                        let key = split.next().unwrap_or("");
-                        let value = split.next().unwrap_or("");
-
-                        (key.to_string(), value.to_string())
-                    })
-                    .collect()
-            })
-            .unwrap_or(HashMap::new()),
-        image: Image {
-            name: format!("{}/{}/{}", HOP_REGISTRY_URL, namespace.clone(), name),
-        },
-        resources: Resources {
-            cpu: config.cpu.clone().unwrap_or(1),
-            ram: serde_json::to_string(&config.ram.clone().unwrap_or(RamSizes::M512))
-                .unwrap()
-                .replace("\"", ""),
-            vgpu: vec![],
-        },
-    };
+    let default = CreateDeployment::default();
+    let name = config.name.clone().unwrap_or(dirname);
 
     if config != DeploymentConfig::default() {
-        if !validate_deployment_name(name) {
+        let mut deployment = default;
+
+        if !validate_deployment_name(name.clone()) {
             panic!("Invalid deployment name, must be alphanumeric and hyphens only");
         }
 
-        return default;
+        // update image name and deployment name accordingly
+        deployment.name = name.clone();
+        deployment.image.name = format!("{}/{}/{}", HOP_REGISTRY_URL, namespace, name);
+
+        if let Some(container_strategy) = config.scaling_strategy {
+            deployment.container_strategy = container_strategy;
+        }
+
+        if let Some(container_type) = config.container_type {
+            deployment.container_type = container_type;
+        }
+
+        if let Some(cpu) = config.cpu {
+            deployment.resources.cpu = cpu;
+        }
+
+        if let Some(ram) = config.ram {
+            deployment.resources.ram = ram.to_string();
+        }
+
+        if let Some(env) = config.env {
+            deployment.env = env
+                .iter()
+                .map(|kv| {
+                    let split = kv.split("=").collect::<Vec<&str>>();
+                    (split[0].to_string(), split[1].to_string())
+                })
+                .collect();
+        }
+
+        return deployment;
     }
 
     info!("No config provided, running interactive mode");
 
     let name = dialoguer::Input::<String>::new()
         .with_prompt("Deployment name")
-        .default(default.name)
+        .default(name)
         .validate_with(|name: &String| -> Result<(), &str> {
             if validate_deployment_name(name.to_string()) {
                 Ok(())
@@ -170,8 +167,8 @@ pub fn create_deployment_config(
 
     let container_strategy = ask_question_iter(
         "Scaling strategy",
-        vec![ScalingStrategy::Manual, ScalingStrategy::Autoscaled],
-        default.container_strategy,
+        ScalingStrategy::values(),
+        ScalingStrategy::default(),
     );
 
     let cpu = dialoguer::Input::<u64>::new()
@@ -187,29 +184,12 @@ pub fn create_deployment_config(
         .interact_text()
         .unwrap();
 
-    let ram = serde_json::to_string(&ask_question_iter(
-        "RAM",
-        vec![
-            RamSizes::M128,
-            RamSizes::M256,
-            RamSizes::M512,
-            RamSizes::G1,
-            RamSizes::G2,
-            RamSizes::G4,
-            RamSizes::G8,
-            RamSizes::G16,
-            RamSizes::G32,
-            RamSizes::G64,
-        ],
-        RamSizes::from_str(&default.resources.ram).unwrap_or(RamSizes::M512),
-    ))
-    .unwrap()
-    .replace("\"", "");
+    let ram = ask_question_iter("RAM", RamSizes::values(), RamSizes::default()).to_string();
 
     let container_type = ask_question_iter(
         "Container type",
-        vec![ContainerType::Ephemeral, ContainerType::Persistent],
-        default.container_type,
+        ContainerType::values(),
+        ContainerType::default(),
     );
 
     CreateDeployment {
@@ -223,9 +203,7 @@ pub fn create_deployment_config(
         },
         name,
         container_strategy,
-        // TODO: ask for env kvs
         env: get_multiple_envs(),
-
         resources: Resources {
             cpu,
             ram,
