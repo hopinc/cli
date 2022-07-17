@@ -10,7 +10,7 @@ use serde_json::Value;
 use structopt::StructOpt;
 use tokio::fs;
 
-use self::util::compress;
+use self::util::{compress, parse_key_val};
 use super::ignite::types::RamSizes;
 use crate::commands::deploy::util::create_deployment_config;
 use crate::commands::ignite::types::{ContainerType, ScalingStrategy, SingleDeployment};
@@ -52,9 +52,11 @@ pub struct DeploymentConfig {
     #[structopt(
         short = "e",
         long = "env",
-        help = "Environment variables to set, in the form of KEY=VALUE"
+        help = "Environment variables to set, in the form of KEY=VALUE",
+        parse(try_from_str = parse_key_val),
+        number_of_values = 1
     )]
-    env: Option<Vec<String>>,
+    env: Option<Vec<(String, String)>>,
 
     #[structopt(
         short = "s",

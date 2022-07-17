@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::env::temp_dir;
+use std::error::Error;
 use std::path::PathBuf;
 use std::vec;
 
@@ -138,13 +139,7 @@ pub fn create_deployment_config(
         }
 
         if let Some(env) = config.env {
-            deployment.env = env
-                .iter()
-                .map(|kv| {
-                    let split = kv.split("=").collect::<Vec<&str>>();
-                    (split[0].to_string(), split[1].to_string())
-                })
-                .collect();
+            deployment.env = env.iter().map(|kv| (kv.0.clone(), kv.1.clone())).collect();
         }
 
         return deployment;
@@ -211,6 +206,19 @@ pub fn create_deployment_config(
         },
         container_type,
     }
+}
+
+pub fn parse_key_val<T, U>(s: &str) -> Result<(T, U), Box<dyn Error>>
+where
+    T: std::str::FromStr,
+    T::Err: Error + 'static,
+    U: std::str::FromStr,
+    U::Err: Error + 'static,
+{
+    let pos = s
+        .find('=')
+        .ok_or_else(|| format!("invalid KEY=value: no `=` found in `{}`", s))?;
+    Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
 }
 
 fn get_multiple_envs() -> HashMap<String, String> {
