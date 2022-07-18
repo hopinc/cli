@@ -6,7 +6,7 @@ mod switch;
 pub mod types;
 pub mod util;
 
-use structopt::StructOpt;
+use clap::{Parser, Subcommand};
 
 use self::create::{handle_create, CreateOptions};
 use self::delete::{handle_delete, DeleteOptions};
@@ -15,22 +15,22 @@ use self::list::{handle_list, ListOptions};
 use self::switch::{handle_switch, SwitchOptions};
 use crate::state::State;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Subcommand)]
 pub enum Commands {
-    #[structopt(name = "new", alias = "create")]
+    #[clap(name = "new", alias = "create")]
     Create(CreateOptions),
     Switch(SwitchOptions),
     Info(InfoOptions),
-    #[structopt(name = "ls", alias = "list")]
+    #[clap(name = "ls", alias = "list")]
     List(ListOptions),
-    #[structopt(name = "rm", alias = "delete")]
+    #[clap(name = "rm", alias = "delete")]
     Delete(DeleteOptions),
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "projects", about = "Interact with projects")]
+#[derive(Debug, Parser)]
+#[clap(name = "projects", about = "Interact with projects")]
 pub struct ProjectsOptions {
-    #[structopt(subcommand)]
+    #[clap(subcommand)]
     pub commands: Commands,
 }
 

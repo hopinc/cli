@@ -2,22 +2,21 @@ mod login;
 mod logout;
 pub mod types;
 
-use structopt::StructOpt;
-
 use self::login::{handle_login, LoginOptions};
 use self::logout::{hanndle_logout, LogoutOptions};
 use crate::state::State;
+use clap::{Parser, Subcommand};
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Subcommand)]
 pub enum Commands {
     Login(LoginOptions),
     Logout(LogoutOptions),
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "auth", about = "Authenticate with Hop")]
+#[derive(Debug, Parser)]
+#[clap(name = "auth", about = "Authenticate with Hop")]
 pub struct AuthOptions {
-    #[structopt(subcommand)]
+    #[clap(subcommand)]
     pub commands: Commands,
 }
 

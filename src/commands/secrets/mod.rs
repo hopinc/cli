@@ -4,24 +4,24 @@ mod set;
 mod types;
 mod util;
 
-use structopt::StructOpt;
+use clap::{Parser, Subcommand};
 
 use self::delete::{handle_delete, DeleteOptions};
 use self::list::{handle_list, ListOptions};
 use self::set::{handle_set, SetOptions};
 use crate::state::State;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Subcommand)]
 pub enum Commands {
-    #[structopt(name = "set", alias = "create", alias = "update", alias = "new")]
+    #[clap(name = "set", alias = "create", alias = "update", alias = "new")]
     Set(SetOptions),
-    #[structopt(name = "ls", alias = "list")]
+    #[clap(name = "ls", alias = "list")]
     List(ListOptions),
-    #[structopt(name = "rm", alias = "del", alias = "delete", alias = "remove")]
+    #[clap(name = "rm", alias = "del", alias = "delete", alias = "remove")]
     Delete(DeleteOptions),
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 #[structopt(name = "secrets", about = "Interact with secrets")]
 pub struct SecretsOptions {
     #[structopt(subcommand)]

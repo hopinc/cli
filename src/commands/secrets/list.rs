@@ -1,10 +1,10 @@
-use structopt::StructOpt;
+use clap::Parser;
 
 use crate::commands::secrets::types::Secrets;
 use crate::commands::secrets::util::format_secrets;
 use crate::state::State;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 #[structopt(about = "List all secrets")]
 pub struct ListOptions {}
 

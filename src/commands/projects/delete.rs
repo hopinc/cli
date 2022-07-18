@@ -1,4 +1,4 @@
-use structopt::StructOpt;
+use clap::Parser;
 
 use crate::commands::projects::util::format_projects;
 use crate::done;
@@ -6,12 +6,12 @@ use crate::state::State;
 
 static CONFIRM_DELETE_PROJECT_MESSAGE: &str = "I am sure I want to delete the project named ";
 
-#[derive(Debug, StructOpt)]
-#[structopt(about = "Delete a project")]
+#[derive(Debug, Parser)]
+#[clap(about = "Delete a project")]
 pub struct DeleteOptions {
-    #[structopt(name = "namespace", help = "Namespace of the project")]
+    #[clap(name = "namespace", help = "Namespace of the project")]
     namespace: Option<String>,
-    #[structopt(long = "no-confirm", help = "Skip confirmation")]
+    #[clap(long = "no-confirm", help = "Skip confirmation")]
     force: bool,
 }
 

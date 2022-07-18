@@ -1,11 +1,11 @@
-use structopt::StructOpt;
+use clap::Parser;
 
 use crate::commands::secrets::types::SecretResponse;
 use crate::commands::secrets::util::validate_name;
 use crate::done;
 use crate::state::State;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 #[structopt(about = "Set a secret")]
 pub struct SetOptions {
     #[structopt(name = "name", help = "Name of the secret")]

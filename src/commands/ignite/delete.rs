@@ -1,15 +1,15 @@
-use structopt::StructOpt;
+use clap::Parser;
 
 use super::types::MultipleDeployments;
 use crate::done;
 use crate::state::State;
 
-#[derive(Debug, StructOpt)]
-#[structopt(about = "Delete a deployment")]
+#[derive(Debug, Parser)]
+#[clap(about = "Delete a deployment")]
 pub struct DeleteOptions {
-    #[structopt(name = "name", help = "Name of the deployment")]
+    #[clap(name = "name", help = "Name of the deployment")]
     name: Option<String>,
-    #[structopt(long = "no-confirm", help = "Skip confirmation")]
+    #[clap(long = "no-confirm", help = "Skip confirmation")]
     force: bool,
 }
 

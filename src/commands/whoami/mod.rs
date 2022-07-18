@@ -1,9 +1,9 @@
-use structopt::StructOpt;
+use clap::Parser;
 
 use crate::state::State;
 
-#[derive(Debug, StructOpt)]
-#[structopt(about = "Get information about the current user")]
+#[derive(Debug, Parser)]
+#[clap(about = "Get information about the current user")]
 pub struct WhoamiOptions {}
 
 pub async fn handle_whoami(_options: WhoamiOptions, state: State) -> Result<(), std::io::Error> {

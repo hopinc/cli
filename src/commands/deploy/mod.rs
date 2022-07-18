@@ -4,13 +4,14 @@ pub mod util;
 use std::env::current_dir;
 use std::path::PathBuf;
 
+use clap::Parser;
 use hyper::Method;
 use reqwest::multipart::{Form, Part};
 
-use structopt::StructOpt;
 use tokio::fs;
 
-use self::util::{compress, parse_key_val};
+use self::types::Env;
+use self::util::compress;
 use super::ignite::types::RamSizes;
 use crate::commands::deploy::types::{Data, Message};
 use crate::commands::deploy::util::create_deployment_config;
@@ -20,78 +21,76 @@ use crate::state::State;
 use crate::store::hopfile::HopFile;
 use crate::{done, info, warn};
 
-#[derive(Debug, StructOpt, Default, PartialEq)]
+#[derive(Debug, Parser, Default, PartialEq)]
 pub struct DeploymentConfig {
-    #[structopt(
-        short = "n",
+    #[clap(
+        short = 'n',
         long = "name",
         help = "Name of the deployment, defaults to the directory name"
     )]
     name: Option<String>,
 
-    #[structopt(
-        short = "t",
+    #[clap(
+        short = 't',
         long = "type",
         help = "Type of the container, defaults to `ephemeral`"
     )]
     container_type: Option<ContainerType>,
 
-    #[structopt(
-        short = "c",
+    #[clap(
+        short = 'c',
         long = "cpu",
         help = "The number of CPUs to use, defaults to 1"
     )]
     cpu: Option<u64>,
 
-    #[structopt(
-        short = "m",
+    #[clap(
+        short = 'r',
         long = "ram",
         help = "Amount of RAM to use, defaults to 512MB"
     )]
     ram: Option<RamSizes>,
 
-    #[structopt(
-        short = "e",
+    #[clap(
+        short = 'e',
         long = "env",
         help = "Environment variables to set, in the form of KEY=VALUE",
-        parse(try_from_str = parse_key_val),
         number_of_values = 1
     )]
-    env: Option<Vec<(String, String)>>,
+    env: Option<Vec<Env>>,
 
-    #[structopt(
-        short = "E",
+    #[clap(
+        short = 'E',
         long = "env-file",
         help = "Load environment variables from a .env file in the current directory, in the form of KEY=VALUE"
     )]
     env_file: bool,
 
-    #[structopt(
-        short = "s",
+    #[clap(
+        short = 's',
         long = "scaling",
         help = "Scaling strategy, defaults to `manual`"
     )]
     scaling_strategy: Option<ScalingStrategy>,
 
-    #[structopt(
-        short = "i",
+    #[clap(
+        short = 'i',
         long = "containers",
-        help = "Number of containers to use, defaults to 1 if `scaling` is manual",
-        required_if("scaling", "manual")
+        help = "Number of containers to use, defaults to 1 if `scaling` is manual"
     )]
     containers: Option<u64>,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 #[structopt(about = "Deploy a new container")]
 pub struct DeployOptions {
-    #[structopt(
+    #[clap(
         name = "dir",
         help = "Directory to deploy, defaults to current directory"
     )]
     path: Option<PathBuf>,
 
-    #[structopt(flatten)]
+    #[clap(flatten)]
     config: DeploymentConfig,
 }
 

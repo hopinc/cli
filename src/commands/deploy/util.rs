@@ -175,6 +175,12 @@ pub async fn create_deployment_config(
         ScalingStrategy::default(),
     );
 
+    let container_type = ask_question_iter(
+        "Container type",
+        ContainerType::values(),
+        ContainerType::default(),
+    );
+
     let cpu = dialoguer::Input::<u64>::new()
         .with_prompt("CPUs")
         .default(default.resources.cpu)
@@ -189,12 +195,6 @@ pub async fn create_deployment_config(
         .unwrap();
 
     let ram = ask_question_iter("RAM", RamSizes::values(), RamSizes::default()).to_string();
-
-    let container_type = ask_question_iter(
-        "Container type",
-        ContainerType::values(),
-        ContainerType::default(),
-    );
 
     CreateDeployment {
         image: Image {

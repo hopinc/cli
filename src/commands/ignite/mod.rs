@@ -3,25 +3,25 @@ mod list;
 pub mod types;
 pub mod util;
 
-use structopt::StructOpt;
+use clap::{Parser, Subcommand};
 
 use self::delete::{handle_delete, DeleteOptions};
 use self::list::{handle_list, ListOptions};
 use crate::state::State;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Subcommand)]
 pub enum Commands {
     // Info(InfoOptions),
-    #[structopt(name = "ls", alias = "list")]
+    #[clap(name = "ls", alias = "list")]
     List(ListOptions),
-    #[structopt(name = "rm", alias = "delete")]
+    #[clap(name = "rm", alias = "delete")]
     Delete(DeleteOptions),
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "ignite", about = "Interact with Ignite containers")]
+#[derive(Debug, Parser)]
+#[clap(name = "ignite", about = "Interact with Ignite containers")]
 pub struct IgniteOptions {
-    #[structopt(subcommand)]
+    #[clap(subcommand)]
     pub commands: Commands,
 }
 

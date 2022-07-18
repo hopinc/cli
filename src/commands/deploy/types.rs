@@ -1,5 +1,9 @@
+use std::str::FromStr;
+
 use serde::Deserialize;
 use serde_json::Value;
+
+use super::util::parse_key_val;
 
 #[derive(Debug, Deserialize)]
 pub struct Data {
@@ -11,4 +15,18 @@ pub struct Data {
 pub struct Message {
     pub d: Value,
     pub e: String,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Env(pub String, pub String);
+
+impl FromStr for Env {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match parse_key_val(s) {
+            Ok((key, val)) => Ok(Env(key, val)),
+            Err(e) => Err(format!("Could not pase env value: {}", e)),
+        }
+    }
 }

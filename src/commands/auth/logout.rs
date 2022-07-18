@@ -1,11 +1,11 @@
-use structopt::StructOpt;
+use clap::Parser;
 
 use crate::done;
 use crate::state::State;
 use crate::store::context::Context;
 
-#[derive(Debug, StructOpt)]
-#[structopt(about = "Logout the current user")]
+#[derive(Debug, Parser)]
+#[clap(about = "Logout the current user")]
 pub struct LogoutOptions {}
 
 pub async fn hanndle_logout(

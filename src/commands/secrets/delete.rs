@@ -1,12 +1,12 @@
-use structopt::StructOpt;
+use clap::Parser;
 
 use crate::commands::secrets::types::Secrets;
 use crate::commands::secrets::util::validate_name;
 use crate::done;
 use crate::state::State;
 
-#[derive(Debug, StructOpt)]
-#[structopt(about = "Delete a secret")]
+#[derive(Debug, Parser)]
+#[clap(about = "Delete a secret")]
 pub struct DeleteOptions {
     #[structopt(name = "name", help = "Name of the secret")]
     pub name: Option<String>,

@@ -5,18 +5,18 @@ mod state;
 mod store;
 mod types;
 
+use clap::Parser;
 use commands::{handle_command, Commands};
 use state::{State, StateOptions};
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 #[structopt(name = "hop", about = "🐇 Interact with Hop via command line")]
 pub struct CLI {
-    #[structopt(subcommand)]
+    #[clap(subcommand)]
     pub commands: Commands,
 
-    #[structopt(
-        short = "p",
+    #[clap(
+        short = 'p',
         long = "project",
         help = "Namespace or ID of the project to use",
         global = true

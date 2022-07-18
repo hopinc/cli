@@ -1,11 +1,11 @@
-use structopt::StructOpt;
+use clap::Parser;
 
 use crate::commands::projects::util::format_projects;
 use crate::done;
 use crate::state::State;
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "switch", about = "Switch to a different project")]
+#[derive(Debug, Parser)]
+#[clap(name = "switch", about = "Switch to a different project")]
 pub struct SwitchOptions {}
 
 pub async fn handle_switch(

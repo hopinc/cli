@@ -1,8 +1,8 @@
 use std::convert::Infallible;
 
+use clap::Parser;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server};
-use structopt::StructOpt;
 use tokio::sync::mpsc::{channel, Sender};
 use tokio::task;
 
@@ -11,10 +11,10 @@ use crate::config::{PAT_FALLBACK_URL, WEB_AUTH_URL};
 use crate::state::State;
 use crate::{done, info};
 
-#[derive(Debug, StructOpt)]
-#[structopt(about = "Login to Hop")]
+#[derive(Debug, Parser)]
+#[clap(about = "Login to Hop")]
 pub struct LoginOptions {
-    #[structopt(long = "browserless", about = "Do not use a browser to login")]
+    #[clap(long = "browserless", help = "Do not use a browser to login")]
     pub browserless: bool,
 }
 

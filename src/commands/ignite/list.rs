@@ -1,10 +1,10 @@
-use structopt::StructOpt;
+use clap::Parser;
 
 use crate::commands::ignite::util::{format_deployments, get_deployments};
 use crate::state::State;
 
-#[derive(Debug, StructOpt)]
-#[structopt(about = "List all deployments")]
+#[derive(Debug, Parser)]
+#[clap(about = "List all deployments")]
 pub struct ListOptions {}
 
 pub async fn handle_list(_options: ListOptions, state: State) -> Result<(), std::io::Error> {

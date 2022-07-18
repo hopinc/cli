@@ -1,14 +1,14 @@
 use std::env::current_dir;
 use std::path::PathBuf;
 
-use structopt::StructOpt;
+use clap::Parser;
 
 use crate::commands::ignite::util::{format_deployments, get_deployments};
 use crate::state::State;
 use crate::store::hopfile::HopFile;
 use crate::{done, info};
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 #[structopt(about = "Link an existing deployment to a hopfile")]
 pub struct LinkOptions {
     #[structopt(
@@ -16,7 +16,7 @@ pub struct LinkOptions {
         help = "Directory to link, defaults to current directory"
     )]
     path: Option<PathBuf>,
-    #[structopt(short = "n", long = "name", help = "Name of the deployment")]
+    #[structopt(short = 'n', long = "name", help = "Name of the deployment")]
     name: Option<String>,
 }
 

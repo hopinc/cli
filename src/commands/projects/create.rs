@@ -1,19 +1,19 @@
+use clap::Parser;
 use serde::Serialize;
-use structopt::StructOpt;
 
 use super::types::{CreateResponse, ProjectRes};
 use crate::done;
 use crate::state::http::HttpClient;
 use crate::state::State;
 
-#[derive(Debug, StructOpt)]
-#[structopt(about = "Create a new project")]
+#[derive(Debug, Parser)]
+#[clap(about = "Create a new project")]
 pub struct CreateOptions {
-    #[structopt(name = "namespace", help = "Namespace of the project")]
+    #[clap(name = "namespace", help = "Namespace of the project")]
     namespace: String,
-    #[structopt(name = "name", help = "Name of the project")]
+    #[clap(name = "name", help = "Name of the project")]
     name: String,
-    #[structopt(short = "d", long = "default", help = "Set as default project")]
+    #[clap(short = 'd', long = "default", help = "Set as default project")]
     default: bool,
 }
 
