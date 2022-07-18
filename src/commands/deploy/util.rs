@@ -103,13 +103,16 @@ pub fn validate_deployment_name(name: String) -> bool {
     regex.is_match(&name)
 }
 
-pub fn create_deployment_config(
+pub async fn create_deployment_config(
     config: DeploymentConfig,
     namespace: String,
-    dirname: String,
+    dir: PathBuf,
 ) -> CreateDeployment {
     let default = CreateDeployment::default();
-    let name = config.name.clone().unwrap_or(dirname);
+    let name = config
+        .name
+        .clone()
+        .unwrap_or_else(|| dir.file_name().unwrap().to_str().unwrap().to_string());
 
     if config != DeploymentConfig::default() {
         let mut deployment = default;
@@ -140,6 +143,12 @@ pub fn create_deployment_config(
 
         if let Some(env) = config.env {
             deployment.env = env.iter().map(|kv| (kv.0.clone(), kv.1.clone())).collect();
+        }
+
+        if config.env_file {
+            deployment
+                .env
+                .extend(env_file_to_map(dir.join(".env")).await);
         }
 
         return deployment;
@@ -252,6 +261,33 @@ fn get_multiple_envs() -> HashMap<String, String> {
 
         if continue_.is_none() || !continue_.unwrap() {
             break;
+        }
+    }
+
+    env
+}
+
+async fn env_file_to_map(path: PathBuf) -> HashMap<String, String> {
+    let mut env = HashMap::new();
+
+    if !path.exists() {
+        panic!("Could not find .env file at {}", path.display());
+    }
+
+    let file = fs::read_to_string(path).await.unwrap();
+    let lines = file.lines();
+
+    for line in lines {
+        // ignore comments
+        if line.starts_with("#") {
+            continue;
+        }
+
+        match parse_key_val(line) {
+            Ok((key, value)) => {
+                env.insert(key, value);
+            }
+            Err(e) => warn!("Failed to parse env file line: {}", e),
         }
     }
 

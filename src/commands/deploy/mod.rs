@@ -1,17 +1,18 @@
-mod util;
+mod types;
+pub mod util;
 
 use std::env::current_dir;
 use std::path::PathBuf;
 
 use hyper::Method;
 use reqwest::multipart::{Form, Part};
-use serde::Deserialize;
-use serde_json::Value;
+
 use structopt::StructOpt;
 use tokio::fs;
 
 use self::util::{compress, parse_key_val};
 use super::ignite::types::RamSizes;
+use crate::commands::deploy::types::{Data, Message};
 use crate::commands::deploy::util::create_deployment_config;
 use crate::commands::ignite::types::{ContainerType, ScalingStrategy, SingleDeployment};
 use crate::config::HOP_BUILD_BASE_URL;
@@ -59,6 +60,13 @@ pub struct DeploymentConfig {
     env: Option<Vec<(String, String)>>,
 
     #[structopt(
+        short = "E",
+        long = "env-file",
+        help = "Load environment variables from a .env file in the current directory, in the form of KEY=VALUE"
+    )]
+    env_file: bool,
+
+    #[structopt(
         short = "s",
         long = "scaling",
         help = "Scaling strategy, defaults to `manual`"
@@ -104,7 +112,8 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
     let mut connection = state
         .ws
         .connect(state.ctx.me.clone().unwrap().leap_token.as_str())
-        .await;
+        .await
+        .expect("Could not connect to Leap Edge");
 
     info!("Attempting to deploy {}", dir.display());
 
@@ -160,11 +169,9 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
                 String::new(),
             );
 
-            // TODO: run a walkthrough to setup the deployment?
-            let dirname = dir.file_name().unwrap().to_str().unwrap().to_string();
-
             let deployment_config =
-                create_deployment_config(options.config, project.namespace.clone(), dirname);
+                create_deployment_config(options.config, project.namespace.clone(), dir.clone())
+                    .await;
 
             let deployment = state
                 .http
@@ -242,18 +249,6 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
 
     info!("Deleting archive...");
     fs::remove_file(packed).await?;
-
-    #[derive(Debug, Deserialize)]
-    struct Data {
-        d: Option<String>,
-        e: String,
-    }
-
-    #[derive(Debug, Deserialize)]
-    struct Message {
-        d: Value,
-        e: String,
-    }
 
     info!("From Hop builder:");
 

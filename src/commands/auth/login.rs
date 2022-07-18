@@ -6,6 +6,7 @@ use structopt::StructOpt;
 use tokio::sync::mpsc::{channel, Sender};
 use tokio::task;
 
+use crate::commands::deploy::util::parse_key_val;
 use crate::config::{PAT_FALLBACK_URL, WEB_AUTH_URL};
 use crate::state::State;
 use crate::{done, info};
@@ -24,10 +25,13 @@ async fn request_handler(
     let query = req.uri().query();
 
     // only send if it's an actual token
-    if query.is_some() {
+    if let Some(query) = query {
         // parse the query
         // since pat should be a URL safe string we can just split on '='
-        let query = querystring::querify(query.unwrap());
+        let query: Vec<(String, String)> = query
+            .split("&")
+            .map(|s| parse_key_val(s).unwrap())
+            .collect::<Vec<_>>();
 
         // if query has a key called "token"
         if let Some(token) = query.iter().find(|(k, _)| k.to_owned() == "token") {
@@ -92,7 +96,7 @@ pub async fn handle_login(options: LoginOptions, mut state: State) -> Result<(),
     let auth_url = format!(
         "{}?{}",
         WEB_AUTH_URL,
-        querystring::stringify(vec![("callback", &callback_url)])
+        vec!["callback", callback_url.as_str()].join("=")
     );
 
     // lunch a web server to handle the auth request
