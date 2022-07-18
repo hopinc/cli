@@ -1,5 +1,7 @@
 # Hop CLI
 
+[![Build and release](https://github.com/hopinc/hop_cli/actions/workflows/release.yml/badge.svg)](https://github.com/hopinc/hop_cli/actions/workflows/release.yml)
+
 The Hop CLI allows you to interface with Hop services through your command line. It can be used as a replacement for the Console.
 
 ## Installing
