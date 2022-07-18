@@ -92,7 +92,11 @@ impl HttpClient {
             request = request.header("Content-Type", content_type);
         }
 
-        let response = request.send().await.expect("Error sending request");
+        let response = request
+            .send()
+            .await
+            .map_err(|e| e.to_string())
+            .expect("Failed to send the request");
 
         self.handle_response(response).await
     }

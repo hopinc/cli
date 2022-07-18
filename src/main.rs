@@ -11,9 +11,9 @@ use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "hop", about = "🐇 Interact with Hop via command line")]
-struct CLI {
+pub struct CLI {
     #[structopt(subcommand)]
-    commands: Commands,
+    pub commands: Commands,
 
     #[structopt(
         short = "p",
@@ -21,7 +21,7 @@ struct CLI {
         help = "Namespace or ID of the project to use",
         global = true
     )]
-    project: Option<String>,
+    pub project: Option<String>,
 }
 
 #[tokio::main]

@@ -46,7 +46,7 @@ pub struct LEAuthParams {
 #[derive(Debug)]
 pub struct SocketChannels {
     send: mpsc::Sender<String>,
-    recv: mpsc::Receiver<Value>,
+    recv: mpsc::Receiver<String>,
 }
 
 #[derive(Debug)]
@@ -56,6 +56,9 @@ pub struct WebsocketClient {
     pub thread: Option<JoinHandle<()>>,
     channels: Option<SocketChannels>,
 }
+
+#[derive(Debug, Clone)]
+pub struct WebsocketError(String);
 
 impl WebsocketClient {
     pub fn new() -> Self {
@@ -69,9 +72,9 @@ impl WebsocketClient {
         }
     }
 
-    pub async fn connect(mut self, token: &str) -> Self {
+    pub async fn connect(mut self, token: &str) -> Result<Self, WebsocketError> {
         let (sender_outbound, mut receiver_outbound) = mpsc::channel::<String>(1);
-        let (sender_inbound, receiver_inbound) = mpsc::channel::<Value>(1);
+        let (sender_inbound, receiver_inbound) = mpsc::channel::<String>(1);
 
         // prepare client for sending / receiving messages
         self.auth = Some(LEAuthParams {
@@ -87,9 +90,7 @@ impl WebsocketClient {
 
         // start massive thread to get messages / deliver messages
         let thread = spawn(async move {
-            let (socket, _) = connect_async(HOP_LEAP_EDGE_URL)
-                .await
-                .expect("Error connecting to Hop Leap Edge");
+            let (socket, _) = connect_async(HOP_LEAP_EDGE_URL).await.unwrap();
 
             let (mut sender, mut receiver) = socket.split();
 
@@ -134,7 +135,7 @@ impl WebsocketClient {
                                     }
 
                                     SocketMessage { op: OpCodes::Dispatch, d: data } => {
-                                        match sender_inbound.send(data.unwrap()).await {
+                                        match sender_inbound.send(serde_json::to_string(&data).unwrap()).await {
                                             Ok(_) => {}
                                             // channel was closed before the message was delievered
                                             // no need to panic here
@@ -147,7 +148,7 @@ impl WebsocketClient {
                                 },
                                 // message recieved was not valid json / packed incorrectly
                                 Err(err) => {
-                                    panic!("Message error: {}", err)
+                                    panic!("Connection error, {}", err)
                                 }
                             },
 
@@ -187,7 +188,7 @@ impl WebsocketClient {
 
         self.thread = Some(thread);
 
-        self
+        Ok(self)
     }
 
     async fn parse_message<T>(message: Message) -> T
@@ -216,8 +217,15 @@ impl WebsocketClient {
     where
         T: serde::de::DeserializeOwned,
     {
-        let value = self.channels.as_mut().unwrap().recv.recv().await;
-        value.map(|v| serde_json::from_value(v).expect("Failed to parse message"))
+        match self.channels {
+            Some(ref mut channels) => match channels.recv.recv().await {
+                Some(message) => match message.as_str() {
+                    message => Some(serde_json::from_str(message).unwrap()),
+                },
+                None => None,
+            },
+            None => None,
+        }
     }
 
     pub async fn _send_message<T>(&mut self, message: T)
