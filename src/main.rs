@@ -1,3 +1,4 @@
+mod cli;
 mod commands;
 mod config;
 mod macros;
@@ -6,23 +7,9 @@ mod store;
 mod types;
 
 use clap::Parser;
-use commands::{handle_command, Commands};
+use cli::CLI;
+use commands::handle_command;
 use state::{State, StateOptions};
-
-#[derive(Debug, Parser)]
-#[structopt(name = "hop", about = "🐇 Interact with Hop via command line")]
-pub struct CLI {
-    #[clap(subcommand)]
-    pub commands: Commands,
-
-    #[clap(
-        short = 'p',
-        long = "project",
-        help = "Namespace or ID of the project to use",
-        global = true
-    )]
-    pub project: Option<String>,
-}
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
