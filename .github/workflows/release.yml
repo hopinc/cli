@@ -1,4 +1,4 @@
-name: Release new version
+name: Build and release
 
 on:
   release:
