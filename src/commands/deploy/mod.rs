@@ -1,4 +1,4 @@
-mod types;
+pub mod types;
 pub mod util;
 
 use std::env::current_dir;
@@ -10,76 +10,16 @@ use reqwest::multipart::{Form, Part};
 
 use tokio::fs;
 
-use self::types::Env;
 use self::util::compress;
-use super::ignite::types::RamSizes;
+use super::ignite::create::DeploymentConfig;
 use crate::commands::deploy::types::{Data, Message};
-use crate::commands::deploy::util::create_deployment_config;
-use crate::commands::ignite::types::{ContainerType, ScalingStrategy, SingleDeployment};
-use crate::config::HOP_BUILD_BASE_URL;
+use crate::commands::deploy::util::{create_deployment_config, env_file_to_map};
+use crate::commands::ignite::create::create_deployment;
+use crate::commands::ignite::types::SingleDeployment;
+use crate::config::{HOP_BUILD_BASE_URL, HOP_REGISTRY_URL};
 use crate::state::State;
 use crate::store::hopfile::HopFile;
 use crate::{done, info, warn};
-
-#[derive(Debug, Parser, Default, PartialEq)]
-pub struct DeploymentConfig {
-    #[clap(
-        short = 'n',
-        long = "name",
-        help = "Name of the deployment, defaults to the directory name"
-    )]
-    name: Option<String>,
-
-    #[clap(
-        short = 't',
-        long = "type",
-        help = "Type of the container, defaults to `ephemeral`"
-    )]
-    container_type: Option<ContainerType>,
-
-    #[clap(
-        short = 'c',
-        long = "cpu",
-        help = "The number of CPUs to use, defaults to 1"
-    )]
-    cpu: Option<u64>,
-
-    #[clap(
-        short = 'r',
-        long = "ram",
-        help = "Amount of RAM to use, defaults to 512MB"
-    )]
-    ram: Option<RamSizes>,
-
-    #[clap(
-        short = 'e',
-        long = "env",
-        help = "Environment variables to set, in the form of KEY=VALUE",
-        number_of_values = 1
-    )]
-    env: Option<Vec<Env>>,
-
-    #[clap(
-        short = 'E',
-        long = "env-file",
-        help = "Load environment variables from a .env file in the current directory, in the form of KEY=VALUE"
-    )]
-    env_file: bool,
-
-    #[clap(
-        short = 's',
-        long = "scaling",
-        help = "Scaling strategy, defaults to `manual`"
-    )]
-    scaling_strategy: Option<ScalingStrategy>,
-
-    #[clap(
-        short = 'i',
-        long = "containers",
-        help = "Number of containers to use, defaults to 1 if `scaling` is manual"
-    )]
-    containers: Option<u64>,
-}
 
 #[derive(Debug, Parser)]
 #[structopt(about = "Deploy a new container")]
@@ -92,6 +32,20 @@ pub struct DeployOptions {
 
     #[clap(flatten)]
     config: DeploymentConfig,
+
+    #[clap(
+        short = 'i',
+        long = "containers",
+        help = "Number of containers to use, defaults to 1 if `scaling` is manual"
+    )]
+    containers: Option<u64>,
+
+    #[clap(
+        short = 'E',
+        long = "env-file",
+        help = "Load environment variables from a .env file in the current directory, in the form of KEY=VALUE"
+    )]
+    pub envfile: bool,
 }
 
 pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), std::io::Error> {
@@ -168,28 +122,34 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
                 String::new(),
             );
 
-            let deployment_config =
-                create_deployment_config(options.config, project.namespace.clone(), dir.clone())
-                    .await;
+            let mut config = create_deployment_config(
+                options.config,
+                Some(
+                    dir.clone()
+                        .file_name()
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                        .to_string(),
+                ),
+            )
+            .await;
 
-            let deployment = state
-                .http
-                .request::<SingleDeployment>(
-                    "POST",
-                    format!(
-                        "/ignite/deployments?project={}",
-                        hopfile.config.project_id.clone()
-                    )
-                    .as_str(),
-                    Some((
-                        serde_json::to_string(&deployment_config).unwrap().into(),
-                        "application/json",
-                    )),
-                )
-                .await
-                .expect("Error while creating deployment")
-                .unwrap()
-                .deployment;
+            config.image.name =
+                format!("{}/{}/{}", HOP_REGISTRY_URL, project.namespace, config.name);
+
+            if options.envfile {
+                config
+                    .env
+                    .extend(env_file_to_map(dir.join("env.yml")).await);
+            }
+
+            let deployment = create_deployment(
+                state.http.clone(),
+                hopfile.config.project_id.clone(),
+                config,
+            )
+            .await;
 
             hopfile.config.deployment_id = deployment.id.clone();
 

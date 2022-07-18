@@ -6,12 +6,12 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(name = "switch", about = "Switch to a different project")]
-pub struct SwitchOptions {}
+pub struct SwitchOptions {
+    #[clap(name = "project", help = "Namespace or ID of the project to use")]
+    pub project: Option<String>,
+}
 
-pub async fn handle_switch(
-    _options: SwitchOptions,
-    mut state: State,
-) -> Result<(), std::io::Error> {
+pub async fn handle_switch(options: SwitchOptions, mut state: State) -> Result<(), std::io::Error> {
     let projects = state
         .ctx
         .me
@@ -23,15 +23,15 @@ pub async fn handle_switch(
         panic!("No projects found");
     }
 
-    let idx = match state.ctx.clone().project_override {
-        Some(project) => projects
-            .iter()
-            .position(|p| p.id == project)
-            .expect("Project not found"),
+    let project = match options.project.or(state.ctx.clone().project_override) {
+        Some(project) => state
+            .ctx
+            .clone()
+            .find_project_by_id_or_namespace_error(project),
         None => {
             let projects_fmt = format_projects(&projects, &state.ctx.default_project);
 
-            dialoguer::Select::new()
+            let idx = dialoguer::Select::new()
                 .with_prompt("Select a project to set as default")
                 .items(&projects_fmt)
                 .default(if let Some(id) = state.ctx.default_project {
@@ -41,11 +41,11 @@ pub async fn handle_switch(
                 })
                 .interact_opt()
                 .expect("Failed to select project")
-                .expect("No project selected")
+                .expect("No project selected");
+
+            projects[idx].clone()
         }
     };
-
-    let project = &projects[idx];
 
     state.ctx.default_project = Some(project.id.clone());
     state.ctx.save().await?;

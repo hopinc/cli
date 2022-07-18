@@ -11,11 +11,10 @@ use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
 use tokio_tar::Builder as TarBuilder;
 
-use super::DeploymentConfig;
+use crate::commands::ignite::create::DeploymentConfig;
 use crate::commands::ignite::types::{
-    ContainerType, CreateDeployment, Image, RamSizes, Resources, ScalingStrategy,
+    ContainerType, CreateDeployment, RamSizes, Resources, ScalingStrategy,
 };
-use crate::config::HOP_REGISTRY_URL;
 use crate::store::hopfile::VALID_HOP_FILENAMES;
 use crate::{info, warn};
 
@@ -105,50 +104,44 @@ pub fn validate_deployment_name(name: String) -> bool {
 
 pub async fn create_deployment_config(
     config: DeploymentConfig,
-    namespace: String,
-    dir: PathBuf,
+    fallback_name: Option<String>,
 ) -> CreateDeployment {
     let default = CreateDeployment::default();
-    let name = config
-        .name
-        .clone()
-        .unwrap_or_else(|| dir.file_name().unwrap().to_str().unwrap().to_string());
+    let name = config.name.clone();
 
     if config != DeploymentConfig::default() {
         let mut deployment = default;
 
-        if !validate_deployment_name(name.clone()) {
+        deployment.name =
+            name.expect("The argument '--name <NAME>' requires a value but none was supplied");
+
+        if !validate_deployment_name(deployment.name.clone()) {
             panic!("Invalid deployment name, must be alphanumeric and hyphens only");
         }
 
-        // update image name and deployment name accordingly
-        deployment.name = name.clone();
-        deployment.image.name = format!("{}/{}/{}", HOP_REGISTRY_URL, namespace, name);
+        deployment.container_type = config.container_type.expect(
+            "The argument '--type <CONTAINER_TYPE>' requires a value but none was supplied",
+        );
 
-        if let Some(container_strategy) = config.scaling_strategy {
-            deployment.container_strategy = container_strategy;
-        }
+        deployment.container_strategy = config.scaling_strategy.expect(
+            "The argument '--scaling <SCALING_STRATEGY>' requires a value but none was supplied",
+        );
 
-        if let Some(container_type) = config.container_type {
-            deployment.container_type = container_type;
-        }
+        deployment.resources.cpu = config
+            .cpu
+            .expect("The argument '--cpu <CPU>' requires a value but none was supplied");
 
-        if let Some(cpu) = config.cpu {
-            deployment.resources.cpu = cpu;
-        }
-
-        if let Some(ram) = config.ram {
-            deployment.resources.ram = ram.to_string();
-        }
+        deployment.resources.ram = config
+            .ram
+            .expect("The argument '--ram <RAM>' requires a value but none was supplied")
+            .to_string();
 
         if let Some(env) = config.env {
-            deployment.env = env.iter().map(|kv| (kv.0.clone(), kv.1.clone())).collect();
-        }
-
-        if config.env_file {
-            deployment
-                .env
-                .extend(env_file_to_map(dir.join(".env")).await);
+            deployment.env.extend(
+                env.iter()
+                    .map(|kv| (kv.0.clone(), kv.1.clone()))
+                    .collect::<Vec<(String, String)>>(),
+            );
         }
 
         return deployment;
@@ -158,7 +151,8 @@ pub async fn create_deployment_config(
 
     let name = dialoguer::Input::<String>::new()
         .with_prompt("Deployment name")
-        .default(name)
+        .default(fallback_name.clone().unwrap_or(String::new()))
+        .show_default(fallback_name.is_some())
         .validate_with(|name: &String| -> Result<(), &str> {
             if validate_deployment_name(name.to_string()) {
                 Ok(())
@@ -169,16 +163,16 @@ pub async fn create_deployment_config(
         .interact_text()
         .unwrap();
 
-    let container_strategy = ask_question_iter(
-        "Scaling strategy",
-        ScalingStrategy::values(),
-        ScalingStrategy::default(),
-    );
-
     let container_type = ask_question_iter(
         "Container type",
         ContainerType::values(),
         ContainerType::default(),
+    );
+
+    let container_strategy = ask_question_iter(
+        "Scaling strategy",
+        ScalingStrategy::values(),
+        ScalingStrategy::default(),
     );
 
     let cpu = dialoguer::Input::<u64>::new()
@@ -197,14 +191,7 @@ pub async fn create_deployment_config(
     let ram = ask_question_iter("RAM", RamSizes::values(), RamSizes::default()).to_string();
 
     CreateDeployment {
-        image: Image {
-            name: format!(
-                "{}/{}/{}",
-                HOP_REGISTRY_URL,
-                namespace.clone(),
-                name.clone()
-            ),
-        },
+        image: default.image,
         name,
         container_strategy,
         env: get_multiple_envs(),
@@ -267,7 +254,7 @@ fn get_multiple_envs() -> HashMap<String, String> {
     env
 }
 
-async fn env_file_to_map(path: PathBuf) -> HashMap<String, String> {
+pub async fn env_file_to_map(path: PathBuf) -> HashMap<String, String> {
     let mut env = HashMap::new();
 
     if !path.exists() {

@@ -103,7 +103,7 @@ impl FromStr for ScalingStrategy {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        serde_json::from_str(format!("\"{}\"", s.to_uppercase()).as_str())
+        serde_json::from_str(format!("\"{}\"", s.to_lowercase()).as_str())
             .map_err(|e| e.to_string())
     }
 }
@@ -116,7 +116,7 @@ impl ToString for ScalingStrategy {
 
 impl Default for ScalingStrategy {
     fn default() -> Self {
-        ScalingStrategy::Manual
+        ScalingStrategy::Autoscaled
     }
 }
 
@@ -151,7 +151,7 @@ impl FromStr for ContainerType {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        serde_json::from_str(format!("\"{}\"", s.to_uppercase()).as_str())
+        serde_json::from_str(format!("\"{}\"", s.to_lowercase()).as_str())
             .map_err(|e| e.to_string())
     }
 }
