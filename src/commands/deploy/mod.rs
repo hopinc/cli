@@ -7,19 +7,18 @@ use std::path::PathBuf;
 use clap::Parser;
 use hyper::Method;
 use reqwest::multipart::{Form, Part};
-
+use serde_json::Value;
 use tokio::fs;
 
 use self::util::compress;
 use super::ignite::create::DeploymentConfig;
-use crate::commands::deploy::types::{Data, Message};
+use crate::commands::deploy::types::{ContainerOptions, CreateContainers, Data, Message};
 use crate::commands::deploy::util::{create_deployment_config, env_file_to_map};
 use crate::commands::ignite::create::create_deployment;
 use crate::commands::ignite::types::SingleDeployment;
 use crate::config::{HOP_BUILD_BASE_URL, HOP_REGISTRY_URL};
 use crate::state::State;
 use crate::store::hopfile::HopFile;
-use crate::{done, info, warn};
 
 #[derive(Debug, Parser)]
 #[structopt(about = "Deploy a new container")]
@@ -34,18 +33,11 @@ pub struct DeployOptions {
     config: DeploymentConfig,
 
     #[clap(
-        short = 'i',
-        long = "containers",
-        help = "Number of containers to use, defaults to 1 if `scaling` is manual"
-    )]
-    containers: Option<u64>,
-
-    #[clap(
         short = 'E',
         long = "env-file",
         help = "Load environment variables from a .env file in the current directory, in the form of KEY=VALUE"
     )]
-    pub envfile: bool,
+    envfile: bool,
 }
 
 pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), std::io::Error> {
@@ -68,11 +60,13 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
         .await
         .expect("Could not connect to Leap Edge");
 
-    info!("Attempting to deploy {}", dir.display());
+    log::info!("Attempting to deploy {}", dir.display());
 
-    let deployment = match HopFile::find(dir.clone()).await {
+    let is_not_guided = options.config != DeploymentConfig::default();
+
+    let (deployment, container_options, existing) = match HopFile::find(dir.clone()).await {
         Some(hopfile) => {
-            info!("Found hopfile: {}", hopfile.path.display());
+            log::info!("Found hopfile: {}", hopfile.path.display());
 
             // TODO: possible update of deployment if it already exists?
             let deployment = state
@@ -93,26 +87,37 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
                 .find_project_by_id_or_namespace(hopfile.config.project_id)
                 .unwrap();
 
-            if options.config != DeploymentConfig::default() {
-                warn!("Deployment exists, skipping arguments");
+            if is_not_guided {
+                log::warn!("Deployment exists, skipping arguments");
             }
 
-            info!(
+            log::info!(
                 "Deploying to project {} /{} ({})",
-                project.name, project.namespace, project.id
+                project.name,
+                project.namespace,
+                project.id
             );
 
-            deployment
+            // TODO: update when autoscaling is supported
+            let container_options = ContainerOptions {
+                containers: Some(deployment.container_count.into()),
+                min_containers: None,
+                max_containers: None,
+            };
+
+            (deployment, container_options, true)
         }
 
         None => {
-            info!("No hopfile found, creating one");
+            log::info!("No hopfile found, creating one");
 
             let project = state.ctx.current_project_error();
 
-            info!(
+            log::info!(
                 "Deploying to project {} /{} ({})",
-                project.name, project.namespace, project.id
+                project.name,
+                project.namespace,
+                project.id
             );
 
             let mut hopfile = HopFile::new(
@@ -122,8 +127,9 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
                 String::new(),
             );
 
-            let mut config = create_deployment_config(
-                options.config,
+            let (mut deployment_config, container_options) = create_deployment_config(
+                options.config.clone(),
+                is_not_guided,
                 Some(
                     dir.clone()
                         .file_name()
@@ -135,19 +141,21 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
             )
             .await;
 
-            config.image.name =
-                format!("{}/{}/{}", HOP_REGISTRY_URL, project.namespace, config.name);
+            deployment_config.image.name = format!(
+                "{}/{}/{}",
+                HOP_REGISTRY_URL, project.namespace, deployment_config.name
+            );
 
             if options.envfile {
-                config
+                deployment_config
                     .env
-                    .extend(env_file_to_map(dir.join("env.yml")).await);
+                    .extend(env_file_to_map(dir.join(".env")).await);
             }
 
             let deployment = create_deployment(
                 state.http.clone(),
                 hopfile.config.project_id.clone(),
-                config,
+                deployment_config,
             )
             .await;
 
@@ -159,7 +167,7 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
                 .await
                 .expect("Could not save hopfile");
 
-            deployment
+            (deployment, container_options, false)
         }
     };
 
@@ -168,7 +176,7 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
         .await
         .expect("Could not compress");
 
-    info!("Packed to: {}", packed);
+    log::info!("Packed to: {}", packed);
 
     let bytes = fs::read(packed.clone())
         .await
@@ -181,7 +189,7 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
             .unwrap(),
     );
 
-    info!("Uploading...");
+    log::info!("Uploading...");
 
     let response = state
         .http
@@ -206,10 +214,10 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
         .await
         .expect("Failed to handle response");
 
-    info!("Deleting archive...");
+    log::info!("Deleting archive...");
     fs::remove_file(packed).await?;
 
-    info!("From Hop builder:");
+    log::info!("From Hop builder:");
 
     while let Some(data) = connection.recieve_message::<Message>().await {
         // build logs are sent only in DMs
@@ -227,7 +235,7 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
             "PUSH_SUCCESS" => {
                 connection.close().await;
                 println!("");
-                info!("Pushed successfully");
+                log::info!("Pushed successfully");
                 break;
             }
 
@@ -242,9 +250,30 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
         }
     }
 
-    done!("Pushed deployment `{}`", deployment.name);
+    log::info!("Pushed deployment `{}`", deployment.name);
 
-    // TODO: ask to deploy containers
+    if existing {
+        log::warn!("Rollouts are not supported yet");
+    } else {
+        let create_containers = CreateContainers {
+            count: container_options
+                .containers
+                .expect("type check: no container count"),
+        };
+
+        state
+            .http
+            .request::<Value>(
+                "POST",
+                format!("/ignite/deployments/{}/containers", deployment.id).as_str(),
+                Some((
+                    serde_json::to_string(&create_containers).unwrap().into(),
+                    "application/json",
+                )),
+            )
+            .await
+            .expect("Failed to create containers");
+    }
 
     Ok(())
 }

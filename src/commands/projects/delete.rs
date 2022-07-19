@@ -1,7 +1,6 @@
 use clap::Parser;
 
 use crate::commands::projects::util::format_projects;
-use crate::done;
 use crate::state::State;
 
 static CONFIRM_DELETE_PROJECT_MESSAGE: &str = "I am sure I want to delete the project named ";
@@ -83,7 +82,7 @@ pub async fn handle_delete(options: DeleteOptions, mut state: State) -> Result<(
         state.ctx.save().await?;
     }
 
-    done!("Project `{}` ({}) deleted", project.name, project.namespace);
+    log::info!("Project `{}` ({}) deleted", project.name, project.namespace);
 
     Ok(())
 }

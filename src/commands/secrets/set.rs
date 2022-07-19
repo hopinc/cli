@@ -2,7 +2,6 @@ use clap::Parser;
 
 use crate::commands::secrets::types::SecretResponse;
 use crate::commands::secrets::util::validate_name;
-use crate::done;
 use crate::state::State;
 
 #[derive(Debug, Parser)]
@@ -36,7 +35,7 @@ pub async fn handle_set(options: SetOptions, state: State) -> Result<(), std::io
         .unwrap()
         .secret;
 
-    done!("Set secret: {} ({})", secret.name, secret.id);
+    log::info!("Set secret: {} ({})", secret.name, secret.id);
 
     Ok(())
 }

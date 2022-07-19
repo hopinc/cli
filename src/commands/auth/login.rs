@@ -9,7 +9,6 @@ use tokio::task;
 use crate::commands::deploy::util::parse_key_val;
 use crate::config::{PAT_FALLBACK_URL, WEB_AUTH_URL};
 use crate::state::State;
-use crate::{done, info};
 
 #[derive(Debug, Parser)]
 #[clap(about = "Login to Hop")]
@@ -101,16 +100,16 @@ pub async fn handle_login(options: LoginOptions, mut state: State) -> Result<(),
 
     // lunch a web server to handle the auth request
     let token = if !options.browserless && webbrowser::open(&auth_url).is_ok() {
-        info!("Opening browser to: {}", auth_url);
+        log::info!("Opening browser to: {}", auth_url);
 
         web_auth(port)
             .await
             .expect("Error while starting web auth server")
     } else {
         if !options.browserless {
-            info!("Could not open web a browser.");
-            info!("Please provide a personal access token manually.");
-            info!("You can create one at {}", PAT_FALLBACK_URL);
+            log::info!("Could not open web a browser.");
+            log::info!("Please provide a personal access token manually.");
+            log::info!("You can create one at {}", PAT_FALLBACK_URL);
         }
 
         // falback to simpe input
@@ -136,7 +135,7 @@ pub async fn handle_login(options: LoginOptions, mut state: State) -> Result<(),
     state.ctx.save().await?;
 
     // output the login info
-    done!("Logged in as: `{}` ({})", me.user.username, me.user.email);
+    log::info!("Logged in as: `{}` ({})", me.user.username, me.user.email);
 
     Ok(())
 }

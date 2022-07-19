@@ -1,7 +1,6 @@
 use clap::Parser;
 
 use crate::commands::projects::util::format_projects;
-use crate::done;
 use crate::state::State;
 
 #[derive(Debug, Parser)]
@@ -50,7 +49,7 @@ pub async fn handle_switch(options: SwitchOptions, mut state: State) -> Result<(
     state.ctx.default_project = Some(project.id.clone());
     state.ctx.save().await?;
 
-    done!(
+    log::info!(
         "Switched to project {} /{} ({})",
         project.name,
         project.namespace,

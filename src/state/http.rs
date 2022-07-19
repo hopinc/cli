@@ -4,10 +4,6 @@ use reqwest::Client as AsyncClient;
 use crate::config::{HOP_API_BASE_URL, PLATFORM, VERSION};
 use crate::types::{Base, ErrorResponse};
 
-/// Request data for the API
-/// body, content_type
-type RequestData<'a> = (hyper::Body, &'a str);
-
 #[derive(Debug, Clone)]
 pub struct HttpClient {
     pub client: AsyncClient,
@@ -77,7 +73,7 @@ impl HttpClient {
         &self,
         method: &str,
         path: &str,
-        data: Option<RequestData<'_>>,
+        data: Option<(hyper::Body, &str)>,
     ) -> Result<Option<T>, String>
     where
         T: serde::de::DeserializeOwned + std::fmt::Debug,

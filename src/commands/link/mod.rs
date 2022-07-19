@@ -6,7 +6,6 @@ use clap::Parser;
 use crate::commands::ignite::util::{format_deployments, get_deployments};
 use crate::state::State;
 use crate::store::hopfile::HopFile;
-use crate::{done, info};
 
 #[derive(Debug, Parser)]
 #[structopt(about = "Link an existing deployment to a hopfile")]
@@ -40,9 +39,11 @@ pub async fn handle_link(options: LinkOptions, state: State) -> Result<(), std::
 
     let project = state.ctx.current_project_error();
 
-    info!(
+    log::info!(
         "Project: {} /{} ({})",
-        project.name, project.namespace, project.id
+        project.name,
+        project.namespace,
+        project.id
     );
 
     let deployments = get_deployments(state.http.clone(), project.id.clone()).await;
@@ -57,7 +58,7 @@ pub async fn handle_link(options: LinkOptions, state: State) -> Result<(), std::
                 .iter()
                 .find(|d| d.id == name_or_id || d.name == name_or_id)
                 .expect("Deployment not found");
-            info!("Deployment: {} ({})", deployment.name, deployment.id);
+            log::info!("Deployment: {} ({})", deployment.name, deployment.id);
 
             deployment
         }
@@ -80,7 +81,7 @@ pub async fn handle_link(options: LinkOptions, state: State) -> Result<(), std::
         .save()
         .await;
 
-    done!(
+    log::info!(
         "Deployment `{}` ({}) linked",
         deployment.name,
         deployment.id

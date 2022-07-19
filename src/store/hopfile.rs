@@ -4,8 +4,6 @@ use serde::{Deserialize, Serialize};
 use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
 
-use crate::info;
-
 pub static VALID_HOP_FILENAMES: &[&str] = &[
     "hop.yml",
     "hop.yaml",
@@ -115,7 +113,7 @@ impl HopFile {
 
         file.write_all(content.as_bytes()).await.ok()?;
 
-        info!("Saved hop file to {}", path.to_str().unwrap());
+        log::info!("Saved hop file to {}", path.to_str().unwrap());
 
         Some(self)
     }

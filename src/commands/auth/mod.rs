@@ -2,10 +2,11 @@ mod login;
 mod logout;
 pub mod types;
 
+use clap::{Parser, Subcommand};
+
 use self::login::{handle_login, LoginOptions};
 use self::logout::{hanndle_logout, LogoutOptions};
 use crate::state::State;
-use clap::{Parser, Subcommand};
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {

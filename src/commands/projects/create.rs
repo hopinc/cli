@@ -2,7 +2,6 @@ use clap::Parser;
 use serde::Serialize;
 
 use super::types::{CreateResponse, ProjectRes};
-use crate::done;
 use crate::state::http::HttpClient;
 use crate::state::State;
 
@@ -58,7 +57,7 @@ pub async fn handle_create(options: CreateOptions, mut state: State) -> Result<(
         state.ctx.save().await?;
     }
 
-    done!("Created project `{}` ({})", options.name, options.namespace);
+    log::info!("Created project `{}` ({})", options.name, options.namespace);
 
     Ok(())
 }

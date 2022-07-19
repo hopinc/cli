@@ -1,7 +1,6 @@
 use clap::Parser;
 
 use super::types::MultipleDeployments;
-use crate::done;
 use crate::state::State;
 
 #[derive(Debug, Parser)]
@@ -86,7 +85,7 @@ pub async fn handle_delete(options: DeleteOptions, state: State) -> Result<(), s
         .await
         .expect("Error while deleting deployment");
 
-    done!(
+    log::info!(
         "Deployment `{}` ({}) deleted",
         deployment.name,
         deployment.id

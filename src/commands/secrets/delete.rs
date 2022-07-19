@@ -2,7 +2,6 @@ use clap::Parser;
 
 use crate::commands::secrets::types::Secrets;
 use crate::commands::secrets::util::validate_name;
-use crate::done;
 use crate::state::State;
 
 #[derive(Debug, Parser)]
@@ -81,7 +80,7 @@ pub async fn handle_delete(options: DeleteOptions, state: State) -> Result<(), s
         .await
         .expect("Error while deleting secret");
 
-    done!("Secret `{}` deleted", secret_name);
+    log::info!("Secret `{}` deleted", secret_name);
 
     Ok(())
 }

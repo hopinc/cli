@@ -11,12 +11,12 @@ use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
 use tokio_tar::Builder as TarBuilder;
 
+use super::types::ContainerOptions;
 use crate::commands::ignite::create::DeploymentConfig;
 use crate::commands::ignite::types::{
     ContainerType, CreateDeployment, RamSizes, Resources, ScalingStrategy,
 };
 use crate::store::hopfile::VALID_HOP_FILENAMES;
-use crate::{info, warn};
 
 // default ignore list for tar files
 static DEFAULT_IGNORE_LIST: &[&str] = &[
@@ -43,14 +43,14 @@ pub async fn compress(id: String, base_dir: PathBuf) -> Result<String, std::io::
     // .gitignore / .hopignore
     let found_ignore = &find_ignore_files(base_dir.clone()).await;
 
-    info!("Finding files to compress...");
-    let files = match found_ignore {
-        Some(ignore_path) => gitignore::File::new(ignore_path)
-            .unwrap()
-            .included_files()
-            .unwrap(),
+    log::info!("Finding files to compress...");
+    let mut walker = match found_ignore {
+        Some(ignore_path) => ignore::WalkBuilder::new(ignore_path.clone())
+            .follow_links(false)
+            .add_custom_ignore_filename(VALID_IGNORE_FILENAMES[0])
+            .build(),
         None => {
-            warn!("No ignore file found, creating a .hopignore file");
+            log::warn!("No ignore file found, creating a .hopignore file");
 
             // create a new .hopignore file and add some default ignore patterns
             let mut file = File::create(base_dir.join(".hopignore")).await?;
@@ -58,22 +58,34 @@ pub async fn compress(id: String, base_dir: PathBuf) -> Result<String, std::io::
                 .await?;
             file.shutdown().await?;
 
-            gitignore::File::new(&base_dir.join(".hopignore").to_path_buf())
-                .unwrap()
-                .included_files()
-                .unwrap()
+            ignore::WalkBuilder::new(&base_dir.clone())
+                .follow_links(false)
+                .add_custom_ignore_filename(VALID_IGNORE_FILENAMES[0])
+                .build()
         }
     };
 
+    // skip first entry
+    walker.next();
+
     // add all found files to the tarball
-    for entry in files {
-        if VALID_HOP_FILENAMES.contains(&entry.file_name().unwrap().to_str().unwrap()) {
-            continue;
+    for entry in walker {
+        match entry {
+            Ok(entry) => {
+                log::debug!("Adding {} to tarball", entry.path().display());
+
+                if VALID_HOP_FILENAMES.contains(&entry.file_name().to_str().unwrap()) {
+                    continue;
+                }
+
+                let path = entry.path().strip_prefix(&base_dir).unwrap().to_owned();
+
+                archive.append_path_with_name(entry.path(), path).await?;
+            }
+            Err(err) => {
+                log::warn!("Error walking: {}", err);
+            }
         }
-
-        let path = entry.as_path().strip_prefix(&base_dir).unwrap().to_owned();
-
-        archive.append_path_with_name(entry.as_path(), path).await?;
     }
 
     let mut buff = archive.into_inner().await?;
@@ -86,9 +98,9 @@ pub async fn compress(id: String, base_dir: PathBuf) -> Result<String, std::io::
 
 async fn find_ignore_files(path: PathBuf) -> Option<PathBuf> {
     for filename in VALID_IGNORE_FILENAMES {
-        let path = path.clone().join(filename);
+        let suffixed_path = path.clone().join(filename);
 
-        if fs::metadata(&path).await.is_ok() {
+        if fs::metadata(&suffixed_path).await.is_ok() {
             return Some(path);
         }
     }
@@ -104,50 +116,80 @@ pub fn validate_deployment_name(name: String) -> bool {
 
 pub async fn create_deployment_config(
     config: DeploymentConfig,
+    is_not_guided: bool,
     fallback_name: Option<String>,
-) -> CreateDeployment {
+) -> (CreateDeployment, ContainerOptions) {
     let default = CreateDeployment::default();
     let name = config.name.clone();
 
-    if config != DeploymentConfig::default() {
-        let mut deployment = default;
+    if is_not_guided {
+        let mut deployment_config = default;
 
-        deployment.name =
+        deployment_config.name =
             name.expect("The argument '--name <NAME>' requires a value but none was supplied");
 
-        if !validate_deployment_name(deployment.name.clone()) {
+        if !validate_deployment_name(deployment_config.name.clone()) {
             panic!("Invalid deployment name, must be alphanumeric and hyphens only");
         }
 
-        deployment.container_type = config.container_type.expect(
+        deployment_config.container_type = config.container_type.expect(
             "The argument '--type <CONTAINER_TYPE>' requires a value but none was supplied",
         );
 
-        deployment.container_strategy = config.scaling_strategy.expect(
+        deployment_config.container_strategy = config.scaling_strategy.expect(
             "The argument '--scaling <SCALING_STRATEGY>' requires a value but none was supplied",
         );
 
-        deployment.resources.cpu = config
+        let mut container_options = ContainerOptions {
+            containers: None,
+            min_containers: None,
+            max_containers: None,
+        };
+
+        if deployment_config.container_strategy == ScalingStrategy::Autoscaled {
+            container_options.min_containers = Some(
+                config.min_containers
+                    .expect("The argument '--min-containers <MIN_CONTAINERS>' requires a value but none was supplied"),
+            );
+            container_options.max_containers = Some(
+                config.max_containers
+                    .expect("The argument '--max-containers <MAX_CONTAINERS>' requires a value but none was supplied"),
+            );
+        } else {
+            container_options.containers = Some(config.containers.expect(
+                "The argument '--containers <CONTAINERS>' requires a value but none was supplied",
+            ));
+        }
+
+        deployment_config.resources.cpu = config
             .cpu
             .expect("The argument '--cpu <CPU>' requires a value but none was supplied");
 
-        deployment.resources.ram = config
+        if deployment_config.resources.cpu < 1 {
+            panic!("The argument '--cpu <CPU>' must be at least 1");
+        }
+
+        if deployment_config.resources.cpu > 32 {
+            panic!("The argument '--cpu <CPU>' must be less than or equal to 32");
+        }
+
+        deployment_config.resources.ram = config
             .ram
             .expect("The argument '--ram <RAM>' requires a value but none was supplied")
             .to_string();
 
         if let Some(env) = config.env {
-            deployment.env.extend(
+            deployment_config.env.extend(
                 env.iter()
                     .map(|kv| (kv.0.clone(), kv.1.clone()))
                     .collect::<Vec<(String, String)>>(),
             );
         }
 
-        return deployment;
+        return (deployment_config, container_options);
     }
 
-    info!("No config provided, running interactive mode");
+    log::info!("No config provided, running interactive mode");
 
     let name = dialoguer::Input::<String>::new()
         .with_prompt("Deployment name")
@@ -175,6 +217,64 @@ pub async fn create_deployment_config(
         ScalingStrategy::default(),
     );
 
+    let mut container_options = ContainerOptions {
+        containers: None,
+        min_containers: None,
+        max_containers: None,
+    };
+
+    if container_strategy == ScalingStrategy::Autoscaled {
+        container_options.min_containers = Some(
+            dialoguer::Input::<u64>::new()
+                .with_prompt("Minimum container ammount")
+                .default(1)
+                .validate_with(|containers: &u64| -> Result<(), &str> {
+                    if *containers > 0 {
+                        Ok(())
+                    } else if *containers > 10 {
+                        Err("Container ammount must be less than or equal to 10")
+                    } else {
+                        Err("Container ammount must be greater than 0")
+                    }
+                })
+                .interact()
+                .expect("Failed to get minimum containers"),
+        );
+        container_options.max_containers = Some(
+            dialoguer::Input::<u64>::new()
+                .with_prompt("Maximum container ammount")
+                .default(10)
+                .validate_with(|containers: &u64| -> Result<(), &str> {
+                    if *containers > 0 {
+                        Ok(())
+                    } else if *containers > 10 {
+                        Err("Container ammount must be less than or equal to 10")
+                    } else {
+                        Err("Container ammount must be greater than 0")
+                    }
+                })
+                .interact()
+                .expect("Failed to get maximum containers"),
+        );
+    } else {
+        container_options.containers = Some(
+            dialoguer::Input::<u64>::new()
+                .with_prompt("Container ammount")
+                .default(1)
+                .validate_with(|containers: &u64| -> Result<(), &str> {
+                    if *containers < 1 {
+                        Err("Container ammount must be at least 1")
+                    } else if *containers > 10 {
+                        Err("Container ammount must be less than or equal to 10")
+                    } else {
+                        Ok(())
+                    }
+                })
+                .interact()
+                .expect("Failed to get containers"),
+        );
+    }
+
     let cpu = dialoguer::Input::<u64>::new()
         .with_prompt("CPUs")
         .default(default.resources.cpu)
@@ -190,18 +290,21 @@ pub async fn create_deployment_config(
 
     let ram = ask_question_iter("RAM", RamSizes::values(), RamSizes::default()).to_string();
 
-    CreateDeployment {
-        image: default.image,
-        name,
-        container_strategy,
-        env: get_multiple_envs(),
-        resources: Resources {
-            cpu,
-            ram,
-            vgpu: vec![],
+    (
+        CreateDeployment {
+            image: default.image,
+            name,
+            container_strategy,
+            env: get_multiple_envs(),
+            resources: Resources {
+                cpu,
+                ram,
+                vgpu: vec![],
+            },
+            container_type,
         },
-        container_type,
-    }
+        container_options,
+    )
 }
 
 pub fn parse_key_val<T, U>(s: &str) -> Result<(T, U), Box<dyn Error>>
@@ -274,7 +377,7 @@ pub async fn env_file_to_map(path: PathBuf) -> HashMap<String, String> {
             Ok((key, value)) => {
                 env.insert(key, value);
             }
-            Err(e) => warn!("Failed to parse env file line: {}", e),
+            Err(e) => log::warn!("Failed to parse env file line: {}", e),
         }
     }
 

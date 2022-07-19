@@ -1,5 +1,6 @@
-use super::types::Project;
 use console::style;
+
+use super::types::Project;
 
 pub fn format_projects(projects: &Vec<Project>, default: &Option<String>) -> Vec<String> {
     projects

@@ -1,6 +1,5 @@
 use clap::Parser;
 
-use crate::done;
 use crate::state::State;
 use crate::store::context::Context;
 
@@ -26,7 +25,7 @@ pub async fn hanndle_logout(
     state.auth.authorized.remove(&user_id.unwrap());
     state.auth.save().await?;
 
-    done!("You have been logged out");
+    log::info!("You have been logged out");
 
     Ok(())
 }
