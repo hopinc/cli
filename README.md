@@ -24,7 +24,7 @@ hop auth login
 
 A browser window will open the Hop Console and prompt you to allow the CLI to connect to your account. Once done, you will be redirected back.
 
-That's all! You can now start using the CLi.
+That's all! You can now start using the CLI.
 
 ## Usage
 
