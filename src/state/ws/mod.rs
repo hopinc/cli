@@ -19,8 +19,8 @@ use tokio_tungstenite::tungstenite::protocol::Message;
 
 #[derive(Debug)]
 pub struct WebsocketClient {
-    pub auth: Option<LEAuthParams>,
-    pub thread: Option<JoinHandle<()>>,
+    auth: Option<LEAuthParams>,
+    thread: Option<JoinHandle<()>>,
     channels: Option<SocketChannels>,
     last_heartbeat_acknowledged: bool,
     heartbeat_instants: (Option<Instant>, Option<Instant>),
@@ -247,22 +247,25 @@ impl WebsocketClient {
         }
     }
 
-    pub async fn _send_message<T>(&mut self, message: T)
+    // TODO: remove when channels are implemented
+    #[allow(dead_code)]
+    pub async fn send_message<T>(&mut self, message: T) -> Result<(), Box<dyn std::error::Error>>
     where
-        T: serde::ser::Serialize + std::fmt::Debug,
+        T: serde::Serialize,
     {
-        if self.channels.is_none() {
-            panic!("Client not connected");
-        }
+        match self.channels {
+            Some(ref mut channels) => {
+                let message = serde_json::to_string(&message).unwrap();
 
-        let message = serde_json::to_string(&message).unwrap();
-        self.channels
-            .as_mut()
-            .unwrap()
-            .send
-            .send(message)
-            .await
-            .unwrap();
+                channels.send.send(message).await?;
+
+                Ok(())
+            }
+            None => Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Not connected",
+            ))),
+        }
     }
 
     pub async fn close(&mut self) {
