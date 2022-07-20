@@ -2,11 +2,11 @@
 
 [![Build and release](https://github.com/hopinc/hop_cli/actions/workflows/release.yml/badge.svg)](https://github.com/hopinc/hop_cli/actions/workflows/release.yml)
 
-The Hop CLI allows you to interface with Hop services through your command line. It can be used as a replacement for the Console.
+The Hop CLI allows you to interface with Hop services through your command line. It can be used as a replacement for the [Console](https://console.hop.io/).
 
-## Installing
+## Installation
 
-During development, the Hop CLI can only be installed by directly compiling the binary on your machine. To do this, you'll first need to install [Rust](https://rust-lang.org). Then, once you've cloned the repository, you can execute this command within the directory:
+During development, the Hop CLI can only be installed by directly compiling the binary on your machine. To do this, you'll first need to install [Rust](https://www.rust-lang.org/tools/install). Then, once you've cloned the repository, you can execute this command within the directory:
 
 ```bash
 cargo install --path .
@@ -36,7 +36,7 @@ You can set a default project to use which will automatically be applied to ever
 hop projects switch
 ```
 
-Even when you have a default set, however, you can override it by passing the `--project` argument to a command with the project's namespace. For example: `hop deploy --project api`.
+You can override it by passing the `--project` argument. For example: `hop deploy --project api`.
 
 ### Deploying
 
@@ -46,4 +46,4 @@ To deploy a project directory, first navigate to the directory through `cd` and 
 hop deploy
 ```
 
-This will walk you through the steps needed to create a deployment, unless you already have a `hop.json` within the current directory. Then, the directory will be uploaded to our build servers and deployed to Hop!
+This will deploy the project to Hop, or create a new one if you don't have a Hopfile (`hop.yml`) already.
