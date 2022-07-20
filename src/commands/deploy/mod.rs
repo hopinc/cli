@@ -56,7 +56,7 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
 
     let mut connection = state
         .ws
-        .connect(state.ctx.me.clone().unwrap().leap_token.as_str())
+        .connect()
         .await
         .expect("Could not connect to Leap Edge");
 

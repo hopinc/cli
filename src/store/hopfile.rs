@@ -16,7 +16,7 @@ pub static VALID_HOP_FILENAMES: &[&str] = &[
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct HopFile {
-    pub version: u64,
+    pub version: u8,
     pub config: HopFileConfigV1,
     #[serde(skip)]
     pub path: PathBuf,

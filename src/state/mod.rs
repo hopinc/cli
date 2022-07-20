@@ -72,5 +72,7 @@ impl State {
 
         // get current user to global
         self.ctx.me = Some(response.clone());
+
+        self.ws.update_token(response.leap_token);
     }
 }

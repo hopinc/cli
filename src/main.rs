@@ -9,11 +9,11 @@ use crate::commands::Commands;
 use clap::Parser;
 use commands::handle_command;
 use fern::colors::{Color, ColoredLevelConfig};
-use log::LevelFilter;
+use log::{Level, LevelFilter};
 use state::{State, StateOptions};
 
 #[derive(Debug, Parser)]
-#[structopt(name = "hop", about = "🐇 Interact with Hop via command line")]
+#[structopt(name = "hop", about = "🐇 Interact with Hop via command line", version)]
 pub struct CLI {
     #[clap(subcommand)]
     pub commands: Commands,
@@ -51,11 +51,22 @@ async fn main() -> Result<(), std::io::Error> {
 
     fern::Dispatch::new()
         .format(move |out, message, record| {
-            out.finish(format_args!(
-                "{}: {}",
-                colors.color(record.level()).to_string().to_lowercase(),
-                message
-            ))
+            let level = record.level();
+
+            match level {
+                Level::Debug => out.finish(format_args!(
+                    "{} [{}]: {}",
+                    colors.color(Level::Debug).to_string().to_lowercase(),
+                    record.target(),
+                    message
+                )),
+
+                level => out.finish(format_args!(
+                    "{}: {}",
+                    colors.color(level).to_string().to_lowercase(),
+                    message
+                )),
+            }
         })
         .level(if cli.verbose {
             LevelFilter::Debug
