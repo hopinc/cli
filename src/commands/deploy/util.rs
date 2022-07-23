@@ -1,15 +1,8 @@
 use std::collections::HashMap;
 use std::env::temp_dir;
 use std::error::Error;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::vec;
-
-use async_compression::tokio::write::GzipEncoder;
-use regex::Regex;
-use serde::Serialize;
-use tokio::fs::{self, File};
-use tokio::io::AsyncWriteExt;
-use tokio_tar::Builder as TarBuilder;
 
 use super::types::ContainerOptions;
 use crate::commands::ignite::create::DeploymentConfig;
@@ -17,21 +10,27 @@ use crate::commands::ignite::types::{
     ContainerType, CreateDeployment, RamSizes, Resources, ScalingStrategy,
 };
 use crate::store::hopfile::VALID_HOP_FILENAMES;
+use async_compression::tokio::write::GzipEncoder;
+use ignore::WalkBuilder;
+use regex::Regex;
+use serde::Serialize;
+use tokio::fs::{self, File};
+use tokio::io::AsyncWriteExt;
+use tokio_tar::Builder as TarBuilder;
 
 // default ignore list for tar files
 static DEFAULT_IGNORE_LIST: &[&str] = &[
-    "/.github",
-    ".gitignore",
+    ".git",
+    ".github",
     ".gitmodules",
     ".DS_Store",
-    "/.idea",
-    "/.vscode",
+    ".idea",
+    ".vscode",
 ];
-
-static VALID_IGNORE_FILENAMES: &[&str] = &[".hopignore", ".gitignore"];
 
 // compress stuff
 pub async fn compress(id: String, base_dir: PathBuf) -> Result<String, std::io::Error> {
+    let base_folder_name = Path::new(base_dir.file_name().unwrap());
     let archive_path = temp_dir().join(format!("hop_{}.tar.gz", id));
 
     // tarball gunzip stuff
@@ -40,33 +39,14 @@ pub async fn compress(id: String, base_dir: PathBuf) -> Result<String, std::io::
     let mut archive = TarBuilder::new(writer);
     archive.follow_symlinks(true);
 
-    // .gitignore / .hopignore
-    let found_ignore = &find_ignore_files(base_dir.clone()).await;
-
     log::info!("Finding files to compress...");
-    let mut walker = match found_ignore {
-        Some(ignore_path) => ignore::WalkBuilder::new(ignore_path.clone())
-            .follow_links(false)
-            .add_custom_ignore_filename(VALID_IGNORE_FILENAMES[0])
-            .build(),
-        None => {
-            log::warn!("No ignore file found, creating a .hopignore file");
 
-            // create a new .hopignore file and add some default ignore patterns
-            let mut file = File::create(base_dir.join(".hopignore")).await?;
-            file.write_all(DEFAULT_IGNORE_LIST.join("\n").as_bytes())
-                .await?;
-            file.shutdown().await?;
+    let mut walker = WalkBuilder::new(&base_dir.clone());
+    walker.add_ignore(create_global_ignore_file().await);
+    walker.add_custom_ignore_filename(".hopignore");
+    walker.hidden(false).follow_links(true);
 
-            ignore::WalkBuilder::new(&base_dir.clone())
-                .follow_links(false)
-                .add_custom_ignore_filename(VALID_IGNORE_FILENAMES[0])
-                .build()
-        }
-    };
-
-    // skip first entry
-    walker.next();
+    let walker = walker.build();
 
     // add all found files to the tarball
     for entry in walker {
@@ -80,7 +60,9 @@ pub async fn compress(id: String, base_dir: PathBuf) -> Result<String, std::io::
 
                 let path = entry.path().strip_prefix(&base_dir).unwrap().to_owned();
 
-                archive.append_path_with_name(entry.path(), path).await?;
+                archive
+                    .append_path_with_name(entry.path(), base_folder_name.clone().join(&path))
+                    .await?;
             }
             Err(err) => {
                 log::warn!("Error walking: {}", err);
@@ -96,16 +78,21 @@ pub async fn compress(id: String, base_dir: PathBuf) -> Result<String, std::io::
     Ok(archive_path.to_str().unwrap().into())
 }
 
-async fn find_ignore_files(path: PathBuf) -> Option<PathBuf> {
-    for filename in VALID_IGNORE_FILENAMES {
-        let suffixed_path = path.clone().join(filename);
+async fn create_global_ignore_file() -> PathBuf {
+    let path = temp_dir().join(".hopignore");
+    let mut file = File::create(path.clone())
+        .await
+        .expect("Could not create global ignore file");
 
-        if fs::metadata(&suffixed_path).await.is_ok() {
-            return Some(path);
-        }
-    }
+    file.write_all(DEFAULT_IGNORE_LIST.join("\n").as_bytes())
+        .await
+        .expect("Could not write to global ignore file");
 
-    None
+    file.shutdown()
+        .await
+        .expect("Could not close global ignore file");
+
+    path
 }
 
 pub fn validate_deployment_name(name: String) -> bool {
@@ -125,8 +112,9 @@ pub async fn create_deployment_config(
     if is_not_guided {
         let mut deployment_config = default;
 
-        deployment_config.name =
-            name.expect("The argument '--name <NAME>' requires a value but none was supplied");
+        deployment_config.name = name
+            .expect("The argument '--name <NAME>' requires a value but none was supplied")
+            .to_lowercase();
 
         if !validate_deployment_name(deployment_config.name.clone()) {
             panic!("Invalid deployment name, must be alphanumeric and hyphens only");

@@ -181,6 +181,7 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
     let bytes = fs::read(packed.clone())
         .await
         .expect("Could not read packed file");
+
     let multipart = Form::new().part(
         "file",
         Part::bytes(bytes)

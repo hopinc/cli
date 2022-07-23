@@ -95,7 +95,7 @@ impl Default for Resources {
 pub enum ScalingStrategy {
     #[serde(rename = "manual")]
     Manual,
-    #[serde(rename = "autoscaled")]
+    #[serde(rename = "autoscale")]
     Autoscaled,
 }
 
