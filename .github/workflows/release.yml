@@ -11,6 +11,8 @@ jobs:
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.name }}
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v2
@@ -100,14 +102,14 @@ jobs:
         run: |
           cd target/${{ matrix.target }}/release
           strip hop.exe
-          7z a ../../../hop-${{ needs.create-release.outputs.tag.name }}-${{ matrix.target }}.zip hop.exe
+          7z a ../../../hop-${{ needs.create-release.outputs.tag }}-${{ matrix.target }}.zip hop.exe
           cd -
       - name: Prepare binaries [*nix]
         if: matrix.os != 'windows-latest'
         run: |
           cd target/${{ matrix.target }}/release
           strip hop || true
-          tar czvf ../../../hop-${{ needs.create-release.outputs.tag.name }}-${{ matrix.target }}.tar.gz hop
+          tar czvf ../../../hop-${{ needs.create-release.outputs.tag }}-${{ matrix.target }}.tar.gz hop
           cd -
 
       - name: Upload release archive
@@ -115,5 +117,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ needs.create-release.outputs.tag.name }}
-          files: hop-${{ needs.create-release.outputs.tag.name }}-${{ matrix.target }}*
+          tag_name: ${{ needs.create-release.outputs.tag }}
+          files: hop-${{ needs.create-release.outputs.tag }}-${{ matrix.target }}*
