@@ -89,7 +89,7 @@ jobs:
 
       - name: Add OPENSSL_DIR to environment
         if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: /
+        run: |
           echo "OPENSSL_LIB_DIR=/usr/lib" >> $GITHUB_ENV
           echo "OPENSSL_INCLUDE_DIR=/usr/include/openssl" >> $GITHUB_ENV
 
