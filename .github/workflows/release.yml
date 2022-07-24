@@ -94,6 +94,12 @@ jobs:
           args: --release --locked --target ${{ matrix.target }}
           use-cross: ${{ matrix.os == 'ubuntu-latest' }}
 
+      - name: Add OPENSSL_DIR to environment
+          if: ${{ matrix.os == 'ubuntu-latest' }}
+          env:
+            OPENSSL_LIB_DIR: /usr/lib
+            OPENSSL_INCLUDE_DIR: /usr/include/openssl
+
       - name: Prepare binaries [Windows]
         if: matrix.os == 'windows-latest'
         run: |
@@ -101,7 +107,7 @@ jobs:
           strip hop.exe
           7z a ../../../hop-${{ needs.create-release.outputs.tag.name }}-${{ matrix.target }}.zip hop.exe
           cd -
-      - name: Prepare binaries [-linux]
+      - name: Prepare binaries [*nix]
         if: matrix.os != 'windows-latest'
         run: |
           cd target/${{ matrix.target }}/release
