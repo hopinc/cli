@@ -67,8 +67,9 @@ jobs:
           - target: i686-pc-windows-msvc
             os: windows-latest
 
-          - target: aarch64-pc-windows-msvc
-            os: windows-latest
+          # ARM WINDOWS xD
+          # - target: aarch64-pc-windows-msvc
+          #   os: windows-latest
 
           - target: x86_64-unknown-freebsd
             os: ubuntu-latest
