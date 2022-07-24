@@ -96,9 +96,9 @@ jobs:
 
       - name: Add OPENSSL_DIR to environment
         if: ${{ matrix.os == 'ubuntu-latest' }}
-        env:
-          OPENSSL_LIB_DIR: /usr/lib
-          OPENSSL_INCLUDE_DIR: /usr/include/openssl
+        run: /
+          echo "/usr/lib" >> $OPENSSL_LIB_DIR
+          echo "/usr/include/openssl" >> $OPENSSL_INCLUDE_DIR
 
       - name: Prepare binaries [Windows]
         if: matrix.os == 'windows-latest'
