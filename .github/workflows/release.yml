@@ -87,12 +87,6 @@ jobs:
           profile: minimal
           override: true
 
-      - name: Add OPENSSL_DIR to environment
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: |
-          echo "OPENSSL_LIB_DIR=/usr/lib" >> $GITHUB_ENV
-          echo "OPENSSL_INCLUDE_DIR=/usr/include/openssl" >> $GITHUB_ENV
-
       - name: Build release binary
         uses: actions-rs/cargo@v1
         with:
