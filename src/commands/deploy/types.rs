@@ -6,8 +6,14 @@ use serde_json::Value;
 use super::util::parse_key_val;
 
 #[derive(Debug, Deserialize)]
-pub struct Data {
-    pub d: Option<String>,
+pub struct EventData {
+    pub progress: Option<String>,
+    pub deployment_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Event {
+    pub d: Option<EventData>,
     pub e: String,
 }
 

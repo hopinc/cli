@@ -11,11 +11,12 @@ use serde_json::Value;
 use tokio::fs;
 
 use self::util::compress;
-use super::ignite::create::DeploymentConfig;
-use crate::commands::deploy::types::{ContainerOptions, CreateContainers, Data, Message};
+use super::ignite::{
+    create::{create_deployment, DeploymentConfig},
+    types::SingleDeployment,
+};
+use crate::commands::deploy::types::{ContainerOptions, CreateContainers, Event, Message};
 use crate::commands::deploy::util::{create_deployment_config, env_file_to_map};
-use crate::commands::ignite::create::create_deployment;
-use crate::commands::ignite::types::SingleDeployment;
 use crate::config::{HOP_BUILD_BASE_URL, HOP_REGISTRY_URL};
 use crate::state::State;
 use crate::store::hopfile::HopFile;
@@ -226,13 +227,21 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
             continue;
         }
 
-        let data: Data = serde_json::from_value(data.d).unwrap();
+        let build_event: Event = serde_json::from_value(data.d).unwrap();
 
-        if let Some(data) = data.d {
-            print!("{}", data);
-        }
+        let build_data = if build_event.d.is_none() {
+            continue;
+        } else {
+            build_event.d.unwrap()
+        };
 
-        match data.e.as_str() {
+        match build_event.e.as_str() {
+            "BUILD_PROGRESS" => {
+                if let Some(progress) = build_data.progress {
+                    print!("{}", progress)
+                }
+            }
+
             "PUSH_SUCCESS" => {
                 connection.close().await;
                 println!("");

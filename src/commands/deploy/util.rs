@@ -30,7 +30,7 @@ static DEFAULT_IGNORE_LIST: &[&str] = &[
 
 // compress stuff
 pub async fn compress(id: String, base_dir: PathBuf) -> Result<String, std::io::Error> {
-    let base_folder_name = Path::new(base_dir.file_name().unwrap());
+    let base_folder_name = Path::new(&id);
     let archive_path = temp_dir().join(format!("hop_{}.tar.gz", id));
 
     // tarball gunzip stuff
