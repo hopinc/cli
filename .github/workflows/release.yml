@@ -60,7 +60,7 @@ jobs:
             os: macOS-latest
             platform: x86_64-Darwin
 
-          - target: aarch64-apple-Darwin
+          - target: aarch64-apple-darwin
             os: macOS-latest
             platform: aarch64-Darwin
 
@@ -79,6 +79,7 @@ jobs:
 
           - target: x86_64-unknown-freebsd
             os: ubuntu-latest
+            platform: x86_64-FreeBSD
 
     steps:
       - name: Checkout repository
