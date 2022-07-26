@@ -11,8 +11,6 @@ jobs:
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
-    outputs:
-      tag: ${{ steps.tag.outputs.name }}
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v2
@@ -42,36 +40,42 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-latest
-
           - target: x86_64-unknown-linux-musl
             os: ubuntu-latest
+            platform: x86_64-Linux
 
           - target: i686-unknown-linux-musl
             os: ubuntu-latest
+            platform: i686-Linux
 
           - target: aarch64-unknown-linux-musl
             os: ubuntu-latest
+            platform: aarch64-Linux
 
           - target: arm-unknown-linux-musleabihf
             os: ubuntu-latest
+            platform: arm7-Linux
 
           - target: x86_64-apple-darwin
             os: macOS-latest
+            platform: x86_64-Darwin
 
-          - target: aarch64-apple-darwin
+          - target: aarch64-apple-Darwin
             os: macOS-latest
+            platform: aarch64-Darwin
 
           - target: x86_64-pc-windows-msvc
             os: windows-latest
+            platform: x86_64-Windows
 
           - target: i686-pc-windows-msvc
             os: windows-latest
+            platform: i686-Windows
 
           # ARM WINDOWS xD
           # - target: aarch64-pc-windows-msvc
           #   os: windows-latest
+          #   platform: aarch64-windows
 
           - target: x86_64-unknown-freebsd
             os: ubuntu-latest
@@ -102,14 +106,15 @@ jobs:
         run: |
           cd target/${{ matrix.target }}/release
           strip hop.exe
-          7z a ../../../hop-${{ needs.create-release.outputs.tag }}-${{ matrix.target }}.zip hop.exe
+          7z a ../../../hop-${{ matrix.platform }}.zip hop.exe
           cd -
+
       - name: Prepare binaries [*nix]
         if: matrix.os != 'windows-latest'
         run: |
           cd target/${{ matrix.target }}/release
           strip hop || true
-          tar czvf ../../../hop-${{ needs.create-release.outputs.tag }}-${{ matrix.target }}.tar.gz hop
+          tar czvf ../../../hop-${{ matrix.platform }}.tar.gz hop
           cd -
 
       - name: Upload release archive
@@ -118,4 +123,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ needs.create-release.outputs.tag }}
-          files: hop-${{ needs.create-release.outputs.tag }}-${{ matrix.target }}*
+          files: hop-${{ matrix.platform }}*
