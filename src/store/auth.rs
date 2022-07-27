@@ -66,7 +66,7 @@ impl Auth {
         .await
         .expect("Failed to write auth store");
 
-        log::info!("Saved credentials to {}", path.display());
+        log::debug!("Saved credentials to {}", path.display());
 
         Ok(self)
     }

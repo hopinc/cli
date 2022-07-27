@@ -124,7 +124,7 @@ impl Context {
         .await
         .expect("Failed to write auth store");
 
-        log::info!("Saved context to {}", path.display());
+        log::debug!("Saved context to {}", path.display());
 
         Ok(self)
     }

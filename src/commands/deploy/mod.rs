@@ -5,6 +5,7 @@ use std::env::current_dir;
 use std::path::PathBuf;
 
 use clap::Parser;
+use console::style;
 use hyper::Method;
 use reqwest::multipart::{Form, Part};
 use tokio::fs;
@@ -12,7 +13,7 @@ use tokio::fs;
 use self::types::{Event, Message};
 use self::util::{compress, env_file_to_map};
 use crate::commands::containers::types::ContainerOptions;
-use crate::commands::containers::utils::create_containers;
+use crate::commands::containers::utils::{create_containers, rollout};
 use crate::commands::ignite::create::{CreateOptions, DeploymentConfig};
 use crate::commands::ignite::types::SingleDeployment;
 use crate::commands::ignite::util::{create_deployment, create_deployment_config};
@@ -255,7 +256,11 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
             "PUSH_FAILURE" => {
                 connection.close().await;
                 println!("");
-                panic!("Push failed, for help contact us on https://discord.gg/hop and mention the deployment id: {}", deployment.id);
+                panic!(
+                    "Push failed, for help contact us on {} and mention the deployment id: {}",
+                    style("https://discord.gg/hop").underlined().bold(),
+                    deployment.id
+                );
             }
 
             // ignore rest
@@ -263,10 +268,11 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
         }
     }
 
-    log::info!("Pushed deployment `{}`", deployment.name);
-
     if existing {
-        log::warn!("Rollouts are not supported yet");
+        if deployment.container_count > 0 {
+            log::info!("Rolling out new containers...");
+            rollout(state.http, deployment.id.clone()).await;
+        }
     } else {
         if let Some(containers) = container_options.containers {
             create_containers(state.http, deployment.id.clone(), containers).await;
@@ -274,9 +280,10 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
     }
 
     log::info!(
-        "Created deployment, you can find it at {}{}",
-        WEB_DEPLOYMENTS_URL,
-        deployment.id
+        "Deployed successfuly, you can find it at: {}",
+        style(format!("{}{}", WEB_DEPLOYMENTS_URL, deployment.id))
+            .underlined()
+            .bold()
     );
 
     Ok(())
