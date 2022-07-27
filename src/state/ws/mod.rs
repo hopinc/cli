@@ -16,7 +16,9 @@ use tokio_tungstenite::tungstenite::protocol::Message;
 
 use self::types::{LEAuthParams, OpCodes, SocketHello, SocketMessage, WebsocketError};
 use self::utils::connect;
-use crate::config::HOP_LEAP_EDGE_PROJECT_ID;
+
+const HOP_LEAP_EDGE_URL: &str = "wss://leap.hop.io/ws?encoding=json&compression=zlib";
+const HOP_LEAP_EDGE_PROJECT_ID: &str = "project_MzA0MDgwOTQ2MDEwODQ5NzQ";
 
 #[derive(Debug)]
 pub struct WebsocketClient {

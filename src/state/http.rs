@@ -1,8 +1,10 @@
 use reqwest::header::HeaderMap;
 use reqwest::Client as AsyncClient;
 
-use crate::config::{HOP_API_BASE_URL, PLATFORM, VERSION};
+use crate::config::{PLATFORM, VERSION};
 use crate::types::{Base, ErrorResponse};
+
+const HOP_API_BASE_URL: &str = "https://api.hop.io/v1";
 
 #[derive(Debug, Clone)]
 pub struct HttpClient {
@@ -43,7 +45,7 @@ impl HttpClient {
 
     pub async fn handle_response<T>(&self, response: reqwest::Response) -> Result<Option<T>, String>
     where
-        T: serde::de::DeserializeOwned + std::fmt::Debug,
+        T: serde::de::DeserializeOwned,
     {
         let response = match response.status() {
             reqwest::StatusCode::OK => response,
@@ -76,7 +78,7 @@ impl HttpClient {
         data: Option<(hyper::Body, &str)>,
     ) -> Result<Option<T>, String>
     where
-        T: serde::de::DeserializeOwned + std::fmt::Debug,
+        T: serde::de::DeserializeOwned,
     {
         let mut request = self.client.request(
             method.parse().unwrap(),

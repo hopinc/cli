@@ -14,12 +14,14 @@ use self::types::{Event, Message};
 use self::util::{compress, env_file_to_map};
 use crate::commands::containers::types::ContainerOptions;
 use crate::commands::containers::utils::{create_containers, rollout};
-use crate::commands::ignite::create::{CreateOptions, DeploymentConfig};
+use crate::commands::ignite::create::{CreateOptions, DeploymentConfig, WEB_DEPLOYMENTS_URL};
 use crate::commands::ignite::types::SingleDeployment;
 use crate::commands::ignite::util::{create_deployment, create_deployment_config};
-use crate::config::{HOP_BUILD_BASE_URL, HOP_REGISTRY_URL, WEB_DEPLOYMENTS_URL};
 use crate::state::State;
 use crate::store::hopfile::HopFile;
+
+const HOP_BUILD_BASE_URL: &str = "https://builder.hop.io/v1";
+const HOP_REGISTRY_URL: &str = "registry.hop.io";
 
 #[derive(Debug, Parser)]
 #[structopt(about = "Deploy a new container")]

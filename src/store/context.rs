@@ -4,10 +4,10 @@ use serde::{Deserialize, Serialize};
 use tokio::fs::{self, File};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-use super::utils::get_path;
+use super::utils::home_path;
 use crate::commands::auth::types::UserMe;
 use crate::commands::projects::types::Project;
-use crate::config::CONTEXT_STORE_PATH;
+use crate::config::EXEC_NAME;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Context {
@@ -28,7 +28,7 @@ pub struct Context {
 
 impl Context {
     fn path() -> PathBuf {
-        get_path(CONTEXT_STORE_PATH)
+        home_path(".hop/context.json")
     }
 
     pub fn find_project_by_id_or_namespace(self, id_or_namespace: String) -> Option<Project> {
@@ -63,9 +63,10 @@ impl Context {
     }
 
     pub fn current_project_error(self) -> Project {
-        self.current_project().expect(
-            "No project specified, run `hop projects switch` or use --project to specify a project",
-        )
+        self.current_project().expect(&format!(
+            "No project specified, run `{} projects switch` or use --project to specify a project",
+            EXEC_NAME
+        ))
     }
 
     pub fn default() -> Context {

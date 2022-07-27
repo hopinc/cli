@@ -7,14 +7,16 @@ use tokio::sync::mpsc::{channel, Sender};
 use tokio::task;
 
 use crate::commands::ignite::util::parse_key_val;
-use crate::config::{PAT_FALLBACK_URL, WEB_AUTH_URL};
 use crate::state::State;
+
+const WEB_AUTH_URL: &str = "https://console.hop.io/cli-auth";
+const PAT_FALLBACK_URL: &str = "https://console.hop.io/settings/pats";
 
 #[derive(Debug, Parser)]
 #[clap(about = "Login to Hop")]
 pub struct LoginOptions {
-    #[clap(long = "browserless", help = "Do not use a browser to login")]
-    pub browserless: bool,
+    #[clap(name = "pat", help = "Personal Access Token")]
+    pub pat: Option<String>,
 }
 
 async fn request_handler(
@@ -89,34 +91,9 @@ async fn web_auth(port: u16) -> Result<String, std::io::Error> {
 }
 
 pub async fn handle_login(options: LoginOptions, mut state: State) -> Result<(), std::io::Error> {
-    let port = portpicker::pick_unused_port().unwrap();
-
-    let callback_url = format!("http://localhost:{}/", port);
-    let auth_url = format!(
-        "{}?{}",
-        WEB_AUTH_URL,
-        vec!["callback", callback_url.as_str()].join("=")
-    );
-
-    // lunch a web server to handle the auth request
-    let token = if !options.browserless && webbrowser::open(&auth_url).is_ok() {
-        log::info!("Opening browser to: {}", auth_url);
-
-        web_auth(port)
-            .await
-            .expect("Error while starting web auth server")
-    } else {
-        if !options.browserless {
-            log::info!("Could not open web a browser.");
-            log::info!("Please provide a personal access token manually.");
-            log::info!("You can create one at {}", PAT_FALLBACK_URL);
-        }
-
-        // falback to simpe input
-        dialoguer::Password::new()
-            .with_prompt("Enter your token")
-            .interact()
-            .unwrap()
+    let token = match options.pat {
+        Some(pat) => pat,
+        None => browser_login().await,
     };
 
     // update the token assuming it's a valid PAT
@@ -138,4 +115,34 @@ pub async fn handle_login(options: LoginOptions, mut state: State) -> Result<(),
     log::info!("Logged in as: `{}` ({})", me.user.username, me.user.email);
 
     Ok(())
+}
+
+async fn browser_login() -> String {
+    let port = portpicker::pick_unused_port().unwrap();
+
+    let callback_url = format!("http://localhost:{}/", port);
+    let auth_url = format!(
+        "{}?{}",
+        WEB_AUTH_URL,
+        vec!["callback", callback_url.as_str()].join("=")
+    );
+
+    // lunch a web server to handle the auth request
+    if webbrowser::open(&auth_url).is_ok() {
+        log::info!("Opening browser to: {}", auth_url);
+
+        web_auth(port)
+            .await
+            .expect("Error while starting web auth server")
+    } else {
+        log::info!("Could not open web a browser.");
+        log::info!("Please provide a personal access token manually.");
+        log::info!("You can create one at {}", PAT_FALLBACK_URL);
+
+        // falback to simpe input
+        dialoguer::Password::new()
+            .with_prompt("Enter your token")
+            .interact()
+            .unwrap()
+    }
 }

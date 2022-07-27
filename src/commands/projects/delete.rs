@@ -15,12 +15,7 @@ pub struct DeleteOptions {
 }
 
 pub async fn handle_delete(options: DeleteOptions, mut state: State) -> Result<(), std::io::Error> {
-    let projects = state
-        .ctx
-        .me
-        .clone()
-        .expect("You are not logged in. Please run `hop auth login` first.")
-        .projects;
+    let projects = state.ctx.me.clone().unwrap().projects;
 
     if projects.is_empty() {
         panic!("No projects found");

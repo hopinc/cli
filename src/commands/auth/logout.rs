@@ -1,5 +1,6 @@
 use clap::Parser;
 
+use crate::config::EXEC_NAME;
 use crate::state::State;
 use crate::store::context::Context;
 
@@ -14,7 +15,10 @@ pub async fn hanndle_logout(
     let user_id = state.ctx.default_user;
 
     if user_id.is_none() {
-        panic!("You are not logged in. Please run `hop auth login` first.");
+        panic!(
+            "You are not logged in. Please run `{} auth login` first.",
+            EXEC_NAME
+        );
     }
 
     // clear all state

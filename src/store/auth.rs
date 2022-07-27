@@ -5,8 +5,7 @@ use serde::{Deserialize, Serialize};
 use tokio::fs::{self, File};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-use super::utils::get_path;
-use crate::config::AUTH_STORE_PATH;
+use super::utils::home_path;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Auth {
@@ -15,7 +14,7 @@ pub struct Auth {
 
 impl Auth {
     fn path() -> PathBuf {
-        get_path(AUTH_STORE_PATH)
+        home_path(".hop/auth.json")
     }
 
     pub fn default() -> Auth {

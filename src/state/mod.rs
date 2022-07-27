@@ -6,6 +6,7 @@ use std::io;
 use self::http::HttpClient;
 use self::ws::WebsocketClient;
 use crate::commands::auth::types::UserMe;
+use crate::config::EXEC_NAME;
 use crate::store::auth::Auth;
 use crate::store::context::Context;
 
@@ -67,7 +68,10 @@ impl State {
             .http
             .request::<UserMe>("GET", "/users/@me", None)
             .await
-            .expect("Error logging in, try running `hop auth login`")
+            .expect(&format!(
+                "Error logging in, try running `{} auth login`",
+                EXEC_NAME
+            ))
             .unwrap();
 
         // get current user to global

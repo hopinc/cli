@@ -5,10 +5,9 @@ mod state;
 mod store;
 mod types;
 
+use crate::commands::update::util::check_version;
 use clap::Parser;
 use commands::{handle_command, Commands};
-use fern::colors::{Color, ColoredLevelConfig};
-use log::{Level, LevelFilter};
 use state::{State, StateOptions};
 
 #[derive(Debug, Parser)]
@@ -42,39 +41,7 @@ async fn main() -> Result<(), std::io::Error> {
     // create a new CLI instance
     let cli = CLI::from_args();
 
-    let colors = ColoredLevelConfig::new()
-        .info(Color::BrightCyan)
-        .error(Color::BrightRed)
-        .warn(Color::BrightYellow)
-        .debug(Color::BrightWhite);
-
-    fern::Dispatch::new()
-        .format(move |out, message, record| {
-            let level = record.level();
-
-            match level {
-                Level::Debug => out.finish(format_args!(
-                    "{} [{}]: {}",
-                    colors.color(Level::Debug).to_string().to_lowercase(),
-                    record.target(),
-                    message
-                )),
-
-                level => out.finish(format_args!(
-                    "{}: {}",
-                    colors.color(level).to_string().to_lowercase(),
-                    message
-                )),
-            }
-        })
-        .level(if cli.verbose {
-            LevelFilter::Debug
-        } else {
-            LevelFilter::Info
-        })
-        .chain(std::io::stdout())
-        .apply()
-        .unwrap();
+    macros::logs(cli.verbose);
 
     let state = State::new(StateOptions {
         override_project_id: cli.project,
@@ -82,6 +49,18 @@ async fn main() -> Result<(), std::io::Error> {
     })
     .await
     .unwrap();
+
+    // only run the check if it's not the update command
+    match cli.commands {
+        Commands::Update(_) => {}
+        _ => {
+            let (update, latest) = check_version(false).await;
+
+            if update {
+                log::warn!("A new version of hop_cli is available: {}", latest);
+            }
+        }
+    }
 
     handle_command(cli.commands, state).await
 }

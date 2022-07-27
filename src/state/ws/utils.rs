@@ -1,7 +1,7 @@
 use std::io;
 
 use super::types::WsStream;
-use crate::config::HOP_LEAP_EDGE_URL;
+use super::HOP_LEAP_EDGE_URL;
 
 pub async fn connect() -> io::Result<WsStream> {
     let url = HOP_LEAP_EDGE_URL;

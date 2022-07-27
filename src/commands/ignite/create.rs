@@ -4,8 +4,9 @@ use super::types::{Env, RamSizes, ScalingStrategy};
 use crate::commands::containers::types::ContainerType;
 use crate::commands::containers::utils::create_containers;
 use crate::commands::ignite::util::{create_deployment, create_deployment_config};
-use crate::config::WEB_DEPLOYMENTS_URL;
 use crate::state::State;
+
+pub const WEB_DEPLOYMENTS_URL: &str = "https://console.hop.io/ignite/deployment/";
 
 #[derive(Debug, Parser, Default, PartialEq, Clone)]
 pub struct DeploymentConfig {
@@ -67,7 +68,7 @@ pub struct DeploymentConfig {
     pub env: Option<Vec<Env>>,
 }
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Default, PartialEq, Clone)]
 pub struct CreateOptions {
     #[clap(flatten)]
     pub config: DeploymentConfig,
@@ -86,7 +87,7 @@ pub async fn handle_create(options: CreateOptions, state: State) -> Result<(), s
         project.id
     );
 
-    let is_not_guided = options.config != DeploymentConfig::default();
+    let is_not_guided = options != CreateOptions::default();
 
     let (deployment_config, container_options) =
         create_deployment_config(options, is_not_guided, None).await;
