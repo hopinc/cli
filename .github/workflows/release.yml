@@ -54,7 +54,7 @@ jobs:
 
           - target: arm-unknown-linux-musleabihf
             os: ubuntu-latest
-            platform: arm7-Linux
+            platform: arm-Linux
 
           - target: x86_64-apple-darwin
             os: macOS-latest

@@ -19,7 +19,7 @@ if [[ $ARCH == armv8* ]] || [[ $ARCH == arm64* ]] || [[ $ARCH == aarch64* ]]; th
 fi
 
 if [[ $ARCH == armv6* ]] || [[ $ARCH == armv7* ]]; then
-    ARCH="armv7"
+    ARCH="arm"
 fi
 
 if [ -z ${INSTALL_PATH+x} ]; then
