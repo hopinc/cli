@@ -1,6 +1,6 @@
 use clap::Parser;
 
-use crate::commands::projects::util::format_projects;
+use super::util::format_projects;
 use crate::state::State;
 
 static CONFIRM_DELETE_PROJECT_MESSAGE: &str = "I am sure I want to delete the project named ";
@@ -10,7 +10,7 @@ static CONFIRM_DELETE_PROJECT_MESSAGE: &str = "I am sure I want to delete the pr
 pub struct DeleteOptions {
     #[clap(name = "namespace", help = "Namespace of the project")]
     namespace: Option<String>,
-    #[clap(long = "no-confirm", help = "Skip confirmation")]
+    #[clap(short = 'f', long = "force", help = "Skip confirmation")]
     force: bool,
 }
 
@@ -35,7 +35,7 @@ pub async fn handle_delete(options: DeleteOptions, mut state: State) -> Result<(
             project.to_owned()
         }
         None => {
-            let projects_fmt = format_projects(&projects, &state.ctx.default_project);
+            let projects_fmt = format_projects(&projects, &state.ctx.default_project, false);
 
             let idx = dialoguer::Select::new()
                 .with_prompt("Select a project to delete")

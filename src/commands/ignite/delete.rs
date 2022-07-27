@@ -8,7 +8,8 @@ use crate::state::State;
 pub struct DeleteOptions {
     #[clap(name = "name", help = "Name of the deployment")]
     name: Option<String>,
-    #[clap(long = "no-confirm", help = "Skip confirmation")]
+
+    #[clap(short = 'f', long = "force", help = "Skip confirmation")]
     force: bool,
 }
 

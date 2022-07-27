@@ -63,7 +63,7 @@ pub async fn handle_link(options: LinkOptions, state: State) -> Result<(), std::
             deployment
         }
         None => {
-            let deployments_fmt = format_deployments(&deployments);
+            let deployments_fmt = format_deployments(&deployments, false);
 
             let idx = dialoguer::Select::new()
                 .with_prompt("Select a deployment to link")

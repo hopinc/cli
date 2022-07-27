@@ -6,7 +6,7 @@ use hyper::{Body, Request, Response, Server};
 use tokio::sync::mpsc::{channel, Sender};
 use tokio::task;
 
-use crate::commands::deploy::util::parse_key_val;
+use crate::commands::ignite::util::parse_key_val;
 use crate::config::{PAT_FALLBACK_URL, WEB_AUTH_URL};
 use crate::state::State;
 

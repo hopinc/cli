@@ -6,9 +6,16 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[structopt(about = "List all secrets")]
-pub struct ListOptions {}
+pub struct ListOptions {
+    #[structopt(
+        short = 'q',
+        long = "quiet",
+        help = "Only print the IDs of the secrets"
+    )]
+    pub quiet: bool,
+}
 
-pub async fn handle_list(_options: ListOptions, state: State) -> Result<(), std::io::Error> {
+pub async fn handle_list(options: ListOptions, state: State) -> Result<(), std::io::Error> {
     let project_id = state.ctx.current_project_error().id;
 
     let secrets = state
@@ -23,14 +30,19 @@ pub async fn handle_list(_options: ListOptions, state: State) -> Result<(), std:
         .unwrap()
         .secrets;
 
-    if secrets.is_empty() {
-        panic!("No secrets found in this project");
+    if options.quiet {
+        let ids = secrets
+            .iter()
+            .map(|d| d.id.as_str())
+            .collect::<Vec<_>>()
+            .join(" ");
+
+        println!("{}", ids);
+    } else {
+        let secrets_fmt = format_secrets(&secrets, true);
+
+        println!("{}", secrets_fmt.join("\n"));
     }
-
-    let secrets_fmt = format_secrets(&secrets);
-
-    println!("Secrets:");
-    println!("{}", secrets_fmt.join("\n"));
 
     Ok(())
 }

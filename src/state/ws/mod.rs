@@ -4,9 +4,6 @@ mod utils;
 use std::io::Cursor;
 use std::time::Duration;
 
-use self::types::{LEAuthParams, OpCodes, SocketHello, SocketMessage, WebsocketError};
-use self::utils::connect;
-use crate::config::HOP_LEAP_EDGE_PROJECT_ID;
 use async_compression::tokio::bufread::ZlibDecoder;
 use futures_util::{SinkExt, StreamExt};
 use serde_json::Value;
@@ -16,6 +13,10 @@ use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
 use tokio::time::{interval, Instant};
 use tokio_tungstenite::tungstenite::protocol::Message;
+
+use self::types::{LEAuthParams, OpCodes, SocketHello, SocketMessage, WebsocketError};
+use self::utils::connect;
+use crate::config::HOP_LEAP_EDGE_PROJECT_ID;
 
 #[derive(Debug)]
 pub struct WebsocketClient {

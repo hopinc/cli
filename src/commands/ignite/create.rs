@@ -1,11 +1,10 @@
 use clap::Parser;
 
-use super::types::{
-    ContainerType, CreateDeployment, Deployment, RamSizes, ScalingStrategy, SingleDeployment,
-};
-use crate::commands::deploy::types::{CreateContainers, Env};
-use crate::commands::deploy::util::create_deployment_config;
-use crate::state::http::HttpClient;
+use super::types::{Env, RamSizes, ScalingStrategy};
+use crate::commands::containers::types::ContainerType;
+use crate::commands::containers::utils::create_containers;
+use crate::commands::ignite::util::{create_deployment, create_deployment_config};
+use crate::config::WEB_DEPLOYMENTS_URL;
 use crate::state::State;
 
 #[derive(Debug, Parser, Default, PartialEq, Clone)]
@@ -44,7 +43,7 @@ pub struct DeploymentConfig {
     #[clap(
         short = 'd',
         long = "containers",
-        help = "Number of containers to use if `scaling` is manual, defaults to 1"
+        help = "Number of containers to deploy if `scaling` is manual, defaults to 1"
     )]
     pub containers: Option<u64>,
 
@@ -71,29 +70,10 @@ pub struct DeploymentConfig {
 #[derive(Debug, Parser)]
 pub struct CreateOptions {
     #[clap(flatten)]
-    config: DeploymentConfig,
+    pub config: DeploymentConfig,
 
     #[clap(short = 'i', long = "image", help = "Image url")]
     pub image: Option<String>,
-}
-
-pub async fn create_deployment(
-    http: HttpClient,
-    project_id: String,
-    config: CreateDeployment,
-) -> Deployment {
-    http.request::<SingleDeployment>(
-        "POST",
-        format!("/ignite/deployments?project={}", project_id).as_str(),
-        Some((
-            serde_json::to_string(&config).unwrap().into(),
-            "application/json",
-        )),
-    )
-    .await
-    .expect("Error while creating deployment")
-    .unwrap()
-    .deployment
 }
 
 pub async fn handle_create(options: CreateOptions, state: State) -> Result<(), std::io::Error> {
@@ -106,23 +86,10 @@ pub async fn handle_create(options: CreateOptions, state: State) -> Result<(), s
         project.id
     );
 
-    let is_not_quided = options.config != DeploymentConfig::default();
+    let is_not_guided = options.config != DeploymentConfig::default();
 
-    let (mut deployment_config, container_options) =
-        create_deployment_config(options.config, is_not_quided, None).await;
-
-    let image = if is_not_quided {
-        dialoguer::Input::<String>::new()
-            .with_prompt("Image url")
-            .interact()
-            .expect("Could not get image url")
-    } else {
-        options
-            .image
-            .expect("The argument '--image <IMAGE>' requires a value but none was supplied")
-    };
-
-    deployment_config.image.name = image;
+    let (deployment_config, container_options) =
+        create_deployment_config(options, is_not_guided, None).await;
 
     let deployment = create_deployment(state.http.clone(), project.id, deployment_config).await;
 
@@ -132,26 +99,18 @@ pub async fn handle_create(options: CreateOptions, state: State) -> Result<(), s
         deployment.id
     );
 
-    let create_containers = CreateContainers {
-        count: container_options
-            .containers
-            .expect("type check: no container count"),
-    };
+    if let Some(count) = container_options.containers {
+        if count > 1 {
+            log::info!("Creating {} containers", count);
+            create_containers(state.http, deployment.id.clone(), count).await;
+        }
+    }
 
-    state
-        .http
-        .request::<()>(
-            "POST",
-            format!("/ignite/deployments/{}/containers", deployment.id).as_str(),
-            Some((
-                serde_json::to_string(&create_containers).unwrap().into(),
-                "application/json",
-            )),
-        )
-        .await
-        .expect("Failed to create containers");
-
-    log::info!("Deployment created successfully");
+    log::info!(
+        "Created deployment. You can find it at {}{}",
+        WEB_DEPLOYMENTS_URL,
+        deployment.id
+    );
 
     Ok(())
 }

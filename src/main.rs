@@ -5,9 +5,8 @@ mod state;
 mod store;
 mod types;
 
-use crate::commands::Commands;
 use clap::Parser;
-use commands::handle_command;
+use commands::{handle_command, Commands};
 use fern::colors::{Color, ColoredLevelConfig};
 use log::{Level, LevelFilter};
 use state::{State, StateOptions};

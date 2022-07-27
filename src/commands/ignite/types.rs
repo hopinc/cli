@@ -3,6 +3,9 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
+use super::util::parse_key_val;
+use crate::commands::containers::types::ContainerType;
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Vgpu {
     #[serde(rename = "type")]
@@ -139,41 +142,6 @@ impl Default for Image {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub enum ContainerType {
-    #[serde(rename = "ephemeral")]
-    Ephemeral,
-    #[serde(rename = "persistent")]
-    Persistent,
-}
-
-impl FromStr for ContainerType {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        serde_json::from_str(format!("\"{}\"", s.to_lowercase()).as_str())
-            .map_err(|e| e.to_string())
-    }
-}
-
-impl ToString for ContainerType {
-    fn to_string(&self) -> String {
-        serde_json::to_string(self).unwrap().replace("\"", "")
-    }
-}
-
-impl Default for ContainerType {
-    fn default() -> Self {
-        ContainerType::Persistent
-    }
-}
-
-impl ContainerType {
-    pub fn values() -> Vec<ContainerType> {
-        vec![ContainerType::Ephemeral, ContainerType::Persistent]
-    }
-}
-
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Config {
     pub version: String,
@@ -223,6 +191,20 @@ impl Default for CreateDeployment {
             name: String::default(),
             resources: Resources::default(),
             container_type: ContainerType::default(),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Env(pub String, pub String);
+
+impl FromStr for Env {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match parse_key_val(s) {
+            Ok((key, val)) => Ok(Env(key, val)),
+            Err(e) => Err(format!("Could not pase env value: {}", e)),
         }
     }
 }

@@ -7,17 +7,16 @@ use std::path::PathBuf;
 use clap::Parser;
 use hyper::Method;
 use reqwest::multipart::{Form, Part};
-use serde_json::Value;
 use tokio::fs;
 
-use self::util::compress;
-use super::ignite::{
-    create::{create_deployment, DeploymentConfig},
-    types::SingleDeployment,
-};
-use crate::commands::deploy::types::{ContainerOptions, CreateContainers, Event, Message};
-use crate::commands::deploy::util::{create_deployment_config, env_file_to_map};
-use crate::config::{HOP_BUILD_BASE_URL, HOP_REGISTRY_URL};
+use self::types::{Event, Message};
+use self::util::{compress, env_file_to_map};
+use crate::commands::containers::types::ContainerOptions;
+use crate::commands::containers::utils::create_containers;
+use crate::commands::ignite::create::{CreateOptions, DeploymentConfig};
+use crate::commands::ignite::types::SingleDeployment;
+use crate::commands::ignite::util::{create_deployment, create_deployment_config};
+use crate::config::{HOP_BUILD_BASE_URL, HOP_REGISTRY_URL, WEB_DEPLOYMENTS_URL};
 use crate::state::State;
 use crate::store::hopfile::HopFile;
 
@@ -129,7 +128,11 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
             );
 
             let (mut deployment_config, container_options) = create_deployment_config(
-                options.config.clone(),
+                CreateOptions {
+                    config: options.config.clone(),
+                    // temporary value that gets replaced after we get the name
+                    image: Some("temp".to_string()),
+                },
                 is_not_guided,
                 Some(
                     dir.clone()
@@ -265,25 +268,16 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
     if existing {
         log::warn!("Rollouts are not supported yet");
     } else {
-        let create_containers = CreateContainers {
-            count: container_options
-                .containers
-                .expect("type check: no container count"),
-        };
-
-        state
-            .http
-            .request::<Value>(
-                "POST",
-                format!("/ignite/deployments/{}/containers", deployment.id).as_str(),
-                Some((
-                    serde_json::to_string(&create_containers).unwrap().into(),
-                    "application/json",
-                )),
-            )
-            .await
-            .expect("Failed to create containers");
+        if let Some(containers) = container_options.containers {
+            create_containers(state.http, deployment.id.clone(), containers).await;
+        }
     }
+
+    log::info!(
+        "Created deployment, you can find it at {}{}",
+        WEB_DEPLOYMENTS_URL,
+        deployment.id
+    );
 
     Ok(())
 }

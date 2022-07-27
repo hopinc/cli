@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod containers;
 pub mod deploy;
 pub mod ignite;
 pub mod link;

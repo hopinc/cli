@@ -5,21 +5,33 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "List all deployments")]
-pub struct ListOptions {}
+pub struct ListOptions {
+    #[clap(
+        short = 'q',
+        long = "quiet",
+        help = "Only print the IDs of the deployments"
+    )]
+    pub quiet: bool,
+}
 
-pub async fn handle_list(_options: ListOptions, state: State) -> Result<(), std::io::Error> {
+pub async fn handle_list(options: ListOptions, state: State) -> Result<(), std::io::Error> {
     let project_id = state.ctx.current_project_error().id;
 
     let deployments = get_deployments(state.http.clone(), project_id).await;
 
-    if deployments.is_empty() {
-        panic!("No deployments found in this project");
+    if options.quiet {
+        let ids = deployments
+            .iter()
+            .map(|d| d.id.as_str())
+            .collect::<Vec<_>>()
+            .join(" ");
+
+        println!("{}", ids);
+    } else {
+        let deployments_fmt = format_deployments(&deployments, true);
+
+        println!("{}", deployments_fmt.join("\n"));
     }
-
-    let deployments_fmt = format_deployments(&deployments);
-
-    println!("Deployments:");
-    println!("{}", deployments_fmt.join("\n"));
 
     Ok(())
 }

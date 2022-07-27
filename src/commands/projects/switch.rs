@@ -28,7 +28,7 @@ pub async fn handle_switch(options: SwitchOptions, mut state: State) -> Result<(
             .clone()
             .find_project_by_id_or_namespace_error(project),
         None => {
-            let projects_fmt = format_projects(&projects, &state.ctx.default_project);
+            let projects_fmt = format_projects(&projects, &state.ctx.default_project, false);
 
             let idx = dialoguer::Select::new()
                 .with_prompt("Select a project to set as default")
