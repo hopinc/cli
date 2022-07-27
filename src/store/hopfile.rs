@@ -46,7 +46,7 @@ impl HopFile {
         }
     }
 
-    fn deserialize(path: PathBuf, content: Self) -> Option<String> {
+    fn serialize(path: PathBuf, content: Self) -> Option<String> {
         match path.clone().extension() {
             Some(ext) => match ext.to_str() {
                 Some("yml") | Some("yaml") => serde_yaml::to_string(&content).ok(),
@@ -65,7 +65,7 @@ impl HopFile {
         }
     }
 
-    fn serialize(path: PathBuf, content: &str) -> Option<Self> {
+    fn deserialize(path: PathBuf, content: &str) -> Option<Self> {
         match path.clone().extension() {
             Some(ext) => match ext.to_str() {
                 Some("yml") | Some("yaml") => serde_yaml::from_str(content).ok(),
@@ -91,8 +91,8 @@ impl HopFile {
             if fs::metadata(&path).await.is_ok() {
                 let content = fs::read_to_string(&path).await.ok()?;
 
-                let mut hop_file_content: Self = Self::serialize(path.clone(), content.as_str())
-                    .expect("Failed to serialize hop file");
+                let mut hop_file_content: Self = Self::deserialize(path.clone(), content.as_str())
+                    .expect("Failed to deserialize hop file");
 
                 hop_file_content.path = path;
 
@@ -107,7 +107,7 @@ impl HopFile {
         let path = self.path.clone();
 
         let content =
-            Self::deserialize(path.clone(), self.clone()).expect("Failed to deserialize hop file");
+            Self::serialize(path.clone(), self.clone()).expect("Failed to serialize hop file");
 
         let mut file = File::create(&path).await.ok()?;
 
