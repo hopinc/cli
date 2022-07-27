@@ -9,6 +9,7 @@ use crate::commands::update::util::check_version;
 use clap::Parser;
 use commands::{handle_command, Commands};
 use state::{State, StateOptions};
+use tokio::task;
 
 #[derive(Debug, Parser)]
 #[structopt(name = "hop", about = "🐇 Interact with Hop via command line", version)]
@@ -54,11 +55,13 @@ async fn main() -> Result<(), std::io::Error> {
     match cli.commands {
         Commands::Update(_) => {}
         _ => {
-            let (update, latest) = check_version(false).await;
+            task::spawn(async move {
+                let (update, latest) = check_version(false).await;
 
-            if update {
-                log::warn!("A new version of hop_cli is available: {}", latest);
-            }
+                if update {
+                    log::warn!("A new version of hop_cli is available: {}", latest);
+                }
+            });
         }
     }
 
