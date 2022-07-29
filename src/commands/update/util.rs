@@ -29,14 +29,17 @@ pub async fn check_version(beta: bool) -> (bool, String) {
     let latest = if beta {
         // the latest release that can be prereleased
         response
-            .first()
+            .iter()
+            // skip drafts
+            .find(|r| !r.draft)
             .map(|r| r.tag_name.clone())
             .expect("No release found")
     } else {
         // the latest release that is not prereleased
         response
             .iter()
-            .find(|r| !r.prerelease)
+            // skip drafts and prereleases
+            .find(|r| !r.prerelease && !r.draft)
             .map(|r| r.tag_name.clone())
             .expect("No beta release found")
     };

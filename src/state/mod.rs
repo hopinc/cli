@@ -1,8 +1,6 @@
 pub mod http;
 pub mod ws;
 
-use std::io;
-
 use self::http::HttpClient;
 use self::ws::WebsocketClient;
 use crate::commands::auth::types::UserMe;
@@ -24,7 +22,7 @@ pub struct StateOptions {
 }
 
 impl State {
-    pub async fn new(options: StateOptions) -> io::Result<Self> {
+    pub async fn new(options: StateOptions) -> Self {
         // do some logic to get current signed in user
         let auth = Auth::new().await;
         let mut ctx = Context::new().await;
@@ -50,12 +48,12 @@ impl State {
         let ws = WebsocketClient::new();
         let client = HttpClient::new(token, ctx.override_api_url.clone());
 
-        Ok(State {
+        State {
             ctx,
             http: client,
             auth,
             ws,
-        })
+        }
     }
 
     /// Rebuilds the http client with the current auth token.
@@ -63,6 +61,7 @@ impl State {
         self.http = HttpClient::new(Some(token), self.ctx.override_api_url.clone());
     }
 
+    /// Login to the API
     pub async fn login(&mut self) {
         let response = self
             .http

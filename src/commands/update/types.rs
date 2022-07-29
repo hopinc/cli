@@ -70,4 +70,5 @@ impl Version {
 pub struct GithubRelease {
     pub tag_name: String,
     pub prerelease: bool,
+    pub draft: bool,
 }

@@ -30,7 +30,7 @@ pub async fn handle_delete(options: DeleteOptions, mut state: State) -> Result<(
             project.to_owned()
         }
         None => {
-            let projects_fmt = format_projects(&projects, &state.ctx.default_project, false);
+            let projects_fmt = format_projects(&projects, false);
 
             let idx = dialoguer::Select::new()
                 .with_prompt("Select a project to delete")
@@ -44,6 +44,7 @@ pub async fn handle_delete(options: DeleteOptions, mut state: State) -> Result<(
                     0
                 })
                 .interact_opt()
+                .ok()
                 .expect("Failed to select project")
                 .expect("No project selected");
 

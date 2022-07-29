@@ -1,9 +1,9 @@
 mod commands;
 mod config;
-mod macros;
 mod state;
 mod store;
 mod types;
+mod utils;
 
 use crate::commands::update::util::check_version;
 use clap::Parser;
@@ -37,19 +37,18 @@ pub struct CLI {
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
     // setup panic hook
-    macros::set_hook();
+    utils::set_hook();
 
     // create a new CLI instance
     let cli = CLI::from_args();
 
-    macros::logs(cli.verbose);
+    utils::logs(cli.verbose);
 
     let state = State::new(StateOptions {
         override_project_id: cli.project,
         override_token: option_env!("HOP_TOKEN").map(|s| s.to_string()),
     })
-    .await
-    .unwrap();
+    .await;
 
     // only run the check if it's not the update command
     match cli.commands {
@@ -59,11 +58,18 @@ async fn main() -> Result<(), std::io::Error> {
                 let (update, latest) = check_version(false).await;
 
                 if update {
-                    log::warn!("A new version of hop_cli is available: {}", latest);
+                    log::warn!("A new version is available: {}", latest);
                 }
             });
         }
     }
 
-    handle_command(cli.commands, state).await
+    match handle_command(cli.commands, state).await {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            log::error!("Error bruh");
+            log::error!("{}", e);
+            Err(e)
+        }
+    }
 }

@@ -283,6 +283,7 @@ fn get_multiple_envs() -> HashMap<String, String> {
         .with_prompt("Add environment variables?")
         .default(false)
         .interact_opt()
+        .ok()
         .expect("Failed to ask for environment variables")
         .unwrap_or(false);
 
@@ -303,6 +304,7 @@ fn get_multiple_envs() -> HashMap<String, String> {
         let continue_ = dialoguer::Confirm::new()
             .with_prompt("Add another environment variable?")
             .interact_opt()
+            .ok()
             .expect("Failed to ask for environment variables");
 
         if continue_.is_none() || !continue_.unwrap() {

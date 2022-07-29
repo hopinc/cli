@@ -49,6 +49,7 @@ pub async fn handle_delete(options: DeleteOptions, state: State) -> Result<(), s
                 .items(&secrets_fmt)
                 .default(0)
                 .interact_opt()
+                .ok()
                 .expect("Failed to select secret")
                 .expect("No secret selected");
 
@@ -63,6 +64,7 @@ pub async fn handle_delete(options: DeleteOptions, state: State) -> Result<(), s
                 secret_name
             ))
             .interact_opt()
+            .ok()
             .expect("Failed to confirm");
 
         if confirm.is_none() || !confirm.unwrap() {

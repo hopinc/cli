@@ -1,7 +1,13 @@
+# `hop-` serves as a "namespace"
 [package]
-name = "hop"
+name = "hop-cli"
 version = "0.1.8"
 edition = "2021"
+
+# override binary name
+[[bin]]
+name = "hop"
+path = "./src/main.rs"
 
 [dependencies]
 log = "0.4"
@@ -15,7 +21,7 @@ tokio-tar = "0.3"
 dialoguer = "0.10"
 webbrowser = "0.7"
 portpicker = "0.1"
-serde_yaml = "0.8"
+serde_yaml = "0.9"
 serde_json = "1.0"
 serde_repr = "0.1"
 futures-util = "0.3"
@@ -24,6 +30,7 @@ fern = { version = "0.6", features = ["colored"] }
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 hyper = { version = "0.14", features = ["server"] }
+ctrlc = { version = "3.0", features = ["termination"] }
 async-compression = { version = "0.3", features = ["tokio", "gzip", "zlib"] }
 reqwest = { version = "0.11", features = [
     "json",
@@ -33,5 +40,6 @@ reqwest = { version = "0.11", features = [
 ], default-features = false }
 tokio-tungstenite = { version = "0.17", features = ["rustls-tls-webpki-roots"] }
 
+# windows only
 [target.'cfg(windows)'.dependencies]
 async_zip = "0.0.8"

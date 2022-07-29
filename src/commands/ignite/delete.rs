@@ -51,6 +51,7 @@ pub async fn handle_delete(options: DeleteOptions, state: State) -> Result<(), s
                 .items(&deployments_fmt)
                 .default(0)
                 .interact_opt()
+                .ok()
                 .expect("Failed to select deployment")
                 .expect("No deployment selected");
 
@@ -65,6 +66,7 @@ pub async fn handle_delete(options: DeleteOptions, state: State) -> Result<(), s
                 deployment.name
             ))
             .interact_opt()
+            .ok()
             .expect("Failed to confirm");
 
         if confirm.is_none() || !confirm.unwrap() {

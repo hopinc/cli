@@ -8,7 +8,7 @@ env:
   MACOSX_DEPLOYMENT_TARGET: 10.7
 
 jobs:
-  create-release:
+  draft-release:
     name: Create Release
     runs-on: ubuntu-latest
     steps:
@@ -30,10 +30,11 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: ${{ steps.tag.outputs.pre_release == 'true' }}
           title: "Version: ${{ steps.tag.outputs.name }}"
+          draft: true
 
   build-release:
     name: Build Release Assets
-    needs: ["create-release"]
+    needs: ["draft-release"]
     runs-on: ${{ matrix.os }}
     continue-on-error: true
     strategy:
@@ -125,3 +126,15 @@ jobs:
         with:
           tag_name: ${{ needs.create-release.outputs.tag }}
           files: hop-${{ matrix.platform }}*
+
+  publish-release:
+    name: Publish Release
+    needs: ["draft-release", "build-release"]
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Update release
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          draft: false

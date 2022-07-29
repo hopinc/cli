@@ -18,7 +18,7 @@ if [[ $ARCH == armv8* ]] || [[ $ARCH == arm64* ]] || [[ $ARCH == aarch64* ]]; th
     ARCH="aarch64"
 fi
 
-if [[ $ARCH == armv6* ]] || [[ $ARCH == armv7* ]]; then
+if [[ $ARCH == armv6* ]] || [[ $ARCH == armv7* ]] || [[ $ARCH == arm7* ]]; then
     ARCH="arm"
 fi
 

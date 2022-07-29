@@ -30,7 +30,7 @@ pub async fn handle_list(options: ListOptions, state: State) -> Result<(), std::
 
         println!("{}", ids);
     } else {
-        let projects_fmt = format_projects(&projects, &state.ctx.default_project, true);
+        let projects_fmt = format_projects(&projects, true);
 
         println!("{}", projects_fmt.join("\n"));
     }

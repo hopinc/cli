@@ -34,7 +34,7 @@ pub async fn handle_link(options: LinkOptions, state: State) -> Result<(), std::
     }
 
     if HopFile::find(dir.clone()).await.is_some() {
-        panic!("A hopfile was found in {}", dir.display());
+        log::warn!("A hopfile was found in {}", dir.display());
     }
 
     let project = state.ctx.current_project_error();
@@ -70,6 +70,7 @@ pub async fn handle_link(options: LinkOptions, state: State) -> Result<(), std::
                 .items(&deployments_fmt)
                 .default(0)
                 .interact_opt()
+                .ok()
                 .expect("Failed to select deployment")
                 .expect("No deployment selected");
 
