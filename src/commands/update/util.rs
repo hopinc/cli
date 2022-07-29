@@ -21,14 +21,25 @@ pub async fn check_version(beta: bool) -> (bool, String) {
         .get(RELEASE_URL)
         .send()
         .await
-        .expect("Failed to get latest release")
+        .expect("Failed to get latest release");
+
+    if !response.status().is_success() {
+        log::debug!(
+            "Failed to get latest release from Github: {}",
+            response.status()
+        );
+        // silently fail if we can't get the latest release
+        return (false, "".to_string());
+    }
+
+    let data = response
         .json::<Vec<GithubRelease>>()
         .await
         .expect("Failed to parse latest release");
 
     let latest = if beta {
         // the latest release that can be prereleased
-        response
+        data
             .iter()
             // skip drafts
             .find(|r| !r.draft)
@@ -36,7 +47,7 @@ pub async fn check_version(beta: bool) -> (bool, String) {
             .expect("No release found")
     } else {
         // the latest release that is not prereleased
-        response
+        data
             .iter()
             // skip drafts and prereleases
             .find(|r| !r.prerelease && !r.draft)
