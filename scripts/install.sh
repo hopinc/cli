@@ -26,7 +26,7 @@ if [ -z ${INSTALL_PATH+x} ]; then
     INSTALL_PATH="${INSTALL_DIR}/hop"
 fi
 
-DOWNLOAD_URL="https://github.com/hopinc/hop_cli/releases/${VERSION}/download/hop-${ARCH}-${PLATFORM}.$([ $PLATFORM = "Windows" ] && echo "zip" || echo "tar.gz"  )"
+DOWNLOAD_URL="https://github.com/hopinc/hop_cli/releases/download/${VERSION}/hop-${ARCH}-${PLATFORM}.$([ $PLATFORM = "Windows" ] && echo "zip" || echo "tar.gz"  )"
 
 echo "This script will automatically install hop (${VERSION}) for you."
 echo "Installation path: ${INSTALL_PATH}"
