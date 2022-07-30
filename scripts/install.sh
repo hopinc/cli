@@ -1,8 +1,5 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 set -eu
-
-#  If the version is not specified, use the latest version.
-VERSION=${HOP_VERSION:-"latest"}
 
 # If the install directory is not set, set it to a default value
 INSTALL_DIR=${HOP_INSTALL_DIR:-"/usr/local/bin"}
@@ -26,7 +23,13 @@ if [ -z ${INSTALL_PATH+x} ]; then
     INSTALL_PATH="${INSTALL_DIR}/hop"
 fi
 
-DOWNLOAD_URL="https://github.com/hopinc/hop_cli/releases/download/${VERSION}/hop-${ARCH}-${PLATFORM}.$([ $PLATFORM = "Windows" ] && echo "zip" || echo "tar.gz"  )"
+if [[ -z "${HOP_VERSION:-""}" ]]; then
+    VERSION="latest"
+    DOWNLOAD_URL="https://github.com/hopinc/hop_cli/releases/latest/download/hop-${ARCH}-${PLATFORM}.$([ $PLATFORM = "Windows" ] && echo "zip" || echo "tar.gz"  )"
+else
+    VERSION="${HOP_VERSION}"
+    DOWNLOAD_URL="https://github.com/hopinc/hop_cli/releases/download/${VERSION}/hop-${ARCH}-${PLATFORM}.$([ $PLATFORM = "Windows" ] && echo "zip" || echo "tar.gz"  )"
+fi
 
 echo "This script will automatically install hop (${VERSION}) for you."
 echo "Installation path: ${INSTALL_PATH}"
@@ -42,7 +45,7 @@ if [ -f "$INSTALL_PATH" ]; then
     exit 1
 fi
 
-if ! hash curl 2> /dev/null; then
+if ! command -v curl 2> /dev/null; then
     echo "error: you do not have 'curl' installed which is required for this script."
     exit 1
 fi
@@ -54,6 +57,8 @@ cleanup() {
     rm -f "$TEMP_FILE"
     rm -f "$TEMP_HEADER_FILE"
 }
+
+echo "Downloading $DOWNLOAD_URL"
 
 trap cleanup EXIT
 HTTP_CODE=$(curl -SL --progress-bar "$DOWNLOAD_URL" -D "$TEMP_HEADER_FILE" --output "$TEMP_FILE" --write-out "%{http_code}")
