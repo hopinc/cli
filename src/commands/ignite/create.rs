@@ -101,7 +101,7 @@ pub async fn handle_create(options: CreateOptions, state: State) -> Result<(), s
     );
 
     if let Some(count) = container_options.containers {
-        if count > 1 {
+        if count > 0 {
             log::info!("Creating {} containers", count);
             create_containers(state.http, deployment.id.clone(), count).await;
         }

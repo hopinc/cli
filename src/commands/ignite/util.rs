@@ -160,7 +160,8 @@ pub async fn create_deployment_config(
             }
         })
         .interact_text()
-        .unwrap();
+        .ok()
+        .expect("Failed to get deployment name");
 
     deployment_config.image.name = match options.image {
         Some(image) => image,
@@ -169,7 +170,8 @@ pub async fn create_deployment_config(
             .default(String::new())
             .show_default(false)
             .interact_text()
-            .unwrap(),
+            .ok()
+            .expect("Failed to get image name"),
     };
 
     deployment_config.container_type = ask_question_iter(
@@ -253,7 +255,8 @@ pub async fn create_deployment_config(
             }
         })
         .interact_text()
-        .unwrap();
+        .ok()
+        .expect("Failed to get CPUs");
 
     deployment_config.resources.ram =
         ask_question_iter("RAM", RamSizes::values(), RamSizes::default()).to_string();
@@ -351,7 +354,8 @@ where
         .default(choices.iter().position(|x| x == &default).unwrap())
         .items(&choices_txt)
         .interact()
-        .unwrap();
+        .ok()
+        .expect("Failed to select");
 
     choices[choice].clone()
 }
