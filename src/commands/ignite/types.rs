@@ -78,7 +78,7 @@ impl RamSizes {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Resources {
-    pub cpu: u64,
+    pub vcpu: u64,
     pub ram: String,
     #[serde(skip)]
     pub vgpu: Vec<Vgpu>,
@@ -87,7 +87,7 @@ pub struct Resources {
 impl Default for Resources {
     fn default() -> Self {
         Resources {
-            cpu: 1,
+            vcpu: 1,
             ram: RamSizes::default().to_string(),
             vgpu: vec![],
         }

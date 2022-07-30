@@ -8,7 +8,7 @@ use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
 
 use super::types::{GithubRelease, Version};
-use crate::config::{ARCH, PLATFORM};
+use crate::config::ARCH;
 use crate::{config::VERSION, state::http::HttpClient};
 
 const RELEASE_URL: &str = "https://api.github.com/repos/hopinc/hop_cli/releases";
@@ -83,7 +83,7 @@ pub async fn download(http: HttpClient, version: String) -> Result<PathBuf, std:
     let filename = format!(
         "hop-{}-{}.{}",
         ARCH,
-        capitalize(PLATFORM),
+        capitalize(&sys_info::os_type().unwrap_or("Unknown".to_string())),
         COMPRESSED_FILE_EXTENSION
     );
 

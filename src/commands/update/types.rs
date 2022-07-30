@@ -16,12 +16,14 @@ impl FromStr for Version {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let tag = if s.starts_with("v") { &s[1..] } else { s };
 
-        let mut parts = tag.split('.');
+        let mut pre = tag.split('-');
+        let mut parts = pre.next().unwrap_or(tag).split('.');
 
         let major = parts.next().unwrap_or("0").parse()?;
         let minor = parts.next().unwrap_or("0").parse()?;
         let patch = parts.next().unwrap_or("0").parse()?;
-        let prelease = match tag.split("-").nth(1) {
+
+        let prelease = match pre.next() {
             Some(prelease) => Some(prelease.parse()?),
             None => None,
         };

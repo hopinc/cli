@@ -116,16 +116,16 @@ pub async fn create_deployment_config(
             ));
         }
 
-        deployment_config.resources.cpu = options
+        deployment_config.resources.vcpu = options
             .config
             .cpu
             .expect("The argument '--cpu <CPU>' requires a value but none was supplied");
 
-        if deployment_config.resources.cpu < 1 {
+        if deployment_config.resources.vcpu < 1 {
             panic!("The argument '--cpu <CPU>' must be at least 1");
         }
 
-        if deployment_config.resources.cpu > 32 {
+        if deployment_config.resources.vcpu > 32 {
             panic!("The argument '--cpu <CPU>' must be less than or equal to 32");
         }
 
@@ -242,9 +242,9 @@ pub async fn create_deployment_config(
         );
     }
 
-    deployment_config.resources.cpu = dialoguer::Input::<u64>::new()
+    deployment_config.resources.vcpu = dialoguer::Input::<u64>::new()
         .with_prompt("CPUs")
-        .default(deployment_config.resources.cpu)
+        .default(deployment_config.resources.vcpu)
         .validate_with(|cpu: &u64| -> Result<(), &str> {
             if *cpu > 0 && *cpu <= 64 {
                 Ok(())

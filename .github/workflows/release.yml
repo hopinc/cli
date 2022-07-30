@@ -11,6 +11,8 @@ jobs:
   draft-release:
     name: Create Release
     runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.release.outputs.name }}
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v2
@@ -20,16 +22,17 @@ jobs:
       - name: Get tag data
         id: tag
         run: |
-          echo ::set-output name=name::${GITHUB_REF#refs/*/}
+          echo ::set-output name=tag_name::${GITHUB_REF#refs/*/}
           if [[ ${{ github.event.ref }} =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+-[0-9]+$ ]]; then
             echo ::set-output name=pre_release::true
           fi
+
       - name: Create new release
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: ${{ steps.tag.outputs.pre_release == 'true' }}
-          title: "Version: ${{ steps.tag.outputs.name }}"
+          title: "Version: ${{ steps.tag.outputs.tag_name }}"
           draft: true
 
   build-release:
@@ -138,7 +141,7 @@ jobs:
         run: for file in hop-*/hop-*; do openssl dgst -sha256 -r "$file" | awk '{print $1}' > "${file}.sha256"; done
 
       - name: Update Release
-        run: gh release edit ${{ needs.release_please.outputs.tag_name }} --draft=false --repo=hopinc/hop_cli
+        run: gh release edit ${{ needs.draft-release.outputs.tag_name }} --draft=false --repo=hopinc/hop_cli
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -146,4 +149,4 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: hop-*/hop-*
-          tag_name: ${{ needs.release_please.outputs.tag_name }}
+          tag_name: ${{ needs.draft-release.outputs.tag_name }}

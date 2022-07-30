@@ -1,7 +1,7 @@
 use reqwest::header::HeaderMap;
 use reqwest::Client as AsyncClient;
 
-use crate::config::{PLATFORM, VERSION};
+use crate::config::VERSION;
 use crate::types::{Base, ErrorResponse};
 
 const HOP_API_BASE_URL: &str = "https://api.hop.io/v1";
@@ -24,7 +24,11 @@ impl HttpClient {
             headers.insert("Authorization", token.parse().unwrap());
         }
 
-        let ua = format!("hop_cli/{} on {}", VERSION, PLATFORM);
+        let ua = format!(
+            "hop_cli/{} on {}",
+            VERSION,
+            sys_info::os_type().unwrap_or("unknown".to_string())
+        );
 
         let base_url = match api_url {
             Some(url) => url,
