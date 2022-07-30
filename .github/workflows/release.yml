@@ -119,13 +119,11 @@ jobs:
           tar czvf ../../../hop-${{ matrix.platform }}.tar.gz hop
           cd -
 
-      - name: Upload release archive
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
         with:
-          tag_name: ${{ needs.create-release.outputs.tag }}
-          files: hop-${{ matrix.platform }}*
+          name: hop-${{ matrix.platform }}.${{ matrix.os == 'windows-latest' && 'zip' || 'tar.gz' }}
+          path: hop-${{ matrix.platform }}.${{ matrix.os == 'windows-latest' && 'zip' || 'tar.gz' }}
 
   publish-release:
     name: Publish Release
@@ -133,8 +131,19 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - name: Update release
-        uses: "marvinpinto/action-automatic-releases@latest"
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Create Checksums
+        run: for file in hop-*/hop-*; do openssl dgst -sha256 -r "$file" | awk '{print $1}' > "${file}.sha256"; done
+
+      - name: Update Release
+        run: gh release edit ${{ needs.release_please.outputs.tag_name }} --draft=false --repo=hopinc/hop_cli
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add Artifacts to Release
+        uses: softprops/action-gh-release@v1
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          draft: false
+          files: hop-*/hop-*
+          tag_name: ${{ needs.release_please.outputs.tag_name }}
