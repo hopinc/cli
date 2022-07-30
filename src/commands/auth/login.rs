@@ -12,88 +12,23 @@ use crate::state::State;
 const WEB_AUTH_URL: &str = "https://console.hop.io/cli-auth";
 const PAT_FALLBACK_URL: &str = "https://console.hop.io/settings/pats";
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, PartialEq, Default)]
 #[clap(about = "Login to Hop")]
 pub struct LoginOptions {
-    #[clap(name = "pat", help = "Personal Access Token")]
+    #[clap(long = "pat", help = "Personal Access Token")]
     pub pat: Option<String>,
-}
-
-async fn request_handler(
-    req: Request<Body>,
-    sender: Sender<String>,
-) -> Result<Response<Body>, Infallible> {
-    let query = req.uri().query();
-
-    // only send if it's an actual token
-    if let Some(query) = query {
-        // parse the query
-        // since pat should be a URL safe string we can just split on '='
-        let query: Vec<(String, String)> = query
-            .split("&")
-            .map(|s| parse_key_val(s).unwrap())
-            .collect::<Vec<_>>();
-
-        // if query has a key called "token"
-        if let Some(token) = query.iter().find(|(k, _)| k.to_owned() == "token") {
-            // send it to the main thread
-            sender.send(token.1.to_string()).await.unwrap();
-            return Ok(Response::new("You've been authorized".into()));
-        }
-    }
-
-    return Ok(Response::builder()
-        .status(400)
-        .body("You're not authorized".into())
-        .unwrap());
-}
-
-async fn web_auth(port: u16) -> Result<String, std::io::Error> {
-    let (sender, mut receiver) = channel::<String>(1);
-
-    let timeouter = sender.clone();
-
-    let timeout = task::spawn(async move {
-        tokio::time::sleep(tokio::time::Duration::from_secs(120)).await;
-        timeouter.send("timeout".to_string()).await.unwrap();
-    });
-
-    let service = make_service_fn(move |_| {
-        let sender = sender.clone();
-
-        async move {
-            Ok::<_, Infallible>(service_fn(move |req: Request<Body>| {
-                request_handler(req, sender.clone())
-            }))
-        }
-    });
-
-    let address = ([127, 0, 0, 1], port).into();
-
-    let server = Server::bind(&address).serve(service);
-
-    let runtime = task::spawn(async move {
-        if let Err(error) = server.await {
-            eprintln!("Server error: {}", error);
-        }
-        timeout.abort();
-    });
-
-    let response = receiver.recv().await;
-
-    runtime.abort();
-
-    if Some("timeout".to_string()) == response {
-        panic!("Reached the 2 minute timeout");
-    }
-
-    Ok(response.unwrap())
+    #[clap(short = 'u', long = "username", help = "Username")]
+    pub username: Option<String>,
+    #[clap(short = 'p', long = "password", help = "Password")]
+    pub password: Option<String>,
 }
 
 pub async fn handle_login(options: LoginOptions, mut state: State) -> Result<(), std::io::Error> {
-    let token = match options.pat {
-        Some(pat) => pat,
-        None => browser_login().await,
+    let token = if LoginOptions::default() == options {
+        browser_login().await
+    } else {
+        todo!();
+        // flags_login(options).await
     };
 
     // update the token assuming it's a valid PAT
@@ -143,6 +78,78 @@ async fn browser_login() -> String {
         dialoguer::Password::new()
             .with_prompt("Enter your token")
             .interact()
-            .unwrap()
+            .ok()
+            .expect("Failed to get token")
     }
+}
+
+async fn web_auth(port: u16) -> Result<String, std::io::Error> {
+    let (sender, mut receiver) = channel::<String>(1);
+
+    let timeouter = sender.clone();
+
+    let timeout = task::spawn(async move {
+        tokio::time::sleep(tokio::time::Duration::from_secs(120)).await;
+        timeouter.send("timeout".to_string()).await.unwrap();
+    });
+
+    let service = make_service_fn(move |_| {
+        let sender = sender.clone();
+
+        async move {
+            Ok::<_, Infallible>(service_fn(move |req: Request<Body>| {
+                request_handler(req, sender.clone())
+            }))
+        }
+    });
+
+    let address = ([127, 0, 0, 1], port).into();
+
+    let server = Server::bind(&address).serve(service);
+
+    let runtime = task::spawn(async move {
+        if let Err(error) = server.await {
+            eprintln!("Server error: {}", error);
+        }
+        timeout.abort();
+    });
+
+    let response = receiver.recv().await;
+
+    runtime.abort();
+
+    if Some("timeout".to_string()) == response {
+        panic!("Reached the 2 minute timeout");
+    }
+
+    Ok(response.unwrap())
+}
+
+async fn request_handler(
+    req: Request<Body>,
+    sender: Sender<String>,
+) -> Result<Response<Body>, Infallible> {
+    let query = req.uri().query();
+
+    // only send if it's an actual token
+    if let Some(query) = query {
+        // parse the query
+        // since pat should be a URL safe string we can just split on '='
+        let query: Vec<(String, String)> = query
+            .split("&")
+            .map(|s| parse_key_val(s).unwrap())
+            .collect::<Vec<_>>();
+
+        // if query has a key called "token"
+        if let Some(token) = query.iter().find(|(k, _)| k.to_owned() == "token") {
+            // send it to the main thread
+            sender.send(token.1.to_string()).await.unwrap();
+            return Ok(Response::new("You've been authorized".into()));
+        }
+    }
+
+    return Ok(Response::builder()
+        .status(400)
+        .body("You're not authorized".into())
+        .unwrap());
 }
