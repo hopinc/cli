@@ -1,7 +1,7 @@
 # `hop-` serves as a "namespace"
 [package]
 name = "hop-cli"
-version = "0.1.11"
+version = "0.1.12"
 edition = "2021"
 
 # override binary name
