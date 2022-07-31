@@ -3,6 +3,7 @@ use std::error::Error;
 use std::io::Write;
 
 use serde::Serialize;
+use serde_json::Value;
 use tabwriter::TabWriter;
 
 use super::types::{CreateDeployment, Deployment, MultipleDeployments, SingleDeployment};
@@ -41,6 +42,17 @@ pub async fn create_deployment(
     .expect("Error while creating deployment")
     .unwrap()
     .deployment
+}
+
+pub async fn rollout(http: HttpClient, deployment_id: String) {
+    http.request::<Value>(
+        "POST",
+        format!("/ignite/deployments/{}/rollouts", deployment_id).as_str(),
+        None,
+    )
+    .await
+    .expect("Failed to rollout")
+    .expect("Failed to rollout");
 }
 
 pub fn format_deployments(deployments: &Vec<Deployment>, title: bool) -> Vec<String> {
@@ -121,12 +133,8 @@ pub async fn create_deployment_config(
             .cpu
             .expect("The argument '--cpu <CPU>' requires a value but none was supplied");
 
-        if deployment_config.resources.vcpu < 1 {
-            panic!("The argument '--cpu <CPU>' must be at least 1");
-        }
-
-        if deployment_config.resources.vcpu > 32 {
-            panic!("The argument '--cpu <CPU>' must be less than or equal to 32");
+        if deployment_config.resources.vcpu < 0.1 {
+            panic!("The argument '--cpu <CPU>' must be at least 0.1");
         }
 
         deployment_config.resources.ram = options
@@ -244,14 +252,14 @@ pub async fn create_deployment_config(
         );
     }
 
-    deployment_config.resources.vcpu = dialoguer::Input::<u64>::new()
+    deployment_config.resources.vcpu = dialoguer::Input::<f64>::new()
         .with_prompt("CPUs")
         .default(deployment_config.resources.vcpu)
-        .validate_with(|cpu: &u64| -> Result<(), &str> {
-            if *cpu > 0 && *cpu <= 64 {
+        .validate_with(|cpu: &f64| -> Result<(), &str> {
+            if *cpu < 0.1 {
                 Ok(())
             } else {
-                Err("CPUs must be greater than 0 and less than or equal to 64")
+                Err("CPUs must be at least 0.1")
             }
         })
         .interact_text()

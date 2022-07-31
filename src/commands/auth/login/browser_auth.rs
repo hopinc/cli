@@ -1,58 +1,16 @@
 use std::convert::Infallible;
 
-use clap::Parser;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server};
 use tokio::sync::mpsc::{channel, Sender};
 use tokio::task;
 
+use crate::commands::auth::login::PAT_FALLBACK_URL;
 use crate::commands::ignite::util::parse_key_val;
-use crate::state::State;
 
-const WEB_AUTH_URL: &str = "https://console.hop.io/cli-auth";
-const PAT_FALLBACK_URL: &str = "https://console.hop.io/settings/pats";
+use super::WEB_AUTH_URL;
 
-#[derive(Debug, Parser, PartialEq, Default)]
-#[clap(about = "Login to Hop")]
-pub struct LoginOptions {
-    #[clap(long = "pat", help = "Personal Access Token")]
-    pub pat: Option<String>,
-    #[clap(short = 'u', long = "username", help = "Username")]
-    pub username: Option<String>,
-    #[clap(short = 'p', long = "password", help = "Password")]
-    pub password: Option<String>,
-}
-
-pub async fn handle_login(options: LoginOptions, mut state: State) -> Result<(), std::io::Error> {
-    let token = if LoginOptions::default() == options {
-        browser_login().await
-    } else {
-        todo!();
-        // flags_login(options).await
-    };
-
-    // update the token assuming it's a valid PAT
-    state.update_http_token(token.clone());
-
-    // for sanity fetch the user info
-    state.login().await;
-
-    let me = state.ctx.me.clone().unwrap();
-
-    // save the state
-    state.auth.authorized.insert(me.user.id.clone(), token);
-    state.auth.save().await?;
-
-    state.ctx.default_user = Some(me.user.id);
-    state.ctx.save().await?;
-
-    // output the login info
-    log::info!("Logged in as: `{}` ({})", me.user.username, me.user.email);
-
-    Ok(())
-}
-
-async fn browser_login() -> String {
+pub async fn browser_login() -> String {
     let port = portpicker::pick_unused_port().unwrap();
 
     let callback_url = format!("http://localhost:{}/", port);

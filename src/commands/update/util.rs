@@ -13,15 +13,18 @@ use crate::{config::VERSION, state::http::HttpClient};
 
 const RELEASE_URL: &str = "https://api.github.com/repos/hopinc/hop_cli/releases";
 
-pub async fn check_version(beta: bool) -> (bool, String) {
+pub async fn check_version(beta: bool, silent: bool) -> (bool, String) {
     let http = HttpClient::new(None, None);
 
-    let response = http
-        .client
-        .get(RELEASE_URL)
-        .send()
-        .await
-        .expect("Failed to get latest release");
+    let response = match http.client.get(RELEASE_URL).send().await {
+        Ok(response) => response,
+        Err(e) => {
+            if !silent {
+                log::error!("Failed to check for updates: {}", e);
+            }
+            return (false, VERSION.to_string());
+        }
+    };
 
     if !response.status().is_success() {
         log::debug!(

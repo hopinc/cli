@@ -14,7 +14,7 @@ use tokio::task::JoinHandle;
 use tokio::time::{interval, Instant};
 use tokio_tungstenite::tungstenite::protocol::Message;
 
-use self::types::{LEAuthParams, OpCodes, SocketHello, SocketMessage, WebsocketError};
+use self::types::{LeapEdgeAuthParams, OpCodes, SocketHello, SocketMessage, WebsocketError};
 use self::utils::connect;
 
 const HOP_LEAP_EDGE_URL: &str = "wss://leap.hop.io/ws?encoding=json&compression=zlib";
@@ -22,7 +22,7 @@ const HOP_LEAP_EDGE_PROJECT_ID: &str = "project_MzA0MDgwOTQ2MDEwODQ5NzQ";
 
 #[derive(Debug)]
 pub struct WebsocketClient {
-    auth: Option<LEAuthParams>,
+    auth: Option<LeapEdgeAuthParams>,
     thread: Option<JoinHandle<()>>,
     channels: Option<SocketChannels>,
     last_heartbeat_acknowledged: bool,
@@ -51,7 +51,7 @@ impl WebsocketClient {
 
     /// Called from login
     pub fn update_token(&mut self, token: String) {
-        self.auth = Some(LEAuthParams {
+        self.auth = Some(LeapEdgeAuthParams {
             project_id: HOP_LEAP_EDGE_PROJECT_ID.to_string(),
             token,
         });
@@ -62,11 +62,12 @@ impl WebsocketClient {
         let (sender_inbound, receiver_inbound) = mpsc::channel::<String>(1);
 
         self.channels = Some(SocketChannels {
-            send: sender_outbound,
+            send: sender_outbound.clone(),
             recv: receiver_inbound,
         });
 
         let socket_auth = self.auth.clone();
+        let internal_sender = sender_outbound.clone();
 
         // start massive thread to get messages / deliver messages
         let thread = spawn(async move {
@@ -86,22 +87,24 @@ impl WebsocketClient {
             // it is safe to unwrap since first message **has** to be hello
             let htb = hello.d.unwrap().heartbeat_interval;
 
+            log::debug!("Heartbeat interval: {}ms", htb);
+
             let mut interval = interval(Duration::from_millis(htb));
 
             // skip first htb
             interval.tick().await;
 
-            sender
+            internal_sender
+                .clone()
                 .send(
                     serde_json::to_string(&SocketMessage {
                         op: OpCodes::Identify,
                         d: Some(socket_auth),
                     })
-                    .unwrap()
-                    .into(),
+                    .unwrap(),
                 )
                 .await
-                .unwrap();
+                .expect("Failed to send identify message");
 
             loop {
                 tokio::select! {
@@ -215,6 +218,7 @@ impl WebsocketClient {
 
                 message
             }
+
             Message::Binary(bin) => {
                 let mut uncompressed = ZlibDecoder::new(Cursor::new(bin));
                 let mut buff = vec![];
@@ -229,7 +233,13 @@ impl WebsocketClient {
 
                 message
             }
+
+            Message::Close(close) => {
+                panic!("Socket closed unexpectedly: {:?}", close);
+            }
+
             _ => {
+                log::debug!("Unknown message type: {:?}", message);
                 panic!("received unexpected message type");
             }
         }
@@ -241,9 +251,7 @@ impl WebsocketClient {
     {
         match self.channels {
             Some(ref mut channels) => match channels.recv.recv().await {
-                Some(message) => match message.as_str() {
-                    message => Some(serde_json::from_str(message).unwrap()),
-                },
+                Some(message) => Some(serde_json::from_str(&message).unwrap()),
                 None => None,
             },
             None => None,
@@ -252,12 +260,12 @@ impl WebsocketClient {
 
     // TODO: remove when channels are implemented
     #[allow(dead_code)]
-    pub async fn send_message<T>(&mut self, message: T) -> Result<(), Box<dyn std::error::Error>>
+    pub async fn send_message<T>(&self, message: T) -> Result<(), Box<dyn std::error::Error>>
     where
         T: serde::Serialize,
     {
         match self.channels {
-            Some(ref mut channels) => {
+            Some(ref channels) => {
                 let message = serde_json::to_string(&message).unwrap();
 
                 channels.send.send(message).await?;

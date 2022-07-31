@@ -1,6 +1,7 @@
 pub mod create;
 mod delete;
 mod list;
+pub mod rollout;
 pub mod types;
 pub mod util;
 
@@ -9,6 +10,7 @@ use clap::{Parser, Subcommand};
 use self::create::{handle_create, CreateOptions};
 use self::delete::{handle_delete, DeleteOptions};
 use self::list::{handle_list, ListOptions};
+use self::rollout::{handle_rollout, RolloutOptions};
 use crate::state::State;
 
 #[derive(Debug, Subcommand)]
@@ -19,6 +21,8 @@ pub enum Commands {
     List(ListOptions),
     #[clap(name = "rm", alias = "delete")]
     Delete(DeleteOptions),
+    #[clap(name = "rollout", alias = "rollouts")]
+    Rollout(RolloutOptions),
 }
 
 #[derive(Debug, Parser)]
@@ -36,5 +40,6 @@ pub async fn handle_deployments(
         Commands::Create(options) => handle_create(options, state).await,
         Commands::List(options) => handle_list(options, state).await,
         Commands::Delete(options) => handle_delete(options, state).await,
+        Commands::Rollout(options) => handle_rollout(options, state).await,
     }
 }

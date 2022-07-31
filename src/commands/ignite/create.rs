@@ -1,4 +1,5 @@
 use clap::Parser;
+use console::style;
 
 use super::types::{Env, RamSizes, ScalingStrategy};
 use crate::commands::containers::types::ContainerType;
@@ -32,7 +33,7 @@ pub struct DeploymentConfig {
         long = "cpu",
         help = "The number of CPUs to use between 1 to 32, defaults to 1"
     )]
-    pub cpu: Option<u64>,
+    pub cpu: Option<f64>,
 
     #[clap(
         short = 'r',
@@ -50,13 +51,13 @@ pub struct DeploymentConfig {
 
     #[clap(
         long = "min",
-        help = "Minimum number of containers to use if `scaling` is autoscaled, defaults to 1"
+        help = "Minimum number of containers to use if `scaling` is autoscale, defaults to 1"
     )]
     pub min_containers: Option<u64>,
 
     #[clap(
         long = "max",
-        help = "Maximum number of containers to use if `scaling` is autoscaled, defaults to 10"
+        help = "Maximum number of containers to use if `scaling` is autoscale, defaults to 10"
     )]
     pub max_containers: Option<u64>,
 
@@ -69,6 +70,7 @@ pub struct DeploymentConfig {
 }
 
 #[derive(Debug, Parser, Default, PartialEq, Clone)]
+#[clap(about = "Create a new deployment")]
 pub struct CreateOptions {
     #[clap(flatten)]
     pub config: DeploymentConfig,
@@ -108,9 +110,13 @@ pub async fn handle_create(options: CreateOptions, state: State) -> Result<(), s
     }
 
     log::info!(
-        "Created deployment. You can find it at {}{}",
-        WEB_DEPLOYMENTS_URL,
-        deployment.id
+        "Deployed successfuly, you can find it at: {}",
+        style(format!(
+            "{}{}?project={}",
+            WEB_DEPLOYMENTS_URL, deployment.id, project.namespace
+        ))
+        .underlined()
+        .bold()
     );
 
     Ok(())

@@ -55,16 +55,7 @@ impl HttpClient {
             reqwest::StatusCode::OK => response,
             reqwest::StatusCode::CREATED => return Ok(None),
             reqwest::StatusCode::NO_CONTENT => return Ok(None),
-            code => {
-                let body = response.json::<ErrorResponse>().await;
-
-                match body {
-                    Ok(body) => return Err(format!("{}: {}", code.as_u16(), body.error.message)),
-                    Err(err) => {
-                        panic!("{}", err)
-                    }
-                };
-            }
+            code => return self.handle_error(response, code.as_u16()).await,
         };
 
         let response = response
@@ -73,6 +64,21 @@ impl HttpClient {
             .expect("Failed to parse response");
 
         Ok(Some(response.data))
+    }
+
+    async fn handle_error<T>(
+        &self,
+        response: reqwest::Response,
+        code: u16,
+    ) -> Result<Option<T>, String> {
+        let body = response.json::<ErrorResponse>().await;
+
+        match body {
+            Ok(body) => Err(format!("{}: {}", code, body.error.message)),
+            Err(err) => {
+                panic!("{}", err)
+            }
+        }
     }
 
     pub async fn request<T>(
@@ -93,6 +99,8 @@ impl HttpClient {
             request = request.body(body);
             request = request.header("Content-Type", content_type);
         }
+
+        log::debug!("Request: {:?}", request);
 
         let response = request
             .send()

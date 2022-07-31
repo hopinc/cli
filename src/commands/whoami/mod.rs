@@ -7,12 +7,12 @@ use crate::{config::EXEC_NAME, state::State};
 pub struct WhoamiOptions {}
 
 pub async fn handle_whoami(_options: WhoamiOptions, state: State) -> Result<(), std::io::Error> {
-    let me = state.ctx.me.clone().unwrap();
+    let authorized = state.ctx.current.clone().unwrap();
 
     log::info!(
         "You are logged in as `{}` ({})",
-        me.user.username,
-        me.user.email
+        authorized.name,
+        authorized.email.unwrap_or(authorized.id)
     );
 
     let project = state.ctx.current_project();

@@ -1,34 +1,35 @@
 use clap::Parser;
 
-use super::util::format_projects;
 use crate::state::State;
 
+use super::utils::format_users;
+
 #[derive(Debug, Parser)]
-#[clap(about = "List all projects")]
+#[clap(about = "List all deployments")]
 pub struct ListOptions {
     #[clap(
         short = 'q',
         long = "quiet",
-        help = "Only print the IDs of the projects"
+        help = "Only print the IDs of the authorized users"
     )]
     pub quiet: bool,
 }
 
 pub async fn handle_list(options: ListOptions, state: State) -> Result<(), std::io::Error> {
-    let projects = state.ctx.current.unwrap().projects;
+    let users = state.auth.authorized.keys().collect::<Vec<_>>();
 
     if options.quiet {
-        let ids = projects
+        let ids = users
             .iter()
-            .map(|d| d.id.as_str())
+            .map(|d| d.as_str())
             .collect::<Vec<_>>()
             .join(" ");
 
         println!("{}", ids);
     } else {
-        let projects_fmt = format_projects(&projects, true);
+        let users_fmt = format_users(&users, true);
 
-        println!("{}", projects_fmt.join("\n"));
+        println!("{}", users_fmt.join("\n"));
     }
 
     Ok(())

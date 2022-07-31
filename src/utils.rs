@@ -17,7 +17,7 @@ pub fn set_hook() {
         log::error!("{}", message);
 
         if cfg!(debug_assertions) {
-            log::trace!("{}", panic_info)
+            log::debug!("{}", panic_info)
         }
 
         std::process::exit(1);

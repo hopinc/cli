@@ -40,7 +40,7 @@ pub async fn handle_command(command: Commands, mut state: State) -> Result<(), s
 
         authorized_command => {
             // login so these commands can run
-            state.login().await;
+            state.login(None).await;
 
             match authorized_command {
                 Commands::Auth(_) => unreachable!(),

@@ -17,19 +17,13 @@ pub static VALID_HOP_FILENAMES: &[&str] = &[
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct HopFile {
     pub version: u8,
-    pub config: HopFileConfigV1,
+    pub config: HopFileConfig,
     #[serde(skip)]
     pub path: PathBuf,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-enum HopFileVersion {
-    #[serde(rename = "1")]
-    V1(HopFileConfigV1),
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct HopFileConfigV1 {
+pub struct HopFileConfig {
     pub project_id: String,
     pub deployment_id: String,
 }
@@ -38,7 +32,7 @@ impl HopFile {
     pub fn new(path: PathBuf, project: String, deployment: String) -> HopFile {
         HopFile {
             version: 1,
-            config: HopFileConfigV1 {
+            config: HopFileConfig {
                 project_id: project,
                 deployment_id: deployment,
             },
@@ -102,7 +96,6 @@ impl HopFile {
 
         None
     }
-
     pub async fn save(self) -> Option<Self> {
         let path = self.path.clone();
 

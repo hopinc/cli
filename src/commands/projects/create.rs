@@ -1,7 +1,7 @@
 use clap::Parser;
 use serde::Serialize;
 
-use super::types::{CreateResponse, ProjectRes};
+use super::types::{Project, SingleProjectResponse};
 use crate::state::http::HttpClient;
 use crate::state::State;
 
@@ -23,12 +23,9 @@ struct CreateParams {
     namespace: String,
 }
 
-async fn create_project(
-    params: CreateParams,
-    http: HttpClient,
-) -> Result<ProjectRes, std::io::Error> {
+async fn create_project(params: CreateParams, http: HttpClient) -> Result<Project, std::io::Error> {
     let json = http
-        .request::<CreateResponse>(
+        .request::<SingleProjectResponse>(
             "POST",
             "/projects",
             Some((

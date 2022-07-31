@@ -10,6 +10,15 @@ pub struct User {
     pub username: String,
 }
 
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct AuthorizedClient {
+    pub id: String,
+    pub name: String,
+    pub leap_token: String,
+    pub projects: Vec<Project>,
+    pub email: Option<String>,
+}
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct UserMe {
     pub leap_token: String,

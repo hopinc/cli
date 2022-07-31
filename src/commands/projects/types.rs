@@ -7,8 +7,8 @@ pub struct ProjectRes {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct CreateResponse {
-    pub project: ProjectRes,
+pub struct SingleProjectResponse {
+    pub project: Project,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -20,4 +20,10 @@ pub struct Project {
     pub namespace: String,
     #[serde(rename = "type")]
     pub p_type: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ThisProjectResponse {
+    pub leap_token: String,
+    pub project: Project,
 }

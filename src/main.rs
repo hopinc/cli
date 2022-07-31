@@ -55,7 +55,7 @@ async fn main() -> Result<(), std::io::Error> {
         Commands::Update(_) => {}
         _ => {
             task::spawn(async move {
-                let (update, latest) = check_version(false).await;
+                let (update, latest) = check_version(false, true).await;
 
                 if update {
                     log::warn!("A new version is available: {}", latest);
@@ -67,7 +67,6 @@ async fn main() -> Result<(), std::io::Error> {
     match handle_command(cli.commands, state).await {
         Ok(_) => Ok(()),
         Err(e) => {
-            log::error!("Error bruh");
             log::error!("{}", e);
             Err(e)
         }

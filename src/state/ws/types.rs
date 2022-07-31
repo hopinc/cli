@@ -27,7 +27,7 @@ pub struct SocketHello {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct LEAuthParams {
+pub struct LeapEdgeAuthParams {
     pub project_id: String,
     pub token: String,
 }

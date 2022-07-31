@@ -13,10 +13,10 @@ use tokio::fs;
 use self::types::{Event, Message};
 use self::util::{compress, env_file_to_map};
 use crate::commands::containers::types::ContainerOptions;
-use crate::commands::containers::utils::{create_containers, rollout};
+use crate::commands::containers::utils::create_containers;
 use crate::commands::ignite::create::{CreateOptions, DeploymentConfig, WEB_DEPLOYMENTS_URL};
 use crate::commands::ignite::types::SingleDeployment;
-use crate::commands::ignite::util::{create_deployment, create_deployment_config};
+use crate::commands::ignite::util::{create_deployment, create_deployment_config, rollout};
 use crate::state::State;
 use crate::store::hopfile::HopFile;
 
@@ -67,7 +67,8 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
 
     let is_not_guided = options.config != DeploymentConfig::default();
 
-    let (deployment, container_options, existing) = match HopFile::find(dir.clone()).await {
+    let (project, deployment, container_options, existing) = match HopFile::find(dir.clone()).await
+    {
         Some(hopfile) => {
             log::info!("Found hopfile: {}", hopfile.path.display());
 
@@ -108,7 +109,7 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
                 max_containers: None,
             };
 
-            (deployment, container_options, true)
+            (project, deployment, container_options, true)
         }
 
         None => {
@@ -174,7 +175,7 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
                 .await
                 .expect("Could not save hopfile");
 
-            (deployment, container_options, false)
+            (project, deployment, container_options, false)
         }
     };
 
@@ -272,7 +273,7 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
 
     if existing {
         if deployment.container_count > 0 {
-            log::info!("Rolling out new containers...");
+            log::info!("Rolling out new containers");
             rollout(state.http, deployment.id.clone()).await;
         }
     } else {
@@ -283,9 +284,12 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
 
     log::info!(
         "Deployed successfuly, you can find it at: {}",
-        style(format!("{}{}", WEB_DEPLOYMENTS_URL, deployment.id))
-            .underlined()
-            .bold()
+        style(format!(
+            "{}{}?project={}",
+            WEB_DEPLOYMENTS_URL, deployment.id, project.namespace
+        ))
+        .underlined()
+        .bold()
     );
 
     Ok(())

@@ -21,7 +21,7 @@ pub struct UpdateOptions {
 pub async fn handle_update(options: UpdateOptions, _state: State) -> Result<(), std::io::Error> {
     let http = HttpClient::new(None, None);
 
-    let (update, version) = check_version(options.beta).await;
+    let (update, version) = check_version(options.beta, false).await;
 
     if !update && !options.force {
         log::info!("CLI is up to date");

@@ -5,11 +5,11 @@ use tokio::fs::{self, File};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use super::utils::home_path;
-use crate::commands::auth::types::UserMe;
+use crate::commands::auth::types::AuthorizedClient;
 use crate::commands::projects::types::Project;
 use crate::config::EXEC_NAME;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct Context {
     /// stored in the context store file
     pub default_project: Option<String>,
@@ -20,7 +20,7 @@ pub struct Context {
 
     /// runtime context
     #[serde(skip)]
-    pub me: Option<UserMe>,
+    pub current: Option<AuthorizedClient>,
     /// runtime context
     #[serde(skip)]
     pub project_override: Option<String>,
@@ -32,7 +32,7 @@ impl Context {
     }
 
     pub fn find_project_by_id_or_namespace(self, id_or_namespace: String) -> Option<Project> {
-        self.me
+        self.current
             .as_ref()
             .and_then(|me| {
                 me.projects.iter().find(|p| {
@@ -69,16 +69,6 @@ impl Context {
         ))
     }
 
-    pub fn default() -> Context {
-        Context {
-            me: None,
-            project_override: None,
-            override_api_url: None,
-            default_project: None,
-            default_user: None,
-        }
-    }
-
     pub async fn new() -> Self {
         let path = Self::path();
 
@@ -103,8 +93,8 @@ impl Context {
     }
 
     pub async fn save(mut self) -> Result<Self, std::io::Error> {
-        if let Some(ref me) = self.me {
-            self.default_user = Some(me.user.id.clone());
+        if let Some(ref authorized) = self.current {
+            self.default_user = Some(authorized.id.clone());
         }
 
         let path = Self::path();
