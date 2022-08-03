@@ -99,20 +99,19 @@ jobs:
           profile: minimal
           override: true
 
+      - name: Install Wix [Windows]
+        if: matrix.os == 'windows-latest'
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: cargo-wix
+
       - name: Build release binary
         uses: actions-rs/cargo@v1
         with:
           command: build
           args: --release --locked --target ${{ matrix.target }}
           use-cross: ${{ matrix.os == 'ubuntu-latest' }}
-
-      - name: Prepare binaries [Windows]
-        if: matrix.os == 'windows-latest'
-        run: |
-          cd target/${{ matrix.target }}/release
-          strip hop.exe
-          7z a ../../../hop-${{ matrix.platform }}.zip hop.exe
-          cd -
 
       - name: Prepare binaries [*nix]
         if: matrix.os != 'windows-latest'
@@ -122,11 +121,33 @@ jobs:
           tar czvf ../../../hop-${{ matrix.platform }}.tar.gz hop
           cd -
 
-      - name: Upload artifacts
+      - name: Prepare binaries [Windows]
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd target/${{ matrix.target }}/release
+          strip hop.exe
+          7z a ../../../hop-${{ matrix.platform }}.zip hop.exe
+          cd -
+        
+      - name: Build installer [Windows] 
+        if: matrix.os == 'windows-latest'
+        uses: actions-rs/cargo@v1
+        with:
+          command: wix
+          args:  -I .\build\windows\main.wxs -v --no-build --nocapture --target ${{ matrix.target }} --output target/wix/hop-${{ matrix.platform }}.msi
+
+      - name: Upload binaries
         uses: actions/upload-artifact@v3
         with:
           name: hop-${{ matrix.platform }}.${{ matrix.os == 'windows-latest' && 'zip' || 'tar.gz' }}
           path: hop-${{ matrix.platform }}.${{ matrix.os == 'windows-latest' && 'zip' || 'tar.gz' }}
+
+      - name: Upload installer [Windows]
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v3
+        with:
+          name: hop-${{ matrix.platform }}.msi
+          path: target/wix/hop-${{ matrix.platform }}.msi
 
   publish-release:
     name: Publish Release

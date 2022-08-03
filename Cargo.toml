@@ -1,46 +1,69 @@
-# `hop-` serves as a "namespace"
 [package]
 name = "hop-cli"
 version = "0.1.12"
 edition = "2021"
+license = "MPL-2.0"
+authors = ["Hop Inc."]
+description = "Interact with Hop in your terminal"
 
-# override binary name
 [[bin]]
 name = "hop"
 path = "./src/main.rs"
 
+[package.metadata.winres]
+ProductName = "Hop CLI"
+OriginalFilename = "hop.exe"
+LegalCopyright = "© 2022 Hop Inc."
+FileDescription = "Interact with Hop in your terminal"
+
 [dependencies]
-log = "0.4"
-dirs = "4.0"
-regex = "1.5"
-runas = "0.2"
-ignore = "0.4"
-console = "0.15"
-sys-info = "0.9"
-tabwriter = "1.2"
-tokio-tar = "0.3"
-dialoguer = "0.10"
-webbrowser = "0.7"
-portpicker = "0.1"
-serde_yaml = "0.9"
-serde_json = "1.0"
-serde_repr = "0.1"
-futures-util = "0.3"
-clap = { version = "3.2", features = ["derive"] }
-fern = { version = "0.6", features = ["colored"] }
-tokio = { version = "1", features = ["full"] }
-serde = { version = "1.0", features = ["derive"] }
-hyper = { version = "0.14", features = ["server"] }
-ctrlc = { version = "3.0", features = ["termination"] }
-async-compression = { version = "0.3", features = ["tokio", "gzip", "zlib"] }
-reqwest = { version = "0.11", features = [
+log = "0.4.17"
+dirs = "4.0.0"
+regex = "1.6.0"
+runas = "0.2.1"
+ignore = "0.4.18"
+console = "0.15.1"
+sys-info = "0.9.1"
+tabwriter = "1.2.1"
+tokio-tar = "0.3.0"
+dialoguer = "0.10.2"
+webbrowser = "0.7.1"
+portpicker = "0.1.1"
+serde_yaml = "0.9.4"
+serde_json = "1.0.82"
+serde_repr = "0.1.8"
+futures-util = "0.3.21"
+clap = { version = "3.2.16", features = ["derive"] }
+fern = { version = "0.6.1", features = ["colored"] }
+tokio = { version = "1.20.1", features = ["full"] }
+serde = { version = "1.0.141", features = ["derive"] }
+hyper = { version = "0.14.20", features = ["server"] }
+ctrlc = { version = "3.2.2", features = ["termination"] }
+async-compression = { version = "0.3.14", features = ["tokio", "gzip", "zlib"] }
+
+# *nix only deps
+[target.'cfg(not(windows))'.dependencies]
+reqwest = { version = "0.11.11", features = [
     "json",
     "multipart",
     "rustls-tls-webpki-roots",
 
 ], default-features = false }
-tokio-tungstenite = { version = "0.17", features = ["rustls-tls-webpki-roots"] }
+tokio-tungstenite = { version = "0.17.2", features = [
+    "rustls-tls-webpki-roots",
+] }
 
-# windows only
+# windows only deps
 [target.'cfg(windows)'.dependencies]
 async_zip = "0.0.8"
+reqwest = { version = "0.11.11", features = [
+    "json",
+    "multipart",
+    "native-tls",
+] }
+tokio-tungstenite = { version = "0.17.2", features = ["native-tls"] }
+
+[target.'cfg(windows)'.build-dependencies]
+winapi = { version = "0.3.9", features = ["winuser"] }
+static_vcruntime = "2.0.0"
+winres = "0.1.12"
