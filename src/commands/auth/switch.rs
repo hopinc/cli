@@ -1,7 +1,8 @@
 use clap::Parser;
 
 use super::utils::format_users;
-use crate::{config::EXEC_NAME, state::State};
+use crate::config::EXEC_NAME;
+use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Switch to a different user")]
