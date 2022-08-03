@@ -1,12 +1,11 @@
 use clap::Parser;
 
-use crate::state::State;
-
 use super::utils::format_users;
+use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "List all deployments")]
-pub struct ListOptions {
+pub struct Options {
     #[clap(
         short = 'q',
         long = "quiet",
@@ -15,8 +14,10 @@ pub struct ListOptions {
     pub quiet: bool,
 }
 
-pub async fn handle_list(options: ListOptions, state: State) -> Result<(), std::io::Error> {
+pub fn handle(options: &Options, state: &State) {
     let users = state.auth.authorized.keys().collect::<Vec<_>>();
+
+    assert!(users.is_empty(), "There are no authorized users");
 
     if options.quiet {
         let ids = users
@@ -31,6 +32,4 @@ pub async fn handle_list(options: ListOptions, state: State) -> Result<(), std::
 
         println!("{}", users_fmt.join("\n"));
     }
-
-    Ok(())
 }

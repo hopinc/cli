@@ -2,13 +2,9 @@ use std::str::FromStr;
 
 use serde::Deserialize;
 
-use crate::{
-    commands::{
-        auth::types::{AuthorizedClient, UserMe},
-        projects::types::ThisProjectResponse,
-    },
-    state::http::HttpClient,
-};
+use crate::commands::auth::types::{AuthorizedClient, UserMe};
+use crate::commands::projects::types::ThisProjectResponse;
+use crate::state::http::HttpClient;
 
 #[derive(Debug, Deserialize, Clone)]
 pub enum TokenType {
@@ -21,11 +17,21 @@ pub enum TokenType {
 }
 
 impl FromStr for TokenType {
-    type Err = String;
+    type Err = std::io::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        serde_json::from_str(&format!("\"{}\"", s.to_uppercase()))
-            .map_err(|_| format!("Could not parse token type: {}", s))
+        serde_json::from_str(&format!("\"{}\"", s.to_uppercase())).map_err(|_| {
+            std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Could not parse token type: {}", s),
+            )
+        })
+    }
+}
+
+impl TokenType {
+    pub fn from_token(token: &str) -> Result<Self, std::io::Error> {
+        Self::from_str(&token.split('_').next().unwrap_or("").to_uppercase())
     }
 }
 
@@ -36,7 +42,10 @@ pub async fn token_options(http: HttpClient, token_type: Option<TokenType>) -> A
         Some(TokenType::Bearer) => login_pat(http.clone()).await,
         // ptks only allow one project at a time so diff route
         Some(TokenType::Ptk) => login_ptk(http.clone()).await,
-        _ => unreachable!("invalid token type"),
+        // should be impossible to get here
+        token => {
+            panic!("Unsupported token type: {:?}", token);
+        }
     }
 }
 

@@ -27,6 +27,6 @@ pub fn format_projects(projects: &Vec<Project>, title: bool) -> Vec<String> {
     String::from_utf8(tw.into_inner().unwrap())
         .unwrap()
         .lines()
-        .map(|l| l.to_string())
+        .map(std::string::ToString::to_string)
         .collect()
 }

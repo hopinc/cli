@@ -6,18 +6,18 @@ pub fn set_hook() {
     std::panic::set_hook(Box::new(|panic_info| {
         // print the panic message
         let message = if let Some(message) = panic_info.payload().downcast_ref::<String>() {
-            message.to_owned()
+            message.clone()
         } else if let Some(message) = panic_info.payload().downcast_ref::<&str>() {
-            message.to_string()
+            (*message).to_string()
         } else {
-            format!("{:?}", panic_info).to_string()
+            format!("{:?}", panic_info)
         };
 
         // add some color
         log::error!("{}", message);
 
         if cfg!(debug_assertions) {
-            log::debug!("{}", panic_info)
+            log::debug!("{}", panic_info);
         }
 
         std::process::exit(1);
@@ -28,7 +28,8 @@ pub fn set_hook() {
         // doesnt show the cursor when we exit
         // so lets do that manually
         let term = console::Term::stdout();
-        let _ = term.show_cursor();
+        term.show_cursor().ok();
+
         std::process::exit(0);
     })
     .ok();

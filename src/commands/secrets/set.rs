@@ -6,15 +6,15 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[structopt(about = "Set a secret")]
-pub struct SetOptions {
+pub struct Options {
     #[structopt(name = "name", help = "Name of the secret")]
     pub name: String,
     #[structopt(name = "value", help = "Value of the secret")]
     pub value: String,
 }
 
-pub async fn handle_set(options: SetOptions, state: State) -> Result<(), std::io::Error> {
-    validate_name(&options.name).unwrap();
+pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error> {
+    validate_name(&options.name)?;
 
     let project_id = state.ctx.current_project().expect("Project not found").id;
 

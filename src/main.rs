@@ -1,18 +1,19 @@
-mod commands;
-mod config;
-mod state;
-mod store;
-mod types;
-mod utils;
+#![warn(clippy::pedantic)]
 
-use crate::commands::update::util::check_version;
 use clap::Parser;
-use commands::{handle_command, Commands};
-use state::{State, StateOptions};
+use hop_cli::commands::update::util::check_version;
+use hop_cli::commands::{handle_command, Commands};
+use hop_cli::state::{State, StateOptions};
+use hop_cli::utils;
 use tokio::task;
 
 #[derive(Debug, Parser)]
-#[structopt(name = "hop", about = "🐇 Interact with Hop via command line", version)]
+#[structopt(
+    name = "hop",
+    about = "🐇 Interact with Hop via command line",
+    version,
+    author
+)]
 pub struct CLI {
     #[clap(subcommand)]
     pub commands: Commands,
@@ -46,7 +47,7 @@ async fn main() -> Result<(), std::io::Error> {
 
     let state = State::new(StateOptions {
         override_project_id: cli.project,
-        override_token: option_env!("HOP_TOKEN").map(|s| s.to_string()),
+        override_token: option_env!("HOP_TOKEN").map(std::string::ToString::to_string),
     })
     .await;
 
@@ -64,11 +65,5 @@ async fn main() -> Result<(), std::io::Error> {
         }
     }
 
-    match handle_command(cli.commands, state).await {
-        Ok(_) => Ok(()),
-        Err(e) => {
-            log::error!("{}", e);
-            Err(e)
-        }
-    }
+    handle_command(cli.commands, state).await
 }

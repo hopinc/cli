@@ -7,27 +7,26 @@ static CONFIRM_DELETE_PROJECT_MESSAGE: &str = "I am sure I want to delete the pr
 
 #[derive(Debug, Parser)]
 #[clap(about = "Delete a project")]
-pub struct DeleteOptions {
+pub struct Options {
     #[clap(name = "namespace", help = "Namespace of the project")]
     namespace: Option<String>,
     #[clap(short = 'f', long = "force", help = "Skip confirmation")]
     force: bool,
 }
 
-pub async fn handle_delete(options: DeleteOptions, mut state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: &Options, mut state: State) -> Result<(), std::io::Error> {
     let projects = state.ctx.current.clone().unwrap().projects;
 
-    if projects.is_empty() {
-        panic!("No projects found");
-    }
+    assert!(!projects.is_empty(), "No projects found");
 
-    let project = match options.namespace {
+    let project = match options.namespace.clone() {
         Some(namespace) => {
             let project = projects
                 .iter()
                 .find(|p| p.namespace == namespace)
                 .expect("Project not found");
-            project.to_owned()
+
+            project.clone()
         }
         None => {
             let projects_fmt = format_projects(&projects, false);
@@ -44,11 +43,10 @@ pub async fn handle_delete(options: DeleteOptions, mut state: State) -> Result<(
                     0
                 })
                 .interact_opt()
-                .ok()
                 .expect("Failed to select project")
                 .expect("No project selected");
 
-            projects[idx].to_owned()
+            projects[idx].clone()
         }
     };
 
@@ -62,9 +60,11 @@ pub async fn handle_delete(options: DeleteOptions, mut state: State) -> Result<(
             .interact_text()
             .expect("Failed to confirm deletion");
 
-        if output != format!("{}{}", CONFIRM_DELETE_PROJECT_MESSAGE, project.name) {
-            panic!("Aborted deletion of `{}`", project.name);
-        }
+        assert!(
+            output == CONFIRM_DELETE_PROJECT_MESSAGE.to_string() + &project.name,
+            "Aborted deletion of `{}`",
+            project.name
+        );
     }
 
     state

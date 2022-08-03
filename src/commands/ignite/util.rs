@@ -9,7 +9,7 @@ use tabwriter::TabWriter;
 use super::types::{CreateDeployment, Deployment, MultipleDeployments, SingleDeployment};
 use crate::commands::containers::types::{ContainerOptions, ContainerType};
 use crate::commands::deploy::util::validate_deployment_name;
-use crate::commands::ignite::create::CreateOptions;
+use crate::commands::ignite::create::Options;
 use crate::commands::ignite::types::{RamSizes, ScalingStrategy};
 use crate::state::http::HttpClient;
 
@@ -74,14 +74,15 @@ pub fn format_deployments(deployments: &Vec<Deployment>, title: bool) -> Vec<Str
     String::from_utf8(tw.into_inner().unwrap())
         .unwrap()
         .lines()
-        .map(|l| l.to_string())
+        .map(std::string::ToString::to_string)
         .collect()
 }
 
-pub async fn create_deployment_config(
-    options: CreateOptions,
+#[allow(clippy::too_many_lines)]
+pub fn create_deployment_config(
+    options: Options,
     is_not_guided: bool,
-    fallback_name: Option<String>,
+    fallback_name: &Option<String>,
 ) -> (CreateDeployment, ContainerOptions) {
     let mut deployment_config = CreateDeployment::default();
     let name = options.config.name.clone();
@@ -91,9 +92,10 @@ pub async fn create_deployment_config(
             .expect("The argument '--name <NAME>' requires a value but none was supplied")
             .to_lowercase();
 
-        if !validate_deployment_name(deployment_config.name.clone()) {
-            panic!("Invalid deployment name, must be alphanumeric and hyphens only");
-        }
+        assert!(
+            validate_deployment_name(&deployment_config.name),
+            "Invalid deployment name, must be alphanumeric and hyphens only"
+        );
 
         deployment_config.image.name = options
             .image
@@ -133,9 +135,10 @@ pub async fn create_deployment_config(
             .cpu
             .expect("The argument '--cpu <CPU>' requires a value but none was supplied");
 
-        if deployment_config.resources.vcpu < 0.1 {
-            panic!("The argument '--cpu <CPU>' must be at least 0.1");
-        }
+        assert!(
+            deployment_config.resources.vcpu > 0.09,
+            "The argument '--cpu <CPU>' must be at least 0.1"
+        );
 
         deployment_config.resources.ram = options
             .config
@@ -158,17 +161,16 @@ pub async fn create_deployment_config(
 
     deployment_config.name = dialoguer::Input::<String>::new()
         .with_prompt("Deployment name")
-        .default(fallback_name.clone().unwrap_or(String::new()))
+        .default(fallback_name.clone().unwrap_or_default())
         .show_default(fallback_name.is_some())
         .validate_with(|name: &String| -> Result<(), &str> {
-            if validate_deployment_name(name.to_string()) {
+            if validate_deployment_name(name) {
                 Ok(())
             } else {
                 Err("Invalid deployment name, must be alphanumeric and hyphens only")
             }
         })
         .interact_text()
-        .ok()
         .expect("Failed to get deployment name");
 
     deployment_config.image.name = match options.image {
@@ -178,21 +180,14 @@ pub async fn create_deployment_config(
             .default(String::new())
             .show_default(false)
             .interact_text()
-            .ok()
             .expect("Failed to get image name"),
     };
 
-    deployment_config.container_type = ask_question_iter(
-        "Container type",
-        ContainerType::values(),
-        ContainerType::default(),
-    );
+    deployment_config.container_type =
+        ask_question_iter("Container type", &ContainerType::values());
 
-    deployment_config.container_strategy = ask_question_iter(
-        "Scaling strategy",
-        ScalingStrategy::values(),
-        ScalingStrategy::default(),
-    );
+    deployment_config.container_strategy =
+        ask_question_iter("Scaling strategy", &ScalingStrategy::values());
 
     let mut container_options = ContainerOptions {
         containers: None,
@@ -263,11 +258,9 @@ pub async fn create_deployment_config(
             }
         })
         .interact_text()
-        .ok()
         .expect("Failed to get CPUs");
 
-    deployment_config.resources.ram =
-        ask_question_iter("RAM", RamSizes::values(), RamSizes::default()).to_string();
+    deployment_config.resources.ram = ask_question_iter("RAM", &RamSizes::values()).to_string();
 
     deployment_config.env = get_multiple_envs();
 
@@ -294,7 +287,6 @@ fn get_multiple_envs() -> HashMap<String, String> {
         .with_prompt("Add environment variables?")
         .default(false)
         .interact_opt()
-        .ok()
         .expect("Failed to ask for environment variables")
         .unwrap_or(false);
 
@@ -303,22 +295,20 @@ fn get_multiple_envs() -> HashMap<String, String> {
     }
 
     loop {
-        let ekv = get_env_from_input();
+        let env_kv = get_env_from_input();
 
-        if ekv.is_some() {
-            let (key, value) = ekv.unwrap();
+        if let Some((key, value)) = env_kv {
             env.insert(key, value);
         } else {
             break;
         }
 
-        let continue_ = dialoguer::Confirm::new()
+        let confirm = dialoguer::Confirm::new()
             .with_prompt("Add another environment variable?")
             .interact_opt()
-            .ok()
             .expect("Failed to ask for environment variables");
 
-        if continue_.is_none() || !continue_.unwrap() {
+        if confirm.is_none() || !confirm.unwrap() {
             break;
         }
     }
@@ -348,21 +338,20 @@ fn get_env_from_input() -> Option<(String, String)> {
     Some((key, value))
 }
 
-fn ask_question_iter<T>(prompt: &str, choices: Vec<T>, default: T) -> T
+fn ask_question_iter<T>(prompt: &str, choices: &[T]) -> T
 where
-    T: std::cmp::PartialEq + Clone + Serialize,
+    T: PartialEq + Clone + Serialize + Default,
 {
     let choices_txt: Vec<String> = choices
         .iter()
-        .map(|c| serde_json::to_string(c).unwrap().replace("\"", ""))
+        .map(|c| serde_json::to_string(c).unwrap().replace('"', ""))
         .collect();
 
     let choice = dialoguer::Select::new()
         .with_prompt(prompt)
-        .default(choices.iter().position(|x| x == &default).unwrap())
+        .default(choices.iter().position(|x| x == &T::default()).unwrap())
         .items(&choices_txt)
         .interact()
-        .ok()
         .expect("Failed to select");
 
     choices[choice].clone()

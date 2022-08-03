@@ -1,13 +1,20 @@
+use std::io::ErrorKind;
+
 use clap::Parser;
 
-use crate::{config::EXEC_NAME, state::State};
+use crate::config::EXEC_NAME;
+use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Get information about the current user")]
-pub struct WhoamiOptions {}
+pub struct Options {}
 
-pub async fn handle_whoami(_options: WhoamiOptions, state: State) -> Result<(), std::io::Error> {
-    let authorized = state.ctx.current.clone().unwrap();
+pub fn handle(_options: &Options, state: State) -> Result<(), std::io::Error> {
+    let authorized = state
+        .ctx
+        .current
+        .clone()
+        .ok_or_else(|| std::io::Error::new(ErrorKind::Other, "You are not logged in"))?;
 
     log::info!(
         "You are logged in as `{}` ({})",
@@ -28,7 +35,7 @@ pub async fn handle_whoami(_options: WhoamiOptions, state: State) -> Result<(), 
         }
         None => {
             log::warn!(
-                "No project is currently selected. Please run `{} project switch` first.",
+                "No project is currently selected. Please run `{} projects switch` first.",
                 EXEC_NAME
             );
         }

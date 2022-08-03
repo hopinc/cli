@@ -1,15 +1,14 @@
 use std::env::temp_dir;
 use std::path::PathBuf;
 use std::process::Command as Cmd;
-use std::str::FromStr;
 
 use runas::Command as SudoCmd;
 use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
 
 use super::types::{GithubRelease, Version};
-use crate::config::ARCH;
-use crate::{config::VERSION, state::http::HttpClient};
+use crate::config::{ARCH, VERSION};
+use crate::state::http::HttpClient;
 
 const RELEASE_URL: &str = "https://api.github.com/repos/hopinc/hop_cli/releases";
 
@@ -22,6 +21,7 @@ pub async fn check_version(beta: bool, silent: bool) -> (bool, String) {
             if !silent {
                 log::error!("Failed to check for updates: {}", e);
             }
+
             return (false, VERSION.to_string());
         }
     };
@@ -58,13 +58,13 @@ pub async fn check_version(beta: bool, silent: bool) -> (bool, String) {
             .expect("No beta release found")
     };
 
-    let latest = Version::from_str(&latest).unwrap();
-    let current = Version::from_str(VERSION).unwrap();
+    let latest = Version::from_string(&latest).unwrap();
+    let current = Version::from_string(VERSION).unwrap();
 
     if latest.is_newer(&current) {
-        return (true, latest.to_string());
+        (true, latest.to_string())
     } else {
-        return (false, String::new());
+        (false, String::new())
     }
 }
 
@@ -86,7 +86,7 @@ pub async fn download(http: HttpClient, version: String) -> Result<PathBuf, std:
     let filename = format!(
         "hop-{}-{}.{}",
         ARCH,
-        capitalize(&sys_info::os_type().unwrap_or("Unknown".to_string())),
+        capitalize(&sys_info::os_type().unwrap_or_else(|_| "Unknown".to_string())),
         COMPRESSED_FILE_EXTENSION
     );
 
@@ -102,9 +102,11 @@ pub async fn download(http: HttpClient, version: String) -> Result<PathBuf, std:
         .await
         .expect("Failed to get latest release");
 
-    if !response.status().is_success() {
-        panic!("Failed to get latest release: {}", response.status());
-    }
+    assert!(
+        response.status().is_success(),
+        "Failed to get latest release: {}",
+        response.status()
+    );
 
     let data = response
         .bytes()

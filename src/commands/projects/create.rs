@@ -7,7 +7,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Create a new project")]
-pub struct CreateOptions {
+pub struct Options {
     #[clap(name = "namespace", help = "Namespace of the project")]
     namespace: String,
     #[clap(name = "name", help = "Name of the project")]
@@ -40,7 +40,7 @@ async fn create_project(params: CreateParams, http: HttpClient) -> Result<Projec
     Ok(json.project)
 }
 
-pub async fn handle_create(options: CreateOptions, mut state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: &Options, mut state: State) -> Result<(), std::io::Error> {
     let params = CreateParams {
         name: options.name.clone(),
         namespace: options.namespace.clone(),

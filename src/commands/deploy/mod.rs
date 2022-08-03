@@ -14,7 +14,9 @@ use self::types::{Event, Message};
 use self::util::{compress, env_file_to_map};
 use crate::commands::containers::types::ContainerOptions;
 use crate::commands::containers::utils::create_containers;
-use crate::commands::ignite::create::{CreateOptions, DeploymentConfig, WEB_DEPLOYMENTS_URL};
+use crate::commands::ignite::create::{
+    DeploymentConfig, Options as CreateOptions, WEB_DEPLOYMENTS_URL,
+};
 use crate::commands::ignite::types::SingleDeployment;
 use crate::commands::ignite::util::{create_deployment, create_deployment_config, rollout};
 use crate::state::State;
@@ -25,7 +27,7 @@ const HOP_REGISTRY_URL: &str = "registry.hop.io";
 
 #[derive(Debug, Parser)]
 #[structopt(about = "Deploy a new container")]
-pub struct DeployOptions {
+pub struct Options {
     #[clap(
         name = "dir",
         help = "Directory to deploy, defaults to current directory"
@@ -43,7 +45,8 @@ pub struct DeployOptions {
     envfile: bool,
 }
 
-pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), std::io::Error> {
+#[allow(clippy::too_many_lines)]
+pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error> {
     let mut dir = current_dir().expect("Could not get current directory");
 
     if let Some(path) = options.path {
@@ -53,9 +56,7 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
             .expect("Could not get canonical path");
     }
 
-    if !dir.is_dir() {
-        panic!("{} is not a directory", dir.display());
-    }
+    assert!(dir.is_dir(), "{} is not a directory", dir.display());
 
     let mut connection = state
         .ws
@@ -138,7 +139,7 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
                     image: Some("temp".to_string()),
                 },
                 is_not_guided,
-                Some(
+                &Some(
                     dir.clone()
                         .file_name()
                         .unwrap()
@@ -146,8 +147,7 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
                         .unwrap()
                         .to_string(),
                 ),
-            )
-            .await;
+            );
 
             deployment_config.image.name = format!(
                 "{}/{}/{}",
@@ -245,20 +245,20 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
         match build_event.e.as_str() {
             "BUILD_PROGRESS" => {
                 if let Some(progress) = build_data.progress {
-                    print!("{}", progress)
+                    print!("{}", progress);
                 }
             }
 
             "PUSH_SUCCESS" => {
                 connection.close().await;
-                println!("");
+                println!();
                 log::info!("Pushed successfully");
                 break;
             }
 
             "PUSH_FAILURE" => {
                 connection.close().await;
-                println!("");
+                println!();
                 panic!(
                     "Push failed, for help contact us on {} and mention the deployment id: {}",
                     style("https://discord.gg/hop").underlined().bold(),
@@ -276,10 +276,8 @@ pub async fn handle_deploy(options: DeployOptions, state: State) -> Result<(), s
             log::info!("Rolling out new containers");
             rollout(state.http, deployment.id.clone()).await;
         }
-    } else {
-        if let Some(containers) = container_options.containers {
-            create_containers(state.http, deployment.id.clone(), containers).await;
-        }
+    } else if let Some(containers) = container_options.containers {
+        create_containers(state.http, deployment.id.clone(), containers).await;
     }
 
     log::info!(

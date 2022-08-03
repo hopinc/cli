@@ -1,3 +1,4 @@
+mod parse;
 pub mod types;
 pub mod util;
 
@@ -10,7 +11,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Update Hop to the latest version")]
-pub struct UpdateOptions {
+pub struct Options {
     #[clap(short = 'f', long = "force", help = "Force update")]
     pub force: bool,
 
@@ -18,7 +19,7 @@ pub struct UpdateOptions {
     pub beta: bool,
 }
 
-pub async fn handle_update(options: UpdateOptions, _state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: Options, _state: State) -> Result<(), std::io::Error> {
     let http = HttpClient::new(None, None);
 
     let (update, version) = check_version(options.beta, false).await;
@@ -26,9 +27,9 @@ pub async fn handle_update(options: UpdateOptions, _state: State) -> Result<(), 
     if !update && !options.force {
         log::info!("CLI is up to date");
         return Ok(());
-    } else {
-        log::info!("Found new version {} (current: {})", version, VERSION);
     }
+
+    log::info!("Found new version {} (current: {})", version, VERSION);
 
     // download the new release
     let packed_temp = download(http, version.clone())

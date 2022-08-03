@@ -9,7 +9,7 @@ use crate::store::hopfile::HopFile;
 
 #[derive(Debug, Parser)]
 #[structopt(about = "Link an existing deployment to a hopfile")]
-pub struct LinkOptions {
+pub struct Options {
     #[structopt(
         name = "dir",
         help = "Directory to link, defaults to current directory"
@@ -19,7 +19,7 @@ pub struct LinkOptions {
     name: Option<String>,
 }
 
-pub async fn handle_link(options: LinkOptions, state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error> {
     let mut dir = current_dir().expect("Could not get current directory");
 
     if let Some(path) = options.path {
@@ -29,9 +29,7 @@ pub async fn handle_link(options: LinkOptions, state: State) -> Result<(), std::
             .expect("Could not get canonical path");
     }
 
-    if !dir.is_dir() {
-        panic!("{} is not a directory", dir.display());
-    }
+    assert!(dir.is_dir(), "{} is not a directory", dir.display());
 
     if HopFile::find(dir.clone()).await.is_some() {
         log::warn!("A hopfile was found in {}", dir.display());
@@ -48,9 +46,10 @@ pub async fn handle_link(options: LinkOptions, state: State) -> Result<(), std::
 
     let deployments = get_deployments(state.http.clone(), project.id.clone()).await;
 
-    if deployments.is_empty() {
-        panic!("No deployments found in this project");
-    }
+    assert!(
+        !deployments.is_empty(),
+        "No deployments found in this project"
+    );
 
     let deployment = match options.name {
         Some(name_or_id) => {
@@ -70,7 +69,6 @@ pub async fn handle_link(options: LinkOptions, state: State) -> Result<(), std::
                 .items(&deployments_fmt)
                 .default(0)
                 .interact_opt()
-                .ok()
                 .expect("Failed to select deployment")
                 .expect("No deployment selected");
 

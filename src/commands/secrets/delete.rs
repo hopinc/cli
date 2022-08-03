@@ -6,16 +6,16 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Delete a secret")]
-pub struct DeleteOptions {
+pub struct Options {
     #[structopt(name = "name", help = "Name of the secret")]
     pub name: Option<String>,
     #[structopt(long = "no-confirm", help = "Skip confirmation")]
     force: bool,
 }
 
-pub async fn handle_delete(options: DeleteOptions, state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error> {
     if let Some(ref name) = options.name {
-        validate_name(&name).unwrap();
+        validate_name(name).unwrap();
     }
 
     let project_id = state.ctx.current_project().expect("Project not found").id;
@@ -35,9 +35,7 @@ pub async fn handle_delete(options: DeleteOptions, state: State) -> Result<(), s
                 .unwrap()
                 .secrets;
 
-            if secrests.is_empty() {
-                panic!("No secrets found");
-            }
+            assert!(!secrests.is_empty(), "No secrets found");
 
             let secrets_fmt = secrests
                 .iter()
@@ -49,7 +47,6 @@ pub async fn handle_delete(options: DeleteOptions, state: State) -> Result<(), s
                 .items(&secrets_fmt)
                 .default(0)
                 .interact_opt()
-                .ok()
                 .expect("Failed to select secret")
                 .expect("No secret selected");
 
@@ -64,12 +61,13 @@ pub async fn handle_delete(options: DeleteOptions, state: State) -> Result<(), s
                 secret_name
             ))
             .interact_opt()
-            .ok()
             .expect("Failed to confirm");
 
-        if confirm.is_none() || !confirm.unwrap() {
-            panic!("Aborted deletion of `{}`", secret_name);
-        }
+        assert!(
+            (confirm.is_some() || confirm.unwrap()),
+            "Aborted deletion of `{}`",
+            secret_name
+        );
     }
 
     state

@@ -49,7 +49,7 @@ impl FromStr for RamSizes {
 
 impl ToString for RamSizes {
     fn to_string(&self) -> String {
-        serde_json::to_string(self).unwrap().replace("\"", "")
+        serde_json::to_string(self).unwrap().replace('"', "")
     }
 }
 
@@ -113,7 +113,7 @@ impl FromStr for ScalingStrategy {
 
 impl ToString for ScalingStrategy {
     fn to_string(&self) -> String {
-        serde_json::to_string(self).unwrap().replace("\"", "")
+        serde_json::to_string(self).unwrap().replace('"', "")
     }
 }
 
@@ -129,17 +129,9 @@ impl ScalingStrategy {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct Image {
     pub name: String,
-}
-
-impl Default for Image {
-    fn default() -> Self {
-        Image {
-            name: String::default(),
-        }
-    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -171,7 +163,7 @@ pub struct MultipleDeployments {
     pub deployments: Vec<Deployment>,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, Default)]
 pub struct CreateDeployment {
     pub container_strategy: ScalingStrategy,
     pub env: HashMap<String, String>,
@@ -180,19 +172,6 @@ pub struct CreateDeployment {
     pub resources: Resources,
     #[serde(rename = "type")]
     pub container_type: ContainerType,
-}
-
-impl Default for CreateDeployment {
-    fn default() -> Self {
-        Self {
-            container_strategy: ScalingStrategy::default(),
-            env: HashMap::new(),
-            image: Image::default(),
-            name: String::default(),
-            resources: Resources::default(),
-            container_type: ContainerType::default(),
-        }
-    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

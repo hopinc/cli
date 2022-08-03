@@ -10,14 +10,14 @@ mod whoami;
 
 use clap::Subcommand;
 
-use self::auth::{handle_auth, AuthOptions};
-use self::deploy::{handle_deploy, DeployOptions};
-use self::ignite::{handle_deployments, IgniteOptions};
-use self::link::{handle_link, LinkOptions};
-use self::projects::{handle_projects, ProjectsOptions};
-use self::secrets::{handle_secrets, SecretsOptions};
-use self::update::{handle_update, UpdateOptions};
-use self::whoami::{handle_whoami, WhoamiOptions};
+use self::auth::{handle as handle_auth, Options as AuthOptions};
+use self::deploy::{handle as handle_deploy, Options as DeployOptions};
+use self::ignite::{handle as handle_ignite, Options as IgniteOptions};
+use self::link::{handle as handle_link, Options as LinkOptions};
+use self::projects::{handle as handle_projects, Options as ProjectsOptions};
+use self::secrets::{handle as handle_secrets, Options as SecretsOptions};
+use self::update::{handle as handle_update, Options as UpdateOptions};
+use self::whoami::{handle as handle_whoami, Options as WhoamiOptions};
 use crate::state::State;
 
 #[derive(Debug, Subcommand)]
@@ -43,13 +43,12 @@ pub async fn handle_command(command: Commands, mut state: State) -> Result<(), s
             state.login(None).await;
 
             match authorized_command {
-                Commands::Auth(_) => unreachable!(),
-                Commands::Update(_) => unreachable!(),
+                Commands::Auth(_) | Commands::Update(_) => unreachable!(),
                 Commands::Projects(options) => handle_projects(options, state).await,
                 Commands::Secrets(options) => handle_secrets(options, state).await,
                 Commands::Deploy(options) => handle_deploy(options, state).await,
-                Commands::Whoami(options) => handle_whoami(options, state).await,
-                Commands::Ignite(options) => handle_deployments(options, state).await,
+                Commands::Whoami(options) => handle_whoami(&options, state),
+                Commands::Ignite(options) => handle_ignite(options, state).await,
                 Commands::Link(options) => handle_link(options, state).await,
             }
         }

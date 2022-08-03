@@ -5,19 +5,21 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(name = "switch", about = "Switch to a different project")]
-pub struct SwitchOptions {
+pub struct Options {
     #[clap(name = "project", help = "Namespace or ID of the project to use")]
     pub project: Option<String>,
 }
 
-pub async fn handle_switch(options: SwitchOptions, mut state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: &Options, mut state: State) -> Result<(), std::io::Error> {
     let projects = state.ctx.current.clone().unwrap().projects;
 
-    if projects.is_empty() {
-        panic!("No projects found");
-    }
+    assert!(!projects.is_empty(), "No projects found");
 
-    let project = match options.project.or(state.ctx.clone().project_override) {
+    let project = match options
+        .project
+        .clone()
+        .or(state.ctx.clone().project_override)
+    {
         Some(project) => state
             .ctx
             .clone()
@@ -34,7 +36,6 @@ pub async fn handle_switch(options: SwitchOptions, mut state: State) -> Result<(
                     0
                 })
                 .interact_opt()
-                .ok()
                 .expect("Failed to select project")
                 .expect("No project selected");
 

@@ -1,31 +1,37 @@
 use super::types::{LoginRequest, LoginResponse};
-use super::LoginOptions;
-use crate::{config::EXEC_NAME, state::http::HttpClient};
+use super::Options;
+use crate::config::EXEC_NAME;
+use crate::state::http::HttpClient;
 
-pub async fn flags_login(options: LoginOptions, http: HttpClient) -> String {
+pub async fn flags_login(options: Options, http: HttpClient) -> String {
     match options {
-        LoginOptions {
+        Options {
             token: Some(token), ..
         } => token,
 
-        LoginOptions {
+        Options {
             email: Some(username),
-            password: Some(password),
+            password: None,
             ..
-        } => login_with_credentials(http, username, password).await,
-
-        LoginOptions {
+        }
+        | Options {
             email: Some(username),
+            password: Some(_),
             ..
         } => {
-            let password = dialoguer::Password::new()
-                .with_prompt("Password")
-                .interact()
-                .ok()
-                .expect("Error getting password");
+            let password =
+                if options.password.is_none() || options.password.as_ref().unwrap().is_empty() {
+                    dialoguer::Password::new()
+                        .with_prompt("Password")
+                        .interact()
+                        .expect("Error getting password")
+                } else {
+                    options.password.unwrap()
+                };
 
             login_with_credentials(http, username, password).await
         }
+
         _ => panic!(
             "Invalid login options, run `{} auth login --help` for more info",
             EXEC_NAME

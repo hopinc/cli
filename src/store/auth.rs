@@ -57,7 +57,7 @@ impl Auth {
             .await
             .expect("Error opening auth file:");
 
-        file.write(
+        file.write_all(
             serde_json::to_string(&self)
                 .expect("Failed to deserialize auth")
                 .as_bytes(),

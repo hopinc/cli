@@ -5,10 +5,9 @@ use hyper::{Body, Request, Response, Server};
 use tokio::sync::mpsc::{channel, Sender};
 use tokio::task;
 
+use super::WEB_AUTH_URL;
 use crate::commands::auth::login::PAT_FALLBACK_URL;
 use crate::commands::ignite::util::parse_key_val;
-
-use super::WEB_AUTH_URL;
 
 pub async fn browser_login() -> String {
     let port = portpicker::pick_unused_port().unwrap();
@@ -36,7 +35,6 @@ pub async fn browser_login() -> String {
         dialoguer::Password::new()
             .with_prompt("Enter your token")
             .interact()
-            .ok()
             .expect("Failed to get token")
     }
 }
@@ -76,9 +74,10 @@ async fn web_auth(port: u16) -> Result<String, std::io::Error> {
 
     runtime.abort();
 
-    if Some("timeout".to_string()) == response {
-        panic!("Reached the 2 minute timeout");
-    }
+    assert!(
+        Some("timeout".to_string()) != response,
+        "Reached the 2 minute timeout"
+    );
 
     Ok(response.unwrap())
 }
@@ -94,20 +93,20 @@ async fn request_handler(
         // parse the query
         // since pat should be a URL safe string we can just split on '='
         let query: Vec<(String, String)> = query
-            .split("&")
+            .split('&')
             .map(|s| parse_key_val(s).unwrap())
             .collect::<Vec<_>>();
 
         // if query has a key called "token"
-        if let Some(token) = query.iter().find(|(k, _)| k.to_owned() == "token") {
+        if let Some(token) = query.iter().find(|(k, _)| *k == "token") {
             // send it to the main thread
             sender.send(token.1.to_string()).await.unwrap();
             return Ok(Response::new("You've been authorized".into()));
         }
     }
 
-    return Ok(Response::builder()
+    Ok(Response::builder()
         .status(400)
         .body("You're not authorized".into())
-        .unwrap());
+        .unwrap())
 }

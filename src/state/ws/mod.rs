@@ -20,7 +20,7 @@ use self::utils::connect;
 const HOP_LEAP_EDGE_URL: &str = "wss://leap.hop.io/ws?encoding=json&compression=zlib";
 const HOP_LEAP_EDGE_PROJECT_ID: &str = "project_MzA0MDgwOTQ2MDEwODQ5NzQ";
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct WebsocketClient {
     auth: Option<LeapEdgeAuthParams>,
     thread: Option<JoinHandle<()>>,
@@ -38,14 +38,10 @@ pub struct SocketChannels {
 impl WebsocketClient {
     pub fn new() -> Self {
         let last_heartbeat_acknowledged = true;
-        let heartbeat_instants = (None, None);
 
         Self {
-            auth: None,
-            thread: None,
-            channels: None,
-            heartbeat_instants,
             last_heartbeat_acknowledged,
+            ..Default::default()
         }
     }
 
@@ -67,7 +63,6 @@ impl WebsocketClient {
         });
 
         let socket_auth = self.auth.clone();
-        let internal_sender = sender_outbound.clone();
 
         // start massive thread to get messages / deliver messages
         let thread = spawn(async move {
@@ -94,7 +89,7 @@ impl WebsocketClient {
             // skip first htb
             interval.tick().await;
 
-            internal_sender
+            sender_outbound
                 .clone()
                 .send(
                     serde_json::to_string(&SocketMessage {
@@ -138,12 +133,7 @@ impl WebsocketClient {
                                     }
 
                                     SocketMessage { op: OpCodes::Dispatch, d: data } => {
-                                        match sender_inbound.send(serde_json::to_string(&data).unwrap()).await {
-                                            Ok(_) => {}
-                                            // channel was closed before the message was delievered
-                                            // no need to panic here
-                                            Err(_) => {}
-                                        }
+                                        sender_inbound.send(serde_json::to_string(&data).unwrap()).await.ok();
                                     }
 
                                     // ignore other messages
@@ -165,12 +155,10 @@ impl WebsocketClient {
                     // internal rcv thread
                     internal = receiver_outbound.recv() => {
                         match internal {
-                            Some(message) => match message.as_str() {
-                                message => {
-                                    log::debug!("Sending message: {}", message);
+                            Some(message) => {
+                                log::debug!("Sending message: {}", message);
 
-                                    sender.send(message.into()).await.expect("Error sending message")
-                                }
+                                sender.send(message.into()).await.expect("Error sending message")
                             },
                             // no idea why this would happen
                             None => {}
@@ -250,10 +238,11 @@ impl WebsocketClient {
         T: serde::de::DeserializeOwned,
     {
         match self.channels {
-            Some(ref mut channels) => match channels.recv.recv().await {
-                Some(message) => Some(serde_json::from_str(&message).unwrap()),
-                None => None,
-            },
+            Some(ref mut channels) => channels
+                .recv
+                .recv()
+                .await
+                .map(|message| serde_json::from_str(&message).unwrap()),
             None => None,
         }
     }

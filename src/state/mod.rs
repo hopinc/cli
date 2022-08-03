@@ -1,11 +1,10 @@
 pub mod http;
 pub mod ws;
 
-use std::str::FromStr;
-
 use self::http::HttpClient;
 use self::ws::WebsocketClient;
 use crate::commands::auth::login::util::{token_options, TokenType};
+use crate::config::EXEC_NAME;
 use crate::store::auth::Auth;
 use crate::store::context::Context;
 
@@ -15,7 +14,7 @@ pub struct State {
     pub ctx: Context,
     pub http: HttpClient,
     pub ws: WebsocketClient,
-    token: Option<String>,
+    pub token: Option<String>,
     pub token_type: Option<TokenType>,
 }
 
@@ -35,10 +34,15 @@ impl State {
             ctx.project_override = Some(options.override_project_id.unwrap());
         }
 
-        // get the auth token from the auth store if it exists
-        let init_token = match ctx.default_user {
-            Some(ref user) => auth.authorized.get(user).map(|x| x.to_string()),
-            None => None,
+        // use the override token if provided
+        let init_token = if let Some(override_token) = options.override_token {
+            Some(override_token)
+        // otherwise use the token from the store
+        } else if let Some(ref user) = ctx.default_user {
+            auth.authorized.get(user).map(|x| x.to_string())
+        // if all fail then no token
+        } else {
+            None
         };
 
         let (token, token_type) = Self::handle_token(init_token);
@@ -59,28 +63,20 @@ impl State {
 
     /// Rebuilds the http client with the current auth token.
     fn handle_token(token: Option<String>) -> (Option<String>, Option<TokenType>) {
-        let token = match token {
-            Some(token) => Some(token),
-
-            None => None,
-        };
-
-        let token_type = match token {
-            // should only be PAT or PTK
-            Some(ref token) => Some(
-                TokenType::from_str(token.split('_').next().unwrap()).expect("Invalid token type"),
-            ),
-            None => None,
-        };
+        let token_type = token
+            .as_ref()
+            .map(|token| TokenType::from_token(token).expect("Invalid token type"));
 
         (token, token_type)
     }
 
     /// Login to the API
     pub async fn login(&mut self, token: Option<String>) {
-        if token.is_none() && self.token.is_none() {
-            panic!("No token provided");
-        }
+        assert!(
+            token.is_some() || self.token.is_some(),
+            "You are not logged in. Please run `{} auth login` first.",
+            EXEC_NAME
+        );
 
         if let Some(token) = token {
             let (token, token_type) = Self::handle_token(Some(token));
@@ -96,5 +92,10 @@ impl State {
         self.ctx.current = Some(response.clone());
 
         self.ws.update_token(response.leap_token);
+
+        // if the token is a ptk override the project
+        if let Some(TokenType::Ptk) = self.token_type {
+            self.ctx.project_override = self.ctx.current.as_ref().map(|cur| cur.id.clone())
+        }
     }
 }

@@ -7,10 +7,10 @@ mod utils;
 
 use clap::{Parser, Subcommand};
 
-use self::list::{handle_list, ListOptions};
-use self::login::{handle_login, LoginOptions};
-use self::logout::{hanndle_logout, LogoutOptions};
-use self::switch::{handle_switch, SwitchOptions};
+use self::list::{handle as handle_list, Options as ListOptions};
+use self::login::{handle as handle_login, Options as LoginOptions};
+use self::logout::{handle as handle_logout, Options as LogoutOptions};
+use self::switch::{handle as handle_switch, Options as SwitchOptions};
 use crate::state::State;
 
 #[derive(Debug, Subcommand)]
@@ -24,16 +24,19 @@ pub enum Commands {
 
 #[derive(Debug, Parser)]
 #[clap(name = "auth", about = "Authenticate with Hop")]
-pub struct AuthOptions {
+pub struct Options {
     #[clap(subcommand)]
     pub commands: Commands,
 }
 
-pub async fn handle_auth(options: AuthOptions, state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error> {
     match options.commands {
-        Commands::List(options) => handle_list(options, state).await,
         Commands::Login(options) => handle_login(options, state).await,
-        Commands::Logout(options) => hanndle_logout(options, state).await,
+        Commands::Logout(options) => handle_logout(options, state).await,
         Commands::Switch(options) => handle_switch(options, state).await,
+        Commands::List(options) => {
+            handle_list(&options, &state);
+            Ok(())
+        }
     }
 }

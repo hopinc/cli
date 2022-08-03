@@ -55,7 +55,7 @@ pub async fn compress(id: String, base_dir: PathBuf) -> Result<String, std::io::
                 let path = entry.path().strip_prefix(&base_dir).unwrap().to_owned();
 
                 archive
-                    .append_path_with_name(entry.path(), base_folder_name.clone().join(&path))
+                    .append_path_with_name(entry.path(), &(*base_folder_name).join(&path))
                     .await?;
             }
             Err(err) => {
@@ -89,25 +89,27 @@ async fn create_global_ignore_file() -> PathBuf {
     path
 }
 
-pub fn validate_deployment_name(name: String) -> bool {
+pub fn validate_deployment_name(name: &str) -> bool {
     let regex = Regex::new(r"^[a-zA-Z0-9-]*$").unwrap();
 
-    regex.is_match(&name)
+    regex.is_match(name)
 }
 
 pub async fn env_file_to_map(path: PathBuf) -> HashMap<String, String> {
     let mut env = HashMap::new();
 
-    if !path.exists() {
-        panic!("Could not find .env file at {}", path.display());
-    }
+    assert!(
+        path.exists(),
+        "Could not find .env file at {}",
+        path.display()
+    );
 
     let file = fs::read_to_string(path).await.unwrap();
     let lines = file.lines();
 
     for line in lines {
         // ignore comments
-        if line.starts_with("#") {
+        if line.starts_with('#') {
             continue;
         }
 

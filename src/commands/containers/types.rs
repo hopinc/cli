@@ -22,7 +22,7 @@ impl FromStr for ContainerType {
 
 impl ToString for ContainerType {
     fn to_string(&self) -> String {
-        serde_json::to_string(self).unwrap().replace("\"", "")
+        serde_json::to_string(self).unwrap().replace('"', "")
     }
 }
 
@@ -50,7 +50,7 @@ pub enum ContainerState {
 
 impl ToString for ContainerState {
     fn to_string(&self) -> String {
-        serde_json::to_string(self).unwrap().replace("\"", "")
+        serde_json::to_string(self).unwrap().replace('"', "")
     }
 }
 

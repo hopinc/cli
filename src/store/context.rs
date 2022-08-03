@@ -52,7 +52,7 @@ impl Context {
         match self.project_override.clone() {
             Some(project) => Some(
                 self.find_project_by_id_or_namespace(project.clone())
-                    .expect(format!("Could not find project `{}`", project).as_str()),
+                    .unwrap_or_else(|| panic!("Could not find project `{}`", project)),
             ),
 
             None => self
@@ -63,10 +63,8 @@ impl Context {
     }
 
     pub fn current_project_error(self) -> Project {
-        self.current_project().expect(&format!(
-            "No project specified, run `{} projects switch` or use --project to specify a project",
-            EXEC_NAME
-        ))
+        self.current_project().unwrap_or_else(|| panic!("No project specified, run `{} projects switch` or use --project to specify a project",
+            EXEC_NAME))
     }
 
     pub async fn new() -> Self {
@@ -107,7 +105,7 @@ impl Context {
             .await
             .expect("Error opening auth file:");
 
-        file.write(
+        file.write_all(
             serde_json::to_string(&self)
                 .expect("Failed to deserialize auth")
                 .as_bytes(),

@@ -5,7 +5,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Delete a deployment")]
-pub struct DeleteOptions {
+pub struct Options {
     #[clap(name = "name", help = "Name of the deployment")]
     name: Option<String>,
 
@@ -13,7 +13,7 @@ pub struct DeleteOptions {
     force: bool,
 }
 
-pub async fn handle_delete(options: DeleteOptions, state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error> {
     let project_id = state.ctx.current_project_error().id;
 
     let deployments = state
@@ -28,9 +28,7 @@ pub async fn handle_delete(options: DeleteOptions, state: State) -> Result<(), s
         .unwrap()
         .deployments;
 
-    if deployments.is_empty() {
-        panic!("No deployments found");
-    }
+    assert!(!deployments.is_empty(), "No deployments found");
 
     let deployment = match options.name {
         Some(name) => {
@@ -38,7 +36,7 @@ pub async fn handle_delete(options: DeleteOptions, state: State) -> Result<(), s
                 .iter()
                 .find(|p| p.name == name)
                 .expect("Deployment not found");
-            deployment.to_owned()
+            deployment.clone()
         }
         None => {
             let deployments_fmt = deployments
@@ -51,11 +49,10 @@ pub async fn handle_delete(options: DeleteOptions, state: State) -> Result<(), s
                 .items(&deployments_fmt)
                 .default(0)
                 .interact_opt()
-                .ok()
                 .expect("Failed to select deployment")
                 .expect("No deployment selected");
 
-            deployments[idx].to_owned()
+            deployments[idx].clone()
         }
     };
 
@@ -66,12 +63,13 @@ pub async fn handle_delete(options: DeleteOptions, state: State) -> Result<(), s
                 deployment.name
             ))
             .interact_opt()
-            .ok()
             .expect("Failed to confirm");
 
-        if confirm.is_none() || !confirm.unwrap() {
-            panic!("Aborted deletion of `{}`", deployment.name);
-        }
+        assert!(
+            confirm.is_some() && confirm.unwrap(),
+            "Aborted deletion of `{}`",
+            deployment.name
+        );
     }
 
     state

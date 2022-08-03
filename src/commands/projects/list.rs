@@ -5,7 +5,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "List all projects")]
-pub struct ListOptions {
+pub struct Options {
     #[clap(
         short = 'q',
         long = "quiet",
@@ -14,7 +14,7 @@ pub struct ListOptions {
     pub quiet: bool,
 }
 
-pub async fn handle_list(options: ListOptions, state: State) -> Result<(), std::io::Error> {
+pub fn handle(options: &Options, state: State) {
     let projects = state.ctx.current.unwrap().projects;
 
     if options.quiet {
@@ -30,6 +30,4 @@ pub async fn handle_list(options: ListOptions, state: State) -> Result<(), std::
 
         println!("{}", projects_fmt.join("\n"));
     }
-
-    Ok(())
 }

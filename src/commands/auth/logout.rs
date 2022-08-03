@@ -1,25 +1,16 @@
 use clap::Parser;
 
-use crate::config::EXEC_NAME;
 use crate::state::State;
 use crate::store::context::Context;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Logout the current user")]
-pub struct LogoutOptions {}
+pub struct Options {}
 
-pub async fn hanndle_logout(
-    _options: LogoutOptions,
-    mut state: State,
-) -> Result<(), std::io::Error> {
+pub async fn handle(_options: Options, mut state: State) -> Result<(), std::io::Error> {
     let user_id = state.ctx.default_user;
 
-    if user_id.is_none() {
-        panic!(
-            "You are not logged in. Please run `{} auth login` first.",
-            EXEC_NAME
-        );
-    }
+    assert!(user_id.is_some(), "You are not logged in.");
 
     // clear all state
     state.ctx = Context::default();

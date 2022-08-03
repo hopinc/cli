@@ -27,7 +27,7 @@ impl HttpClient {
         let ua = format!(
             "hop_cli/{} on {}",
             VERSION,
-            sys_info::os_type().unwrap_or("unknown".to_string())
+            sys_info::os_type().unwrap_or_else(|_| "unknown".to_string())
         );
 
         let base_url = match api_url {

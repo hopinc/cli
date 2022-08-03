@@ -7,10 +7,10 @@ pub mod util;
 
 use clap::{Parser, Subcommand};
 
-use self::create::{handle_create, CreateOptions};
-use self::delete::{handle_delete, DeleteOptions};
-use self::list::{handle_list, ListOptions};
-use self::rollout::{handle_rollout, RolloutOptions};
+use self::create::{handle as handle_create, Options as CreateOptions};
+use self::delete::{handle as handle_delete, Options as DeleteOptions};
+use self::list::{handle as handle_list, Options as ListOptions};
+use self::rollout::{handle as handle_rollout, Options as RolloutOptions};
 use crate::state::State;
 
 #[derive(Debug, Subcommand)]
@@ -27,18 +27,15 @@ pub enum Commands {
 
 #[derive(Debug, Parser)]
 #[clap(name = "ignite", about = "Interact with Ignite containers")]
-pub struct IgniteOptions {
+pub struct Options {
     #[clap(subcommand)]
     pub commands: Commands,
 }
 
-pub async fn handle_deployments(
-    options: IgniteOptions,
-    state: State,
-) -> Result<(), std::io::Error> {
+pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error> {
     match options.commands {
-        Commands::Create(options) => handle_create(options, state).await,
         Commands::List(options) => handle_list(options, state).await,
+        Commands::Create(options) => handle_create(options, state).await,
         Commands::Delete(options) => handle_delete(options, state).await,
         Commands::Rollout(options) => handle_rollout(options, state).await,
     }

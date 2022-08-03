@@ -6,9 +6,9 @@ mod util;
 
 use clap::{Parser, Subcommand};
 
-use self::delete::{handle_delete, DeleteOptions};
-use self::list::{handle_list, ListOptions};
-use self::set::{handle_set, SetOptions};
+use self::delete::{handle as handle_delete, Options as DeleteOptions};
+use self::list::{handle as handle_list, Options as ListOptions};
+use self::set::{handle as handle_set, Options as SetOptions};
 use crate::state::State;
 
 #[derive(Debug, Subcommand)]
@@ -23,12 +23,12 @@ pub enum Commands {
 
 #[derive(Debug, Parser)]
 #[structopt(name = "secrets", about = "Interact with secrets")]
-pub struct SecretsOptions {
+pub struct Options {
     #[structopt(subcommand)]
     pub commands: Commands,
 }
 
-pub async fn handle_secrets(options: SecretsOptions, state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error> {
     match options.commands {
         Commands::List(options) => handle_list(options, state).await,
         Commands::Set(options) => handle_set(options, state).await,

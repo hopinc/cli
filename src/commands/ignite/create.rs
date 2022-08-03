@@ -64,14 +64,15 @@ pub struct DeploymentConfig {
     #[clap(
         short = 'e',
         long = "env",
-        help = "Environment variables to set, in the form of `key=value`"
+        help = "Environment variables to set, in the form of `key=value`",
+        min_values = 0
     )]
     pub env: Option<Vec<Env>>,
 }
 
 #[derive(Debug, Parser, Default, PartialEq, Clone)]
 #[clap(about = "Create a new deployment")]
-pub struct CreateOptions {
+pub struct Options {
     #[clap(flatten)]
     pub config: DeploymentConfig,
 
@@ -79,7 +80,7 @@ pub struct CreateOptions {
     pub image: Option<String>,
 }
 
-pub async fn handle_create(options: CreateOptions, state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error> {
     let project = state.ctx.current_project_error();
 
     log::info!(
@@ -89,10 +90,10 @@ pub async fn handle_create(options: CreateOptions, state: State) -> Result<(), s
         project.id
     );
 
-    let is_not_guided = options != CreateOptions::default();
+    let is_not_guided = options != Options::default();
 
     let (deployment_config, container_options) =
-        create_deployment_config(options, is_not_guided, None).await;
+        create_deployment_config(options, is_not_guided, &None);
 
     let deployment = create_deployment(state.http.clone(), project.id, deployment_config).await;
 

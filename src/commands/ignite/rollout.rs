@@ -1,17 +1,16 @@
 use clap::Parser;
 
-use crate::state::State;
-
 use super::util::{format_deployments, get_deployments, rollout};
+use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Rollout new containers to a deployment")]
-pub struct RolloutOptions {
+pub struct Options {
     #[clap(name = "deployment", help = "Deployment to rollout")]
     pub deployment: Option<String>,
 }
 
-pub async fn handle_rollout(options: RolloutOptions, state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error> {
     let deployment = match options.deployment {
         Some(deployment) => {
             if deployment.starts_with("deployment_") {
