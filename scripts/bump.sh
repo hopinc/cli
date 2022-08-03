@@ -16,6 +16,8 @@ fi
 
 cargo bump $TAG
 
+sleep 10
+
 git add Cargo.*
 git commit -m "feat: v$TAG" -S
 git tag -a v$TAG -m v$TAG -s

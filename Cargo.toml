@@ -1,20 +1,20 @@
 [package]
 name = "hop-cli"
-version = "0.1.12"
+version = "0.1.13"
 edition = "2021"
 license = "MPL-2.0"
 authors = ["Hop Inc."]
 description = "Interact with Hop in your terminal"
-
-[[bin]]
-name = "hop"
-path = "./src/main.rs"
 
 [package.metadata.winres]
 ProductName = "Hop CLI"
 OriginalFilename = "hop.exe"
 LegalCopyright = "© 2022 Hop Inc."
 FileDescription = "Interact with Hop in your terminal"
+
+[[bin]]
+name = "hop"
+path = "./src/main.rs"
 
 [dependencies]
 log = "0.4.17"
