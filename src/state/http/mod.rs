@@ -1,8 +1,10 @@
+mod types;
+
 use reqwest::header::HeaderMap;
 use reqwest::Client as AsyncClient;
 
+use self::types::{Base, ErrorResponse};
 use crate::config::VERSION;
-use crate::types::{Base, ErrorResponse};
 
 const HOP_API_BASE_URL: &str = "https://api.hop.io/v1";
 
