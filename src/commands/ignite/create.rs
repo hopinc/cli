@@ -50,13 +50,13 @@ pub struct DeploymentConfig {
     pub containers: Option<u64>,
 
     #[clap(
-        long = "min",
+        long = "min-containers",
         help = "Minimum number of containers to use if `scaling` is autoscale, defaults to 1"
     )]
     pub min_containers: Option<u64>,
 
     #[clap(
-        long = "max",
+        long = "max-containers",
         help = "Maximum number of containers to use if `scaling` is autoscale, defaults to 10"
     )]
     pub max_containers: Option<u64>,

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use super::util::parse_key_val;
 use crate::commands::containers::types::ContainerType;
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Vgpu {
     #[serde(rename = "type")]
     pub g_type: String,
@@ -76,7 +76,7 @@ impl RamSizes {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Resources {
     pub vcpu: f64,
     pub ram: String,
@@ -129,12 +129,12 @@ impl ScalingStrategy {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default, PartialEq)]
 pub struct Image {
     pub name: String,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Config {
     pub version: String,
     #[serde(rename = "type")]
@@ -144,7 +144,7 @@ pub struct Config {
     pub resources: Resources,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Deployment {
     pub id: String,
     pub name: String,

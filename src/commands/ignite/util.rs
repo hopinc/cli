@@ -136,7 +136,7 @@ pub fn create_deployment_config(
             .expect("The argument '--cpu <CPU>' requires a value but none was supplied");
 
         assert!(
-            deployment_config.resources.vcpu > 0.09,
+            deployment_config.resources.vcpu >= 0.1,
             "The argument '--cpu <CPU>' must be at least 0.1"
         );
 
@@ -251,7 +251,7 @@ pub fn create_deployment_config(
         .with_prompt("CPUs")
         .default(deployment_config.resources.vcpu)
         .validate_with(|cpu: &f64| -> Result<(), &str> {
-            if *cpu < 0.1 {
+            if *cpu >= 0.1 {
                 Ok(())
             } else {
                 Err("CPUs must be at least 0.1")
