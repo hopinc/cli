@@ -1,6 +1,8 @@
 pub mod http;
 pub mod ws;
 
+use anyhow::{ensure, Result};
+
 use self::http::HttpClient;
 use self::ws::WebsocketClient;
 use crate::commands::auth::login::util::{token_options, TokenType};
@@ -71,8 +73,8 @@ impl State {
     }
 
     /// Login to the API
-    pub async fn login(&mut self, token: Option<String>) {
-        assert!(
+    pub async fn login(&mut self, token: Option<String>) -> Result<()> {
+        ensure!(
             token.is_some() || self.token.is_some(),
             "You are not logged in. Please run `{} auth login` first.",
             EXEC_NAME
@@ -97,5 +99,7 @@ impl State {
         if let Some(TokenType::Ptk) = self.token_type {
             self.ctx.project_override = self.ctx.current.as_ref().map(|cur| cur.id.clone())
         }
+
+        Ok(())
     }
 }

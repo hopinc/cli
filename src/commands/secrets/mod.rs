@@ -4,6 +4,7 @@ mod set;
 mod types;
 mod util;
 
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 
 use self::delete::{handle as handle_delete, Options as DeleteOptions};
@@ -28,7 +29,7 @@ pub struct Options {
     pub commands: Commands,
 }
 
-pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: Options, state: State) -> Result<()> {
     match options.commands {
         Commands::List(options) => handle_list(options, state).await,
         Commands::Set(options) => handle_set(options, state).await,

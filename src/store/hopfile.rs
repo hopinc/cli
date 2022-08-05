@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
@@ -97,18 +98,18 @@ impl HopFile {
         None
     }
 
-    pub async fn save(self) -> Option<Self> {
+    pub async fn save(self) -> Result<Self> {
         let path = self.path.clone();
 
         let content =
             Self::serialize(path.clone(), self.clone()).expect("Failed to serialize hop file");
 
-        let mut file = File::create(&path).await.ok()?;
+        let mut file = File::create(&path).await?;
 
-        file.write_all(content.as_bytes()).await.ok()?;
+        file.write_all(content.as_bytes()).await?;
 
         log::info!("Saved hop file to {}", path.to_str().unwrap());
 
-        Some(self)
+        Ok(self)
     }
 }

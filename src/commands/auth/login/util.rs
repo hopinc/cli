@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use anyhow::{anyhow, Result};
 use serde::Deserialize;
 
 use crate::commands::auth::types::{AuthorizedClient, UserMe};
@@ -17,20 +18,16 @@ pub enum TokenType {
 }
 
 impl FromStr for TokenType {
-    type Err = std::io::Error;
+    type Err = anyhow::Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        serde_json::from_str(&format!("\"{}\"", s.to_uppercase())).map_err(|_| {
-            std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("Could not parse token type: {}", s),
-            )
-        })
+    fn from_str(s: &str) -> Result<Self> {
+        serde_json::from_str(&format!("\"{}\"", s.to_uppercase()))
+            .map_err(|_| anyhow!("Could not parse token type: {}", s))
     }
 }
 
 impl TokenType {
-    pub fn from_token(token: &str) -> Result<Self, std::io::Error> {
+    pub fn from_token(token: &str) -> Result<Self> {
         Self::from_str(&token.split('_').next().unwrap_or("").to_uppercase())
     }
 }

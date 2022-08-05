@@ -1,9 +1,9 @@
-use std::io;
+use anyhow::Result;
 
 use super::types::WsStream;
 use super::HOP_LEAP_EDGE_URL;
 
-pub async fn connect() -> io::Result<WsStream> {
+pub async fn connect() -> Result<WsStream> {
     let url = HOP_LEAP_EDGE_URL;
 
     let config = tokio_tungstenite::tungstenite::protocol::WebSocketConfig {
@@ -13,9 +13,7 @@ pub async fn connect() -> io::Result<WsStream> {
         accept_unmasked_frames: false,
     };
 
-    let (stream, _) = tokio_tungstenite::connect_async_with_config(url, Some(config))
-        .await
-        .expect("Failed to connect to websocket");
+    let (stream, _) = tokio_tungstenite::connect_async_with_config(url, Some(config)).await?;
 
     Ok(stream)
 }

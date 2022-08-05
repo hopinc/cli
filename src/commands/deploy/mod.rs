@@ -4,6 +4,7 @@ pub mod util;
 use std::env::current_dir;
 use std::path::PathBuf;
 
+use anyhow::Result;
 use clap::Parser;
 use console::style;
 use hyper::Method;
@@ -46,7 +47,7 @@ pub struct Options {
 }
 
 #[allow(clippy::too_many_lines)]
-pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: Options, state: State) -> Result<()> {
     let mut dir = current_dir().expect("Could not get current directory");
 
     if let Some(path) = options.path {
@@ -57,12 +58,6 @@ pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error
     }
 
     assert!(dir.is_dir(), "{} is not a directory", dir.display());
-
-    let mut connection = state
-        .ws
-        .connect()
-        .await
-        .expect("Could not connect to Leap Edge");
 
     log::info!("Attempting to deploy {}", dir.display());
 
@@ -178,6 +173,13 @@ pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error
             (project, deployment, container_options, false)
         }
     };
+
+    // connect to leap here so no logs interfere with the deploy
+    let mut connection = state
+        .ws
+        .connect()
+        .await
+        .expect("Could not connect to Leap Edge");
 
     // deployment id is used not to colide if the user is deploying multiple items
     let packed = compress(deployment.id.clone(), dir)

@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use tokio::fs::{self, File};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -17,6 +18,8 @@ pub struct Context {
     pub default_user: Option<String>,
     /// api url override
     pub override_api_url: Option<String>,
+    // latest version of the cli and time it was last checked
+    pub last_version_check: Option<(String, String)>,
 
     /// runtime context
     #[serde(skip)]
@@ -90,7 +93,7 @@ impl Context {
         }
     }
 
-    pub async fn save(mut self) -> Result<Self, std::io::Error> {
+    pub async fn save(mut self) -> Result<Self> {
         if let Some(ref authorized) = self.current {
             self.default_user = Some(authorized.id.clone());
         }

@@ -1,3 +1,4 @@
+use anyhow::Result;
 use clap::Parser;
 
 use super::types::MultipleDeployments;
@@ -13,7 +14,7 @@ pub struct Options {
     force: bool,
 }
 
-pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: Options, state: State) -> Result<()> {
     let project_id = state.ctx.current_project_error().id;
 
     let deployments = state

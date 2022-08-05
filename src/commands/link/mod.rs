@@ -1,6 +1,7 @@
 use std::env::current_dir;
 use std::path::PathBuf;
 
+use anyhow::Result;
 use clap::Parser;
 
 use crate::commands::ignite::util::{format_deployments, get_deployments};
@@ -19,7 +20,7 @@ pub struct Options {
     name: Option<String>,
 }
 
-pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: Options, state: State) -> Result<()> {
     let mut dir = current_dir().expect("Could not get current directory");
 
     if let Some(path) = options.path {
@@ -78,7 +79,7 @@ pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error
 
     HopFile::new(dir.join("hop.yml"), project.id, deployment.id.clone())
         .save()
-        .await;
+        .await?;
 
     log::info!(
         "Deployment `{}` ({}) linked",

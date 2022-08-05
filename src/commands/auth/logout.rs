@@ -1,3 +1,4 @@
+use anyhow::Result;
 use clap::Parser;
 
 use crate::state::State;
@@ -7,7 +8,7 @@ use crate::store::context::Context;
 #[clap(about = "Logout the current user")]
 pub struct Options {}
 
-pub async fn handle(_options: Options, mut state: State) -> Result<(), std::io::Error> {
+pub async fn handle(_options: Options, mut state: State) -> Result<()> {
     let user_id = state.ctx.default_user;
 
     assert!(user_id.is_some(), "You are not logged in.");

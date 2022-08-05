@@ -1,3 +1,4 @@
+use anyhow::Result;
 use clap::Parser;
 use console::style;
 
@@ -80,7 +81,7 @@ pub struct Options {
     pub image: Option<String>,
 }
 
-pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: Options, state: State) -> Result<()> {
     let project = state.ctx.current_project_error();
 
     log::info!(

@@ -1,3 +1,4 @@
+use anyhow::Result;
 use clap::Parser;
 
 use crate::commands::secrets::types::SecretResponse;
@@ -13,7 +14,7 @@ pub struct Options {
     pub value: String,
 }
 
-pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: Options, state: State) -> Result<()> {
     validate_name(&options.name)?;
 
     let project_id = state.ctx.current_project().expect("Project not found").id;
@@ -30,9 +31,8 @@ pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error
             .as_str(),
             Some((options.value.into(), "text/plain")),
         )
-        .await
-        .expect("Error while setting secret")
-        .unwrap()
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("Error while parsing response"))?
         .secret;
 
     log::info!("Set secret: {} ({})", secret.name, secret.id);

@@ -1,3 +1,4 @@
+use anyhow::Result;
 use clap::Parser;
 
 use super::utils::format_users;
@@ -8,7 +9,7 @@ use crate::state::State;
 #[clap(about = "Switch to a different user")]
 pub struct Options {}
 
-pub async fn handle(_options: Options, state: State) -> Result<(), std::io::Error> {
+pub async fn handle(_options: Options, state: State) -> Result<()> {
     let users = state.auth.authorized.keys().collect::<Vec<_>>();
 
     assert!(

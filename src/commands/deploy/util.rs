@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::env::temp_dir;
 use std::path::{Path, PathBuf};
 
+use anyhow::Result;
 use async_compression::tokio::write::GzipEncoder;
 use ignore::WalkBuilder;
 use regex::Regex;
@@ -23,7 +24,7 @@ static DEFAULT_IGNORE_LIST: &[&str] = &[
 ];
 
 // compress stuff
-pub async fn compress(id: String, base_dir: PathBuf) -> Result<String, std::io::Error> {
+pub async fn compress(id: String, base_dir: PathBuf) -> Result<String> {
     let base_folder_name = Path::new(&id);
     let archive_path = temp_dir().join(format!("hop_{}.tar.gz", id));
 

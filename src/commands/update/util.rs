@@ -1,7 +1,9 @@
 use std::env::temp_dir;
 use std::path::PathBuf;
 use std::process::Command as Cmd;
+use std::time::{SystemTime, UNIX_EPOCH};
 
+use anyhow::{anyhow, Result};
 use runas::Command as SudoCmd;
 use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
@@ -9,36 +11,31 @@ use tokio::io::AsyncWriteExt;
 use super::types::{GithubRelease, Version};
 use crate::config::{ARCH, VERSION};
 use crate::state::http::HttpClient;
+use crate::store::context::Context;
 
 const RELEASE_URL: &str = "https://api.github.com/repos/hopinc/hop_cli/releases";
 
-pub async fn check_version(beta: bool, silent: bool) -> (bool, String) {
+pub async fn check_version(beta: bool) -> Result<(bool, String)> {
     let http = HttpClient::new(None, None);
 
-    let response = match http.client.get(RELEASE_URL).send().await {
-        Ok(response) => response,
-        Err(e) => {
-            if !silent {
-                log::error!("Failed to check for updates: {}", e);
-            }
-
-            return (false, VERSION.to_string());
-        }
-    };
+    let response = http
+        .client
+        .get(RELEASE_URL)
+        .send()
+        .await
+        .map_err(|_| anyhow!("Failed to get latest release"))?;
 
     if !response.status().is_success() {
-        log::debug!(
+        anyhow::bail!(
             "Failed to get latest release from Github: {}",
             response.status()
         );
-        // silently fail if we can't get the latest release
-        return (false, "".to_string());
     }
 
     let data = response
         .json::<Vec<GithubRelease>>()
         .await
-        .expect("Failed to parse latest release");
+        .map_err(|_| anyhow!("Failed to parse Github release"))?;
 
     let latest = if beta {
         // the latest release that can be prereleased
@@ -47,7 +44,7 @@ pub async fn check_version(beta: bool, silent: bool) -> (bool, String) {
             // skip drafts
             .find(|r| !r.draft)
             .map(|r| r.tag_name.clone())
-            .expect("No release found")
+            .ok_or_else(|| anyhow!("No prerelease found"))?
     } else {
         // the latest release that is not prereleased
         data
@@ -55,20 +52,68 @@ pub async fn check_version(beta: bool, silent: bool) -> (bool, String) {
             // skip drafts and prereleases
             .find(|r| !r.prerelease && !r.draft)
             .map(|r| r.tag_name.clone())
-            .expect("No beta release found")
+            .ok_or_else(|| anyhow!("No release found"))?
     };
 
-    let latest = Version::from_string(&latest).unwrap();
-    let current = Version::from_string(VERSION).unwrap();
-
-    if latest.is_newer(&current) {
-        (true, latest.to_string())
+    if compare_current_and(&latest) {
+        Ok((true, latest))
     } else {
-        (false, String::new())
+        Ok((false, VERSION.to_string()))
     }
 }
 
-pub fn capitalize(s: &str) -> String {
+// static time to check for updates
+const HOUR_IN_SECONDS: u64 = 60 * 60;
+
+pub async fn version_notice(mut ctx: Context) -> Result<()> {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+
+    let last_check = ctx
+        .last_version_check
+        .map(|(time, version)| (time.parse::<u64>().unwrap_or(now), version));
+
+    let (last_checked, last_newest) = match last_check {
+        Some(data) => data,
+        // more than an hour to force check
+        None => (now - HOUR_IN_SECONDS - 1, VERSION.to_string()),
+    };
+
+    let new_version = if now - last_checked > HOUR_IN_SECONDS {
+        let (update, latest) = check_version(false)
+            .await
+            .unwrap_or((false, VERSION.to_string()));
+
+        ctx.last_version_check = Some((now.to_string(), latest.clone()));
+        ctx.save().await?;
+
+        if !update {
+            return Ok(());
+        }
+
+        latest
+    } else if compare_current_and(&last_newest) {
+        last_newest.to_string()
+    } else {
+        // skip fs action
+        return Ok(());
+    };
+
+    log::warn!("A new version is available: {}", new_version);
+
+    Ok(())
+}
+
+fn compare_current_and(version: &str) -> bool {
+    let current = Version::from_string(VERSION).unwrap();
+    let latest = Version::from_string(version).unwrap();
+
+    latest.is_newer(&current)
+}
+
+fn capitalize(s: &str) -> String {
     let mut c = s.chars();
     match c.next() {
         None => String::new(),
@@ -82,7 +127,7 @@ const COMPRESSED_FILE_EXTENSION: &str = "tar.gz";
 #[cfg(windows)]
 const COMPRESSED_FILE_EXTENSION: &str = "zip";
 
-pub async fn download(http: HttpClient, version: String) -> Result<PathBuf, std::io::Error> {
+pub async fn download(http: HttpClient, version: String) -> Result<PathBuf> {
     let filename = format!(
         "hop-{}-{}.{}",
         ARCH,
@@ -125,7 +170,7 @@ pub async fn download(http: HttpClient, version: String) -> Result<PathBuf, std:
 }
 
 #[cfg(not(windows))]
-pub async fn unpack(packed_temp: PathBuf) -> Result<PathBuf, std::io::Error> {
+pub async fn unpack(packed_temp: PathBuf) -> Result<PathBuf> {
     use async_compression::tokio::bufread::GzipDecoder;
     use tokio::io::BufReader;
     use tokio_tar::Archive;
@@ -151,7 +196,7 @@ pub async fn unpack(packed_temp: PathBuf) -> Result<PathBuf, std::io::Error> {
 }
 
 #[cfg(not(windows))]
-pub async fn swap_executables(old_exe: PathBuf, new_exe: PathBuf) -> Result<(), std::io::Error> {
+pub async fn swap_executables(old_exe: PathBuf, new_exe: PathBuf) -> anyhow::Result<()> {
     let elevate = !is_writable(&old_exe).await;
 
     if elevate {
@@ -164,7 +209,7 @@ pub async fn swap_executables(old_exe: PathBuf, new_exe: PathBuf) -> Result<(), 
 }
 
 #[cfg(windows)]
-pub async fn unpack(packed_temp: PathBuf) -> Result<PathBuf, std::io::Error> {
+pub async fn unpack(packed_temp: PathBuf) -> Result<PathBuf> {
     use async_zip::read::fs::ZipFileReader;
 
     let zip = ZipFileReader::new(packed_temp).await.unwrap();
@@ -189,7 +234,7 @@ pub async fn unpack(packed_temp: PathBuf) -> Result<PathBuf, std::io::Error> {
 }
 
 #[cfg(windows)]
-pub async fn swap_executables(old_exe: PathBuf, new_exe: PathBuf) -> Result<(), std::io::Error> {
+pub async fn swap_executables(old_exe: PathBuf, new_exe: PathBuf) -> anyhow::Result<()> {
     let elevate = !is_writable(&old_exe).await;
 
     let temp_delete = temp_dir().join(".hop.tmp");

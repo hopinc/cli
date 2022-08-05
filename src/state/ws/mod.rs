@@ -4,6 +4,7 @@ mod utils;
 use std::io::Cursor;
 use std::time::Duration;
 
+use anyhow::{anyhow, Result};
 use async_compression::tokio::bufread::ZlibDecoder;
 use futures_util::{SinkExt, StreamExt};
 use serde_json::Value;
@@ -14,7 +15,7 @@ use tokio::task::JoinHandle;
 use tokio::time::{interval, Instant};
 use tokio_tungstenite::tungstenite::protocol::Message;
 
-use self::types::{LeapEdgeAuthParams, OpCodes, SocketHello, SocketMessage, WebsocketError};
+use self::types::{LeapEdgeAuthParams, OpCodes, SocketHello, SocketMessage};
 use self::utils::connect;
 
 const HOP_LEAP_EDGE_URL: &str = "wss://leap.hop.io/ws?encoding=json&compression=zlib";
@@ -53,7 +54,7 @@ impl WebsocketClient {
         });
     }
 
-    pub async fn connect(mut self) -> Result<Self, WebsocketError> {
+    pub async fn connect(mut self) -> Result<Self> {
         let (sender_outbound, mut receiver_outbound) = mpsc::channel::<String>(1);
         let (sender_inbound, receiver_inbound) = mpsc::channel::<String>(1);
 
@@ -249,7 +250,7 @@ impl WebsocketClient {
 
     // TODO: remove when channels are implemented
     #[allow(dead_code)]
-    pub async fn send_message<T>(&self, message: T) -> Result<(), Box<dyn std::error::Error>>
+    pub async fn send_message<T>(&self, message: T) -> Result<()>
     where
         T: serde::Serialize,
     {
@@ -261,10 +262,7 @@ impl WebsocketClient {
 
                 Ok(())
             }
-            None => Err(Box::new(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Not connected",
-            ))),
+            None => Err(anyhow!("Not connected")),
         }
     }
 

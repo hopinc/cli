@@ -1,5 +1,6 @@
 mod types;
 
+use anyhow::{anyhow, Result};
 use reqwest::header::HeaderMap;
 use reqwest::Client as AsyncClient;
 
@@ -49,7 +50,7 @@ impl HttpClient {
         }
     }
 
-    pub async fn handle_response<T>(&self, response: reqwest::Response) -> Result<Option<T>, String>
+    pub async fn handle_response<T>(&self, response: reqwest::Response) -> Result<Option<T>>
     where
         T: serde::de::DeserializeOwned,
     {
@@ -68,18 +69,12 @@ impl HttpClient {
         Ok(Some(response.data))
     }
 
-    async fn handle_error<T>(
-        &self,
-        response: reqwest::Response,
-        code: u16,
-    ) -> Result<Option<T>, String> {
+    async fn handle_error<T>(&self, response: reqwest::Response, code: u16) -> Result<Option<T>> {
         let body = response.json::<ErrorResponse>().await;
 
         match body {
-            Ok(body) => Err(format!("{}: {}", code, body.error.message)),
-            Err(err) => {
-                panic!("{}", err)
-            }
+            Ok(body) => Err(anyhow!("{}: {}", code, body.error.message)),
+            Err(err) => Err(anyhow!("Failed to parse error response: {}", err)),
         }
     }
 
@@ -88,7 +83,7 @@ impl HttpClient {
         method: &str,
         path: &str,
         data: Option<(hyper::Body, &str)>,
-    ) -> Result<Option<T>, String>
+    ) -> Result<Option<T>>
     where
         T: serde::de::DeserializeOwned,
     {

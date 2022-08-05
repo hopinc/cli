@@ -8,6 +8,7 @@ mod secrets;
 pub mod update;
 mod whoami;
 
+use anyhow::Result;
 use clap::Subcommand;
 
 use self::auth::{handle as handle_auth, Options as AuthOptions};
@@ -33,14 +34,14 @@ pub enum Commands {
     Update(UpdateOptions),
 }
 
-pub async fn handle_command(command: Commands, mut state: State) -> Result<(), std::io::Error> {
+pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
     match command {
         Commands::Auth(options) => handle_auth(options, state).await,
         Commands::Update(options) => handle_update(options, state).await,
 
         authorized_command => {
             // login so these commands can run
-            state.login(None).await;
+            state.login(None).await?;
 
             match authorized_command {
                 Commands::Auth(_) | Commands::Update(_) => unreachable!(),

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::str::FromStr;
 
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 
 use super::util::parse_key_val;
@@ -39,11 +40,10 @@ pub enum RamSizes {
 }
 
 impl FromStr for RamSizes {
-    type Err = String;
+    type Err = anyhow::Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        serde_json::from_str(format!("\"{}\"", s.to_uppercase()).as_str())
-            .map_err(|e| e.to_string())
+    fn from_str(s: &str) -> Result<Self> {
+        serde_json::from_str(format!("\"{}\"", s.to_uppercase()).as_str()).map_err(|e| anyhow!(e))
     }
 }
 
@@ -103,11 +103,10 @@ pub enum ScalingStrategy {
 }
 
 impl FromStr for ScalingStrategy {
-    type Err = String;
+    type Err = anyhow::Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        serde_json::from_str(format!("\"{}\"", s.to_lowercase()).as_str())
-            .map_err(|e| e.to_string())
+    fn from_str(s: &str) -> Result<Self> {
+        serde_json::from_str(format!("\"{}\"", s.to_lowercase()).as_str()).map_err(|e| anyhow!(e))
     }
 }
 
@@ -178,12 +177,12 @@ pub struct CreateDeployment {
 pub struct Env(pub String, pub String);
 
 impl FromStr for Env {
-    type Err = String;
+    type Err = anyhow::Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         match parse_key_val(s) {
             Ok((key, val)) => Ok(Env(key, val)),
-            Err(e) => Err(format!("Could not pase env value: {}", e)),
+            Err(e) => Err(anyhow!("Could not pase env value: {}", e)),
         }
     }
 }

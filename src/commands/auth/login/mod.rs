@@ -3,6 +3,7 @@ mod flags_auth;
 mod types;
 pub mod util;
 
+use anyhow::Result;
 use clap::Parser;
 
 use self::browser_auth::browser_login;
@@ -31,7 +32,7 @@ pub struct Options {
     pub password: Option<String>,
 }
 
-pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: Options, state: State) -> Result<()> {
     println!("{:?}", options.token);
 
     let init_token = /* if let Some(env_token) = option_env!("HOP_TOKEN") {
@@ -45,8 +46,8 @@ pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error
     token(&init_token, state).await
 }
 
-pub async fn token(token: &str, mut state: State) -> Result<(), std::io::Error> {
-    state.login(Some(token.to_string())).await;
+pub async fn token(token: &str, mut state: State) -> Result<()> {
+    state.login(Some(token.to_string())).await?;
 
     // safe to unwrap here
     let authorized = state.ctx.current.clone().unwrap();

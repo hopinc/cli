@@ -1,3 +1,4 @@
+use anyhow::Result;
 use clap::Parser;
 
 use crate::commands::secrets::types::Secrets;
@@ -13,7 +14,7 @@ pub struct Options {
     force: bool,
 }
 
-pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: Options, state: State) -> Result<()> {
     if let Some(ref name) = options.name {
         validate_name(name).unwrap();
     }

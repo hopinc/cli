@@ -1,5 +1,4 @@
-use std::io::ErrorKind;
-
+use anyhow::{anyhow, Result};
 use clap::Parser;
 
 use crate::config::EXEC_NAME;
@@ -9,12 +8,12 @@ use crate::state::State;
 #[clap(about = "Get information about the current user")]
 pub struct Options {}
 
-pub fn handle(_options: &Options, state: State) -> Result<(), std::io::Error> {
+pub fn handle(_options: &Options, state: State) -> Result<()> {
     let authorized = state
         .ctx
         .current
         .clone()
-        .ok_or_else(|| std::io::Error::new(ErrorKind::Other, "You are not logged in"))?;
+        .ok_or_else(|| anyhow!("You are not logged in"))?;
 
     log::info!(
         "You are logged in as `{}` ({})",

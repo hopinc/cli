@@ -1,5 +1,6 @@
 use std::convert::Infallible;
 
+use anyhow::Result;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server};
 use tokio::sync::mpsc::{channel, Sender};
@@ -39,7 +40,7 @@ pub async fn browser_login() -> String {
     }
 }
 
-async fn web_auth(port: u16) -> Result<String, std::io::Error> {
+async fn web_auth(port: u16) -> Result<String> {
     let (sender, mut receiver) = channel::<String>(1);
 
     let timeouter = sender.clone();
@@ -82,10 +83,7 @@ async fn web_auth(port: u16) -> Result<String, std::io::Error> {
     Ok(response.unwrap())
 }
 
-async fn request_handler(
-    req: Request<Body>,
-    sender: Sender<String>,
-) -> Result<Response<Body>, Infallible> {
+async fn request_handler(req: Request<Body>, sender: Sender<String>) -> Result<Response<Body>> {
     let query = req.uri().query();
 
     // only send if it's an actual token

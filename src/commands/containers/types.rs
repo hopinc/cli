@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -12,11 +13,10 @@ pub enum ContainerType {
 }
 
 impl FromStr for ContainerType {
-    type Err = String;
+    type Err = anyhow::Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        serde_json::from_str(format!("\"{}\"", s.to_lowercase()).as_str())
-            .map_err(|e| e.to_string())
+    fn from_str(s: &str) -> Result<Self> {
+        serde_json::from_str(format!("\"{}\"", s.to_lowercase()).as_str()).map_err(|e| anyhow!(e))
     }
 }
 

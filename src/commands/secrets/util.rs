@@ -1,20 +1,18 @@
 use std::io::Write;
 
+use anyhow::{bail, Result};
 use tabwriter::TabWriter;
 
 use super::types::Secret;
 
-pub fn validate_name(name: &str) -> Result<(), std::io::Error> {
+pub fn validate_name(name: &str) -> Result<()> {
     let regex = regex::Regex::new(r"^[a-zA-Z0-9_]{1,64}$").unwrap();
 
-    if regex.is_match(name) {
-        Ok(())
-    } else {
-        Err(std::io::Error::new(
-            std::io::ErrorKind::InvalidData,
-            "Invalid name. Secret names are limited to 64 characters in length, must be alphanumeric (with underscores) and are automatically uppercased.",
-        ))
+    if !regex.is_match(name) {
+        bail!("Invalid name. Secret names are limited to 64 characters in length, must be alphanumeric (with underscores) and are automatically uppercased.")
     }
+
+    Ok(())
 }
 
 pub fn format_secrets(secrets: &Vec<Secret>, title: bool) -> Vec<String> {

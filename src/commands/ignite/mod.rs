@@ -5,6 +5,7 @@ pub mod rollout;
 pub mod types;
 pub mod util;
 
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 
 use self::create::{handle as handle_create, Options as CreateOptions};
@@ -32,7 +33,7 @@ pub struct Options {
     pub commands: Commands,
 }
 
-pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: Options, state: State) -> Result<()> {
     match options.commands {
         Commands::List(options) => handle_list(options, state).await,
         Commands::Create(options) => handle_create(options, state).await,

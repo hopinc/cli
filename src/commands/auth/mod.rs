@@ -5,6 +5,7 @@ mod switch;
 pub mod types;
 mod utils;
 
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 
 use self::list::{handle as handle_list, Options as ListOptions};
@@ -29,7 +30,7 @@ pub struct Options {
     pub commands: Commands,
 }
 
-pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: Options, state: State) -> Result<()> {
     match options.commands {
         Commands::Login(options) => handle_login(options, state).await,
         Commands::Logout(options) => handle_logout(options, state).await,

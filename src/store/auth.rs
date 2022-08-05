@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use tokio::fs::{self, File};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -46,7 +47,7 @@ impl Auth {
         }
     }
 
-    pub async fn save(self) -> Result<Self, std::io::Error> {
+    pub async fn save(self) -> Result<Self> {
         let path = Self::path();
 
         fs::create_dir_all(path.parent().unwrap())

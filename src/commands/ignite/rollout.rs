@@ -1,3 +1,4 @@
+use anyhow::Result;
 use clap::Parser;
 
 use super::util::{format_deployments, get_deployments, rollout};
@@ -10,7 +11,7 @@ pub struct Options {
     pub deployment: Option<String>,
 }
 
-pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: Options, state: State) -> Result<()> {
     let deployment = match options.deployment {
         Some(deployment) => {
             if deployment.starts_with("deployment_") {

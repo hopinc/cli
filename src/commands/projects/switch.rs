@@ -10,7 +10,7 @@ pub struct Options {
     pub project: Option<String>,
 }
 
-pub async fn handle(options: &Options, mut state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: &Options, mut state: State) -> anyhow::Result<()> {
     let projects = state.ctx.current.clone().unwrap().projects;
 
     assert!(!projects.is_empty(), "No projects found");

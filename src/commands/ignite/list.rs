@@ -1,3 +1,4 @@
+use anyhow::Result;
 use clap::Parser;
 
 use crate::commands::ignite::util::{format_deployments, get_deployments};
@@ -14,7 +15,7 @@ pub struct Options {
     pub quiet: bool,
 }
 
-pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: Options, state: State) -> Result<()> {
     let project_id = state.ctx.current_project_error().id;
 
     let deployments = get_deployments(state.http.clone(), project_id).await;

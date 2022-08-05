@@ -1,3 +1,4 @@
+use anyhow::Result;
 use clap::Parser;
 use serde::Serialize;
 
@@ -23,7 +24,7 @@ struct CreateParams {
     namespace: String,
 }
 
-async fn create_project(params: CreateParams, http: HttpClient) -> Result<Project, std::io::Error> {
+async fn create_project(params: CreateParams, http: HttpClient) -> Result<Project> {
     let json = http
         .request::<SingleProjectResponse>(
             "POST",
@@ -33,14 +34,13 @@ async fn create_project(params: CreateParams, http: HttpClient) -> Result<Projec
                 "application/json",
             )),
         )
-        .await
-        .expect("Error while creating project")
-        .unwrap();
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("Error while parsing response"))?;
 
     Ok(json.project)
 }
 
-pub async fn handle(options: &Options, mut state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: &Options, mut state: State) -> anyhow::Result<()> {
     let params = CreateParams {
         name: options.name.clone(),
         namespace: options.namespace.clone(),

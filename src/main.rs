@@ -1,11 +1,11 @@
 #![warn(clippy::pedantic)]
 
+use anyhow::Result;
 use clap::Parser;
-use hop_cli::commands::update::util::check_version;
+use hop_cli::commands::update::util::version_notice;
 use hop_cli::commands::{handle_command, Commands};
 use hop_cli::state::{State, StateOptions};
 use hop_cli::utils;
-use tokio::task;
 
 #[derive(Debug, Parser)]
 #[structopt(
@@ -36,7 +36,7 @@ pub struct CLI {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), std::io::Error> {
+async fn main() -> Result<()> {
     // setup panic hook
     utils::set_hook();
 
@@ -51,19 +51,13 @@ async fn main() -> Result<(), std::io::Error> {
     })
     .await;
 
-    // only run the check if it's not the update command
-    match cli.commands {
-        Commands::Update(_) => {}
-        _ => {
-            task::spawn(async move {
-                let (update, latest) = check_version(false, true).await;
+    // its okay for the notice to fail
+    version_notice(state.ctx.clone()).await.ok();
 
-                if update {
-                    log::warn!("A new version is available: {}", latest);
-                }
-            });
-        }
+    if let Err(error) = handle_command(cli.commands, state).await {
+        log::error!("{}", error);
+        std::process::exit(1);
     }
 
-    handle_command(cli.commands, state).await
+    Ok(())
 }

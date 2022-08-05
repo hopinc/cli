@@ -31,6 +31,3 @@ pub struct LeapEdgeAuthParams {
     pub project_id: String,
     pub token: String,
 }
-
-#[derive(Debug, Clone)]
-pub struct WebsocketError(String);

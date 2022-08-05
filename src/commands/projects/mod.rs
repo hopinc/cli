@@ -34,7 +34,7 @@ pub struct Options {
     pub commands: Commands,
 }
 
-pub async fn handle(options: Options, state: State) -> Result<(), std::io::Error> {
+pub async fn handle(options: Options, state: State) -> anyhow::Result<()> {
     match options.commands {
         Commands::Switch(options) => handle_switch(&options, state).await,
         Commands::Delete(options) => handle_delete(&options, state).await,
