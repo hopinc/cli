@@ -26,11 +26,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         None => {
             let secrests = state
                 .http
-                .request::<Secrets>(
-                    "GET",
-                    format!("/projects/{}/secrets", project_id).as_str(),
-                    None,
-                )
+                .request::<Secrets>("GET", &format!("/projects/{}/secrets", project_id), None)
                 .await
                 .expect("Error while getting secrets")
                 .unwrap()
@@ -58,7 +54,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     if !options.force {
         let confirm = dialoguer::Confirm::new()
             .with_prompt(&format!(
-                "Are you sure you want to delete secret {}?",
+                "Are you sure you want to delete secret `{}`?",
                 secret_name
             ))
             .interact_opt()
@@ -75,7 +71,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         .http
         .request::<()>(
             "DELETE",
-            format!("/projects/{}/secrets/{}", project_id, secret_name).as_str(),
+            &format!("/projects/{}/secrets/{}", project_id, secret_name),
             None,
         )
         .await

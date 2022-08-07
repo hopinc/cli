@@ -73,7 +73,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .http
                 .request::<SingleDeployment>(
                     "GET",
-                    format!("/ignite/deployments/{}", hopfile.config.deployment_id).as_str(),
+                    &format!("/ignite/deployments/{}", hopfile.config.deployment_id),
                     None,
                 )
                 .await

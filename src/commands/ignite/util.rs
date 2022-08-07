@@ -38,7 +38,7 @@ pub async fn create_deployment(
     let response = http
         .request::<SingleDeployment>(
             "POST",
-            format!("/ignite/deployments?project={}", project_id).as_str(),
+            &format!("/ignite/deployments?project={}", project_id),
             Some((
                 serde_json::to_string(&config).unwrap().into(),
                 "application/json",
@@ -59,11 +59,10 @@ pub async fn update_deployment(
     let response = http
         .request::<SingleDeployment>(
             "PATCH",
-            format!(
+            &format!(
                 "/ignite/deployments/{}?project={}",
                 deployment_id, project_id
-            )
-            .as_str(),
+            ),
             Some((
                 serde_json::to_string(&config).unwrap().into(),
                 "application/json",
@@ -78,7 +77,7 @@ pub async fn update_deployment(
 pub async fn rollout(http: &HttpClient, deployment_id: &str) -> Result<()> {
     http.request::<Value>(
         "POST",
-        format!("/ignite/deployments/{}/rollouts", deployment_id).as_str(),
+        &format!("/ignite/deployments/{}/rollouts", deployment_id),
         None,
     )
     .await?
@@ -90,7 +89,7 @@ pub async fn rollout(http: &HttpClient, deployment_id: &str) -> Result<()> {
 pub async fn scale(http: &HttpClient, deployment_id: &str, scale: u64) -> Result<()> {
     http.request::<()>(
         "PATCH",
-        format!("/ignite/deployments/{}/scale", deployment_id).as_str(),
+        &format!("/ignite/deployments/{}/scale", deployment_id),
         Some((
             serde_json::to_string(&ScaleRequest { scale })
                 .unwrap()

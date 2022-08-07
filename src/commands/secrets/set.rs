@@ -23,12 +23,11 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         .http
         .request::<SecretResponse>(
             "PUT",
-            format!(
+            &format!(
                 "/projects/{}/secrets/{}",
                 project_id,
                 options.name.to_uppercase()
-            )
-            .as_str(),
+            ),
             Some((options.value.into(), "text/plain")),
         )
         .await?

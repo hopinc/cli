@@ -8,7 +8,7 @@ pub async fn create_containers(
 ) -> Vec<Container> {
     http.request::<CreateContainersResponse>(
         "POST",
-        format!("/ignite/deployments/{}/containers", deployment_id).as_str(),
+        &format!("/ignite/deployments/{}/containers", deployment_id),
         Some((
             serde_json::to_string(&CreateContainers { count })
                 .unwrap()

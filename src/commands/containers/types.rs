@@ -18,7 +18,7 @@ impl FromStr for ContainerType {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        serde_json::from_str(format!("\"{}\"", s.to_lowercase()).as_str()).map_err(|e| anyhow!(e))
+        serde_json::from_str(&format!("\"{}\"", s.to_lowercase())).map_err(|e| anyhow!(e))
     }
 }
 

@@ -77,11 +77,10 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         .http
         .request::<()>(
             "DELETE",
-            format!(
+            &format!(
                 "/ignite/deployments/{}?project={}",
                 deployment.id, project_id
-            )
-            .as_str(),
+            ),
             None,
         )
         .await

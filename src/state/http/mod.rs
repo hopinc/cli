@@ -82,7 +82,7 @@ impl HttpClient {
         &self,
         method: &str,
         path: &str,
-        data: Option<(hyper::Body, &str)>,
+        data: Option<(reqwest::Body, &str)>,
     ) -> Result<Option<T>>
     where
         T: serde::de::DeserializeOwned,
@@ -92,17 +92,18 @@ impl HttpClient {
             &format!("{}{}", self.base_url, path),
         );
 
-        if let Some((body, content_type)) = data {
-            log::debug!("Request body: {:?}", body);
+        log::debug!("request: {} {} {:?}", method, path, data);
 
-            request = request.body(body);
+        if let Some((body, content_type)) = data {
             request = request.header("content-type", content_type);
+            request = request.body(body);
         }
 
-        log::debug!("Request: {:?}", request);
+        let request = request.build().unwrap();
 
-        let response = request
-            .send()
+        let response = self
+            .client
+            .execute(request)
             .await
             .map_err(|e| e.to_string())
             .expect("Failed to send the request");

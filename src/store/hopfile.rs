@@ -86,7 +86,7 @@ impl HopFile {
             if fs::metadata(&path).await.is_ok() {
                 let content = fs::read_to_string(&path).await.ok()?;
 
-                let mut hop_file_content: Self = Self::deserialize(path.clone(), content.as_str())
+                let mut hop_file_content: Self = Self::deserialize(path.clone(), &content)
                     .expect("Failed to deserialize hop file");
 
                 hop_file_content.path = path;

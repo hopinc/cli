@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::fmt::Write;
 use std::num::ParseIntError;
 
 use serde::Deserialize;
@@ -18,7 +19,7 @@ impl Display for Version {
         let mut version = format!("{}.{}.{}", self.major, self.minor, self.patch);
 
         if let Some(prelease) = &self.release {
-            version += format!("-{}", prelease).as_str();
+            write!(version, "-pre{}", prelease)?;
         }
 
         write!(f, "{}", version)

@@ -69,7 +69,7 @@ pub async fn handle(options: &Options, mut state: State) -> anyhow::Result<()> {
 
     state
         .http
-        .request::<()>("DELETE", format!("/projects/{}", project.id).as_str(), None)
+        .request::<()>("DELETE", &format!("/projects/{}", project.id), None)
         .await
         .expect("Error while deleting project");
 

@@ -21,11 +21,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     let secrets = state
         .http
-        .request::<Secrets>(
-            "GET",
-            format!("/projects/{}/secrets", project_id).as_str(),
-            None,
-        )
+        .request::<Secrets>("GET", &format!("/projects/{}/secrets", project_id), None)
         .await
         .expect("Error while getting project info")
         .unwrap()
