@@ -106,8 +106,8 @@ impl WebsocketClient {
                 tokio::select! {
                     // gateway receiver
                     message = receiver.next() => {
-                        match message {
-                            Some(recieved) => match recieved {
+                        if let Some(recieved) = message {
+                            match recieved {
                                 Ok(message) => match Self::parse_message::<SocketMessage<Value>>(message).await {
                                     SocketMessage { op: OpCodes::HeartbeatAck, d: _ } => {
                                         self.last_heartbeat_acknowledged = true;
@@ -146,23 +146,16 @@ impl WebsocketClient {
                                     log::error!("Error reading from socket: {}", err);
                                     sender_inbound.send("null".to_string()).await.unwrap();
                                 }
-                            },
-
-                            // no idea why this would happen
-                            None => {}
+                            }
                         }
                     },
 
                     // internal rcv thread
                     internal = receiver_outbound.recv() => {
-                        match internal {
-                            Some(message) => {
-                                log::debug!("Sending message: {}", message);
+                        if let Some(message) = internal {
+                            log::debug!("Sending message: {}", message);
 
-                                sender.send(message.into()).await.expect("Error sending message")
-                            },
-                            // no idea why this would happen
-                            None => {}
+                            sender.send(message.into()).await.expect("Error sending message")
                         }
                     },
 

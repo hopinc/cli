@@ -6,7 +6,7 @@ use serde_json::Value;
 
 use crate::commands::ignite::types::Deployment;
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub enum ContainerType {
     #[serde(rename = "ephemeral")]
     Ephemeral,
@@ -75,7 +75,7 @@ pub struct CreateContainersResponse {
     pub containers: Vec<Container>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ContainerOptions {
     pub containers: Option<u64>,
     pub min_containers: Option<u64>,

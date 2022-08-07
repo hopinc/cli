@@ -13,7 +13,7 @@ use crate::state::State;
 const WEB_AUTH_URL: &str = "https://console.hop.io/cli-auth";
 const PAT_FALLBACK_URL: &str = "https://console.hop.io/settings/pats";
 
-#[derive(Debug, Parser, PartialEq, Default)]
+#[derive(Debug, Parser, Default, PartialEq, Eq)]
 #[clap(about = "Login to Hop")]
 pub struct Options {
     #[clap(
