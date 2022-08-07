@@ -18,7 +18,7 @@ impl Display for Version {
         let mut version = format!("{}.{}.{}", self.major, self.minor, self.patch);
 
         if let Some(prelease) = &self.release {
-            write!(version, "-pre{}", prelease)?;
+            write!(version, "-{}", prelease)?;
         }
 
         write!(f, "{}", version)
@@ -26,7 +26,7 @@ impl Display for Version {
 }
 
 impl Version {
-    pub fn is_newer(&self, other: &Version) -> bool {
+    pub fn is_newer_than(&self, other: &Version) -> bool {
         self.major > other.major
             || (self.major == other.major && self.minor > other.minor)
             || (self.major == other.major && self.minor == other.minor && self.patch > other.patch)
@@ -52,6 +52,64 @@ impl Version {
             patch,
             release: prelease,
         })
+    }
+}
+
+mod test {
+    #[test]
+    fn version_from_string() {
+        let version = super::Version::from_string("1.2.3").unwrap();
+        assert_eq!(version.major, 1);
+        assert_eq!(version.minor, 2);
+        assert_eq!(version.patch, 3);
+        assert_eq!(version.release, None);
+    }
+
+    #[test]
+    fn version_from_string_with_release() {
+        let version = super::Version::from_string("1.2.3-4").unwrap();
+        assert_eq!(version.major, 1);
+        assert_eq!(version.minor, 2);
+        assert_eq!(version.patch, 3);
+        assert_eq!(version.release, Some(4));
+    }
+
+    #[test]
+    fn version_is_newer() {
+        let version = super::Version::from_string("1.2.4").unwrap();
+        let older = super::Version::from_string("1.2.3").unwrap();
+        assert!(version.is_newer_than(&older));
+
+        let version = super::Version::from_string("1.2.4").unwrap();
+        let older = super::Version::from_string("1.2.3-1").unwrap();
+        assert!(version.is_newer_than(&older));
+
+        let version = super::Version::from_string("1.2.3-1").unwrap();
+        let older = super::Version::from_string("1.2.3").unwrap();
+        assert!(version.is_newer_than(&older));
+
+        let version = super::Version::from_string("1.3.3").unwrap();
+        let older = super::Version::from_string("1.2.3").unwrap();
+        assert!(version.is_newer_than(&older));
+
+        let version = super::Version::from_string("2.2.3").unwrap();
+        let older = super::Version::from_string("1.2.3").unwrap();
+        assert!(version.is_newer_than(&older));
+    }
+
+    #[test]
+    fn version_is_not_newer() {
+        let version = super::Version::from_string("1.2.3").unwrap();
+        let older = super::Version::from_string("1.2.3").unwrap();
+        assert!(!version.is_newer_than(&older));
+
+        let version = super::Version::from_string("1.2.3-1").unwrap();
+        let older = super::Version::from_string("1.2.3-1").unwrap();
+        assert!(!version.is_newer_than(&older));
+
+        let version = super::Version::from_string("1.2.3").unwrap();
+        let older = super::Version::from_string("1.2.3-1").unwrap();
+        assert!(!version.is_newer_than(&older));
     }
 }
 

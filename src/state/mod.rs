@@ -16,8 +16,8 @@ pub struct State {
     pub ctx: Context,
     pub http: HttpClient,
     pub ws: WebsocketClient,
-    pub token: Option<String>,
-    pub token_type: Option<TokenType>,
+    token: Option<String>,
+    token_type: Option<TokenType>,
 }
 
 pub struct StateOptions {

@@ -110,7 +110,7 @@ fn compare_current_and(version: &str) -> bool {
     let current = Version::from_string(VERSION).unwrap();
     let latest = Version::from_string(version).unwrap();
 
-    latest.is_newer(&current)
+    latest.is_newer_than(&current)
 }
 
 fn capitalize(s: &str) -> String {
