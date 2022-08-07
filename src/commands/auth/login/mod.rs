@@ -68,6 +68,7 @@ pub async fn token(token: &str, mut state: State) -> Result<()> {
         .insert(authorized.id.clone(), token.to_string());
     state.auth.save().await?;
 
+    state.ctx.default_project = None;
     state.ctx.default_user = Some(authorized.id.clone());
     state.ctx.save().await?;
 

@@ -17,7 +17,7 @@ pub struct Options {
 pub fn handle(options: &Options, state: &State) {
     let users = state.auth.authorized.keys().collect::<Vec<_>>();
 
-    assert!(users.is_empty(), "There are no authorized users");
+    assert!(!users.is_empty(), "There are no authorized users");
 
     if options.quiet {
         let ids = users
