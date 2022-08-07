@@ -21,10 +21,10 @@ impl HttpClient {
     pub fn new(token: Option<String>, api_url: Option<String>) -> Self {
         let mut headers = HeaderMap::new();
 
-        headers.insert("Accept", "application/json".parse().unwrap());
+        headers.insert("accept", "application/json".parse().unwrap());
 
         if let Some(token) = token {
-            headers.insert("Authorization", token.parse().unwrap());
+            headers.insert("authorization", token.parse().unwrap());
         }
 
         let ua = format!(
@@ -93,8 +93,10 @@ impl HttpClient {
         );
 
         if let Some((body, content_type)) = data {
+            log::debug!("Request body: {:?}", body);
+
             request = request.body(body);
-            request = request.header("Content-Type", content_type);
+            request = request.header("content-type", content_type);
         }
 
         log::debug!("Request: {:?}", request);

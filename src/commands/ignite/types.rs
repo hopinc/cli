@@ -87,7 +87,7 @@ pub struct Resources {
 impl Default for Resources {
     fn default() -> Self {
         Resources {
-            vcpu: 1.,
+            vcpu: 0.5,
             ram: RamSizes::default().to_string(),
             vgpu: vec![],
         }
@@ -133,17 +133,18 @@ pub struct Image {
     pub name: String,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct Config {
     pub version: String,
     #[serde(rename = "type")]
     pub d_type: ContainerType,
     pub image: Image,
+    pub env: HashMap<String, String>,
     pub container_strategy: ScalingStrategy,
     pub resources: Resources,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct Deployment {
     pub id: String,
     pub name: String,
@@ -162,7 +163,7 @@ pub struct MultipleDeployments {
     pub deployments: Vec<Deployment>,
 }
 
-#[derive(Debug, Serialize, Clone, Default)]
+#[derive(Debug, Serialize, Clone, Default, PartialEq)]
 pub struct CreateDeployment {
     pub container_strategy: ScalingStrategy,
     pub env: HashMap<String, String>,
@@ -171,6 +172,19 @@ pub struct CreateDeployment {
     pub resources: Resources,
     #[serde(rename = "type")]
     pub container_type: ContainerType,
+}
+
+impl CreateDeployment {
+    pub fn from_deployment(deployment: &Deployment) -> Self {
+        Self {
+            container_strategy: deployment.config.container_strategy.clone(),
+            env: deployment.config.env.clone(),
+            image: deployment.config.image.clone(),
+            name: deployment.name.clone(),
+            resources: deployment.config.resources.clone(),
+            container_type: deployment.config.d_type.clone(),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -185,4 +199,9 @@ impl FromStr for Env {
             Err(e) => Err(anyhow!("Could not pase env value: {}", e)),
         }
     }
+}
+
+#[derive(Debug, Serialize)]
+pub struct ScaleRequest {
+    pub scale: u64,
 }

@@ -4,6 +4,8 @@ use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::commands::ignite::types::Deployment;
+
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub enum ContainerType {
     #[serde(rename = "ephemeral")]
@@ -73,11 +75,23 @@ pub struct CreateContainersResponse {
     pub containers: Vec<Container>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct ContainerOptions {
     pub containers: Option<u64>,
     pub min_containers: Option<u64>,
     pub max_containers: Option<u64>,
+}
+
+impl ContainerOptions {
+    pub fn from_deployment(deployment: &Deployment) -> Self {
+        Self {
+            containers: Some(deployment.container_count as u64),
+            min_containers: Some(0),
+            max_containers: Some(0),
+            // min_containers: Some(deployment.config.resources.min_containers as u64),
+            // max_containers: Some(deployment.config.resources.max_containers as u64),
+        }
+    }
 }
 
 #[derive(Debug, Serialize)]

@@ -7,8 +7,8 @@ use crate::state::State;
 #[derive(Debug, Parser)]
 #[clap(about = "Delete a deployment")]
 pub struct Options {
-    #[clap(name = "name", help = "Name of the deployment")]
-    name: Option<String>,
+    #[clap(name = "deployment", help = "NAME or ID of the deployment to delete")]
+    deployment: Option<String>,
 
     #[clap(short = 'f', long = "force", help = "Skip confirmation")]
     force: bool,
@@ -31,11 +31,11 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     assert!(!deployments.is_empty(), "No deployments found");
 
-    let deployment = match options.name {
+    let deployment = match options.deployment {
         Some(name) => {
             let deployment = deployments
                 .iter()
-                .find(|p| p.name == name)
+                .find(|p| p.name == name || p.id == name)
                 .expect("Deployment not found");
             deployment.clone()
         }

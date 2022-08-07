@@ -1,13 +1,13 @@
 use anyhow::Result;
 use clap::Parser;
 
-use super::util::{format_deployments, get_deployments, rollout};
+use super::util::{format_deployments, get_all_deployments, rollout};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Rollout new containers to a deployment")]
 pub struct Options {
-    #[clap(name = "deployment", help = "Deployment to rollout")]
+    #[clap(name = "deployment", help = "NAME or ID of the deployment to rollout")]
     pub deployment: Option<String>,
 }
 
@@ -21,7 +21,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
                 log::info!("Using deployment {} /{}", project.name, project.namespace);
 
-                let deployments = get_deployments(state.http.clone(), project.id).await;
+                let deployments = get_all_deployments(&state.http, &project.id).await?;
 
                 deployments
                     .iter()
@@ -35,7 +35,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
             log::info!("Using deployment {} /{}", project.name, project.namespace);
 
-            let deployments = get_deployments(state.http.clone(), project.id).await;
+            let deployments = get_all_deployments(&state.http, &project.id).await?;
 
             let deployments_fmt = format_deployments(&deployments, false);
 
@@ -51,7 +51,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         }
     };
 
-    rollout(state.http, deployment).await;
+    rollout(&state.http, &deployment).await?;
 
     log::info!("Rollling out new containers");
 

@@ -2,8 +2,8 @@ use super::types::{Container, CreateContainers, CreateContainersResponse};
 use crate::state::http::HttpClient;
 
 pub async fn create_containers(
-    http: HttpClient,
-    deployment_id: String,
+    http: &HttpClient,
+    deployment_id: &str,
     count: u64,
 ) -> Vec<Container> {
     http.request::<CreateContainersResponse>(

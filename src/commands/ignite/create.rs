@@ -5,7 +5,8 @@ use console::style;
 use super::types::{Env, RamSizes, ScalingStrategy};
 use crate::commands::containers::types::ContainerType;
 use crate::commands::containers::utils::create_containers;
-use crate::commands::ignite::util::{create_deployment, create_deployment_config};
+use crate::commands::ignite::types::Deployment;
+use crate::commands::ignite::util::{create_deployment, update_deployment_config};
 use crate::state::State;
 
 pub const WEB_DEPLOYMENTS_URL: &str = "https://console.hop.io/ignite/deployment/";
@@ -94,9 +95,9 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     let is_not_guided = options != Options::default();
 
     let (deployment_config, container_options) =
-        create_deployment_config(options, is_not_guided, &None);
+        update_deployment_config(options, is_not_guided, &Deployment::default(), &None);
 
-    let deployment = create_deployment(state.http.clone(), project.id, deployment_config).await;
+    let deployment = create_deployment(&state.http, &project.id, &deployment_config).await?;
 
     log::info!(
         "Deployment `{}` ({}) created",
@@ -107,7 +108,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     if let Some(count) = container_options.containers {
         if count > 0 {
             log::info!("Creating {} containers", count);
-            create_containers(state.http, deployment.id.clone(), count).await;
+            create_containers(&state.http, &deployment.id, count).await;
         }
     }
 

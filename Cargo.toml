@@ -1,5 +1,5 @@
 [package]
-name = "hop-cli"
+name = "hop_cli"
 version = "0.1.14"
 edition = "2021"
 license = "MPL-2.0"

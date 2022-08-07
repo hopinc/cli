@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::Parser;
 
-use crate::commands::ignite::util::{format_deployments, get_deployments};
+use crate::commands::ignite::util::{format_deployments, get_all_deployments};
 use crate::state::State;
 use crate::store::hopfile::HopFile;
 
@@ -45,7 +45,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         project.id
     );
 
-    let deployments = get_deployments(state.http.clone(), project.id.clone()).await;
+    let deployments = get_all_deployments(&state.http, &project.id).await?;
 
     assert!(
         !deployments.is_empty(),

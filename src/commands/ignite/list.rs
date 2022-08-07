@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
 
-use crate::commands::ignite::util::{format_deployments, get_deployments};
+use crate::commands::ignite::util::{format_deployments, get_all_deployments};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
@@ -18,7 +18,7 @@ pub struct Options {
 pub async fn handle(options: Options, state: State) -> Result<()> {
     let project_id = state.ctx.current_project_error().id;
 
-    let deployments = get_deployments(state.http.clone(), project_id).await;
+    let deployments = get_all_deployments(&state.http, &project_id).await?;
 
     if options.quiet {
         let ids = deployments

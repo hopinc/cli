@@ -18,8 +18,8 @@ use crate::commands::containers::utils::create_containers;
 use crate::commands::ignite::create::{
     DeploymentConfig, Options as CreateOptions, WEB_DEPLOYMENTS_URL,
 };
-use crate::commands::ignite::types::SingleDeployment;
-use crate::commands::ignite::util::{create_deployment, create_deployment_config, rollout};
+use crate::commands::ignite::types::{Deployment, SingleDeployment};
+use crate::commands::ignite::util::{create_deployment, rollout, update_deployment_config};
 use crate::state::State;
 use crate::store::hopfile::HopFile;
 
@@ -127,13 +127,14 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 String::new(),
             );
 
-            let (mut deployment_config, container_options) = create_deployment_config(
+            let (mut deployment_config, container_options) = update_deployment_config(
                 CreateOptions {
                     config: options.config.clone(),
                     // temporary value that gets replaced after we get the name
-                    image: Some("temp".to_string()),
+                    image: Some("".to_string()),
                 },
                 is_not_guided,
+                &Deployment::default(),
                 &Some(
                     dir.clone()
                         .file_name()
@@ -155,12 +156,9 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                     .extend(env_file_to_map(dir.join(".env")).await);
             }
 
-            let deployment = create_deployment(
-                state.http.clone(),
-                hopfile.config.project_id.clone(),
-                deployment_config,
-            )
-            .await;
+            let deployment =
+                create_deployment(&state.http, &hopfile.config.project_id, &deployment_config)
+                    .await?;
 
             hopfile.config.deployment_id = deployment.id.clone();
 
@@ -276,10 +274,10 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     if existing {
         if deployment.container_count > 0 {
             log::info!("Rolling out new containers");
-            rollout(state.http, deployment.id.clone()).await;
+            rollout(&state.http, &deployment.id).await?;
         }
     } else if let Some(containers) = container_options.containers {
-        create_containers(state.http, deployment.id.clone(), containers).await;
+        create_containers(&state.http, &deployment.id, containers).await;
     }
 
     log::info!(
