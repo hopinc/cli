@@ -58,7 +58,7 @@ impl HttpClient {
             reqwest::StatusCode::OK => response,
             reqwest::StatusCode::CREATED => return Ok(None),
             reqwest::StatusCode::NO_CONTENT => return Ok(None),
-            code => return self.handle_error(response, code.as_u16()).await,
+            _ => return self.handle_error(response).await,
         };
 
         let response = response
@@ -69,11 +69,11 @@ impl HttpClient {
         Ok(Some(response.data))
     }
 
-    async fn handle_error<T>(&self, response: reqwest::Response, code: u16) -> Result<Option<T>> {
+    async fn handle_error<T>(&self, response: reqwest::Response) -> Result<Option<T>> {
         let body = response.json::<ErrorResponse>().await;
 
         match body {
-            Ok(body) => Err(anyhow!("{}: {}", code, body.error.message)),
+            Ok(body) => Err(anyhow!("{}", body.error.message)),
             Err(err) => Err(anyhow!("Failed to parse error response: {}", err)),
         }
     }
