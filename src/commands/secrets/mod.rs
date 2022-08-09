@@ -2,7 +2,7 @@ mod delete;
 mod list;
 mod set;
 mod types;
-mod util;
+pub mod util;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};

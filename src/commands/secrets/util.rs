@@ -1,6 +1,7 @@
 use std::io::Write;
 
 use anyhow::{bail, Result};
+use regex::Regex;
 use tabwriter::TabWriter;
 
 use super::types::Secret;
@@ -36,4 +37,10 @@ pub fn format_secrets(secrets: &Vec<Secret>, title: bool) -> Vec<String> {
         .lines()
         .map(std::string::ToString::to_string)
         .collect()
+}
+
+pub fn get_secret_name(secret: &str) -> Option<String> {
+    let regex = Regex::new(r"^(?i)\$\{secrets\.(\w+)}$").unwrap();
+
+    regex.captures(secret).map(|c| c[1].to_string())
 }

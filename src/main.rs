@@ -2,38 +2,10 @@
 
 use anyhow::Result;
 use clap::Parser;
+use hop_cli::commands::handle_command;
 use hop_cli::commands::update::util::version_notice;
-use hop_cli::commands::{handle_command, Commands};
 use hop_cli::state::{State, StateOptions};
-use hop_cli::utils;
-
-#[derive(Debug, Parser)]
-#[structopt(
-    name = "hop",
-    about = "🐇 Interact with Hop via command line",
-    version,
-    author
-)]
-pub struct CLI {
-    #[clap(subcommand)]
-    pub commands: Commands,
-
-    #[clap(
-        short = 'p',
-        long = "project",
-        help = "Namespace or ID of the project to use",
-        global = true
-    )]
-    pub project: Option<String>,
-
-    #[clap(
-        short = 'v',
-        long = "verbose",
-        help = "Print more information",
-        global = true
-    )]
-    pub verbose: bool,
-}
+use hop_cli::{utils, CLI};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -41,7 +13,7 @@ async fn main() -> Result<()> {
     utils::set_hook();
 
     // create a new CLI instance
-    let cli = CLI::from_args();
+    let cli = CLI::parse();
 
     utils::logs(cli.verbose);
 

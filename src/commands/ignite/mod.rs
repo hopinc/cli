@@ -1,5 +1,6 @@
 pub mod create;
 mod delete;
+mod get_env;
 mod list;
 pub mod rollout;
 mod scale;
@@ -12,6 +13,7 @@ use clap::{Parser, Subcommand};
 
 use self::create::{handle as handle_create, Options as CreateOptions};
 use self::delete::{handle as handle_delete, Options as DeleteOptions};
+use self::get_env::{handle as handle_get_env, Options as GetEnvOptions};
 use self::list::{handle as handle_list, Options as ListOptions};
 use self::rollout::{handle as handle_rollout, Options as RolloutOptions};
 use self::scale::{handle as handle_scale, Options as ScaleOptions};
@@ -32,6 +34,8 @@ pub enum Commands {
     Update(UpdateOptions),
     #[clap(name = "scale")]
     Scale(ScaleOptions),
+    #[clap(name = "get-env")]
+    GetEnv(GetEnvOptions),
 }
 
 #[derive(Debug, Parser)]
@@ -49,5 +53,6 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Commands::Update(options) => handle_update(options, state).await,
         Commands::Rollout(options) => handle_rollout(options, state).await,
         Commands::Scale(options) => handle_scale(options, state).await,
+        Commands::GetEnv(options) => handle_get_env(options, state).await,
     }
 }
