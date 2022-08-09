@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::process::Command as Cmd;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, ensure, Result};
 use runas::Command as SudoCmd;
 use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
@@ -14,6 +14,7 @@ use crate::state::http::HttpClient;
 use crate::store::context::Context;
 
 const RELEASE_URL: &str = "https://api.github.com/repos/hopinc/hop_cli/releases";
+const BASE_DOWNLOAD_URL: &str = "https://github.com/hopinc/hop_cli/releases/download";
 
 pub async fn check_version(beta: bool) -> Result<(bool, String)> {
     let http = HttpClient::new(None, None);
@@ -25,12 +26,11 @@ pub async fn check_version(beta: bool) -> Result<(bool, String)> {
         .await
         .map_err(|_| anyhow!("Failed to get latest release"))?;
 
-    if !response.status().is_success() {
-        anyhow::bail!(
-            "Failed to get latest release from Github: {}",
-            response.status()
-        );
-    }
+    ensure!(
+        response.status().is_success(),
+        "Failed to get latest release from Github: {}",
+        response.status()
+    );
 
     let data = response
         .json::<Vec<GithubRelease>>()
@@ -66,10 +66,7 @@ pub async fn check_version(beta: bool) -> Result<(bool, String)> {
 const HOUR_IN_SECONDS: u64 = 60 * 60;
 
 pub async fn version_notice(mut ctx: Context) -> Result<()> {
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
+    let now = now_secs();
 
     let last_check = ctx
         .last_version_check
@@ -101,9 +98,16 @@ pub async fn version_notice(mut ctx: Context) -> Result<()> {
         return Ok(());
     };
 
-    log::warn!("A new version is available: {}", new_version);
+    log::warn!("A new version is available: {new_version}");
 
     Ok(())
+}
+
+pub fn now_secs() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
 }
 
 fn compare_current_and(version: &str) -> bool {
@@ -128,21 +132,15 @@ const COMPRESSED_FILE_EXTENSION: &str = "tar.gz";
 const COMPRESSED_FILE_EXTENSION: &str = "zip";
 
 pub async fn download(http: HttpClient, version: String) -> Result<PathBuf> {
-    let filename = format!(
-        "hop-{}-{}.{}",
-        ARCH,
-        capitalize(&sys_info::os_type().unwrap_or_else(|_| "Unknown".to_string())),
-        COMPRESSED_FILE_EXTENSION
-    );
+    let platform = capitalize(&sys_info::os_type().unwrap_or_else(|_| "Unknown".to_string()));
 
-    log::info!("Downloading {}@{}", filename, version);
+    let filename = format!("hop-{ARCH}-{platform}.{COMPRESSED_FILE_EXTENSION}",);
+
+    log::info!("Downloading {filename}@{version}");
 
     let response = http
         .client
-        .get(&format!(
-            "https://github.com/hopinc/hop_cli/releases/download/v{}/{}",
-            version, filename
-        ))
+        .get(&format!("{BASE_DOWNLOAD_URL}/{version}/{filename}"))
         .send()
         .await
         .expect("Failed to get latest release");
@@ -160,7 +158,7 @@ pub async fn download(http: HttpClient, version: String) -> Result<PathBuf> {
 
     let packed_temp = temp_dir().join(filename);
 
-    log::debug!("Downloading to: {}", packed_temp.display());
+    log::debug!("Downloading to: {packed_temp:?}");
 
     let mut file = File::create(&packed_temp).await?;
 
@@ -190,7 +188,7 @@ pub async fn unpack(packed_temp: PathBuf) -> Result<PathBuf> {
 
     let exe = unpack_dir.join("hop");
 
-    log::debug!("Unpacked to: {}", exe.display());
+    log::debug!("Unpacked to: {exe:?}");
 
     Ok(exe)
 }
@@ -228,7 +226,7 @@ pub async fn unpack(packed_temp: PathBuf) -> Result<PathBuf> {
     let mut file = File::create(&exe).await?;
     file.write_all(&data).await?;
 
-    log::debug!("Unpacked to: {}", exe.display());
+    log::debug!("Unpacked to: {exe:?}");
 
     Ok(exe)
 }

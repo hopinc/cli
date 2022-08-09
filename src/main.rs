@@ -2,8 +2,8 @@
 
 use anyhow::Result;
 use clap::Parser;
-use hop_cli::commands::handle_command;
 use hop_cli::commands::update::util::version_notice;
+use hop_cli::commands::{handle_command, Commands};
 use hop_cli::state::{State, StateOptions};
 use hop_cli::{utils, CLI};
 
@@ -24,7 +24,9 @@ async fn main() -> Result<()> {
     .await;
 
     // its okay for the notice to fail
-    version_notice(state.ctx.clone()).await.ok();
+    if let Commands::Update(_) = cli.commands {
+        version_notice(state.ctx.clone()).await.ok();
+    }
 
     if let Err(error) = handle_command(cli.commands, state).await {
         log::error!("{}", error);

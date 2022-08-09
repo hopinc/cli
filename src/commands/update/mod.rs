@@ -6,6 +6,7 @@ use anyhow::Result;
 use clap::Parser;
 
 use self::util::{check_version, download, swap_executables, unpack};
+use crate::commands::update::util::now_secs;
 use crate::config::VERSION;
 use crate::state::http::HttpClient;
 use crate::state::State;
@@ -20,7 +21,7 @@ pub struct Options {
     pub beta: bool,
 }
 
-pub async fn handle(options: Options, _state: State) -> Result<()> {
+pub async fn handle(options: Options, mut state: State) -> Result<()> {
     let http = HttpClient::new(None, None);
 
     let (update, version) = check_version(options.beta).await?;
@@ -30,7 +31,7 @@ pub async fn handle(options: Options, _state: State) -> Result<()> {
         return Ok(());
     }
 
-    log::info!("Found new version {} (current: {})", version, VERSION);
+    log::info!("Found new version {version} (current: {VERSION})");
 
     // download the new release
     let packed_temp = download(http, version.clone())
@@ -43,7 +44,10 @@ pub async fn handle(options: Options, _state: State) -> Result<()> {
     // swap the executables
     swap_executables(std::env::current_exe()?, unpacked).await?;
 
-    log::info!("Updated to {}", version);
+    state.ctx.last_version_check = Some((now_secs().to_string(), version.clone()));
+    state.ctx.save().await?;
+
+    log::info!("Updated to {version}");
 
     Ok(())
 }
