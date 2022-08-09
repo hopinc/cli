@@ -27,7 +27,7 @@ const HOP_BUILD_BASE_URL: &str = "https://builder.hop.io/v1";
 const HOP_REGISTRY_URL: &str = "registry.hop.io";
 
 #[derive(Debug, Parser)]
-#[structopt(about = "Deploy a new container")]
+#[clap(about = "Deploy a new container")]
 pub struct Options {
     #[clap(
         name = "dir",
@@ -277,7 +277,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             rollout(&state.http, &deployment.id).await?;
         }
     } else if let Some(containers) = container_options.containers {
-        create_containers(&state.http, &deployment.id, containers).await;
+        create_containers(&state.http, &deployment.id, containers).await?;
     }
 
     log::info!(

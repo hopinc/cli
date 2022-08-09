@@ -11,31 +11,24 @@ pub mod util;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
-use self::create::{handle as handle_create, Options as CreateOptions};
-use self::delete::{handle as handle_delete, Options as DeleteOptions};
-use self::get_env::{handle as handle_get_env, Options as GetEnvOptions};
-use self::list::{handle as handle_list, Options as ListOptions};
-use self::rollout::{handle as handle_rollout, Options as RolloutOptions};
-use self::scale::{handle as handle_scale, Options as ScaleOptions};
-use self::update::{handle as handle_update, Options as UpdateOptions};
 use crate::state::State;
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {
     #[clap(name = "new", alias = "create")]
-    Create(CreateOptions),
+    Create(create::Options),
     #[clap(name = "ls", alias = "list")]
-    List(ListOptions),
+    List(list::Options),
     #[clap(name = "rm", alias = "delete")]
-    Delete(DeleteOptions),
+    Delete(delete::Options),
     #[clap(name = "rollout", alias = "rollouts")]
-    Rollout(RolloutOptions),
+    Rollout(rollout::Options),
     #[clap(name = "update")]
-    Update(UpdateOptions),
+    Update(update::Options),
     #[clap(name = "scale")]
-    Scale(ScaleOptions),
+    Scale(scale::Options),
     #[clap(name = "get-env")]
-    GetEnv(GetEnvOptions),
+    GetEnv(get_env::Options),
 }
 
 #[derive(Debug, Parser)]
@@ -47,12 +40,12 @@ pub struct Options {
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
     match options.commands {
-        Commands::List(options) => handle_list(options, state).await,
-        Commands::Create(options) => handle_create(options, state).await,
-        Commands::Delete(options) => handle_delete(options, state).await,
-        Commands::Update(options) => handle_update(options, state).await,
-        Commands::Rollout(options) => handle_rollout(options, state).await,
-        Commands::Scale(options) => handle_scale(options, state).await,
-        Commands::GetEnv(options) => handle_get_env(options, state).await,
+        Commands::List(options) => list::handle(options, state).await,
+        Commands::Create(options) => create::handle(options, state).await,
+        Commands::Delete(options) => delete::handle(options, state).await,
+        Commands::Update(options) => update::handle(options, state).await,
+        Commands::Rollout(options) => rollout::handle(options, state).await,
+        Commands::Scale(options) => scale::handle(options, state).await,
+        Commands::GetEnv(options) => get_env::handle(options, state).await,
     }
 }

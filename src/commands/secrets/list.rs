@@ -6,9 +6,9 @@ use crate::commands::secrets::util::format_secrets;
 use crate::state::State;
 
 #[derive(Debug, Parser)]
-#[structopt(about = "List all secrets")]
+#[clap(about = "List all secrets")]
 pub struct Options {
-    #[structopt(
+    #[clap(
         short = 'q',
         long = "quiet",
         help = "Only print the IDs of the secrets"

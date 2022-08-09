@@ -11,33 +11,26 @@ mod whoami;
 use anyhow::Result;
 use clap::Subcommand;
 
-use self::auth::{handle as handle_auth, Options as AuthOptions};
-use self::deploy::{handle as handle_deploy, Options as DeployOptions};
-use self::ignite::{handle as handle_ignite, Options as IgniteOptions};
-use self::link::{handle as handle_link, Options as LinkOptions};
-use self::projects::{handle as handle_projects, Options as ProjectsOptions};
-use self::secrets::{handle as handle_secrets, Options as SecretsOptions};
-use self::update::{handle as handle_update, Options as UpdateOptions};
-use self::whoami::{handle as handle_whoami, Options as WhoamiOptions};
 use crate::state::State;
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {
-    Auth(AuthOptions),
-    Projects(ProjectsOptions),
-    Secrets(SecretsOptions),
-    Deploy(DeployOptions),
+    Auth(auth::Options),
+    Projects(projects::Options),
+    Secrets(secrets::Options),
+    Deploy(deploy::Options),
     #[clap(name = "whoami", alias = "info", alias = "ctx")]
-    Whoami(WhoamiOptions),
-    Ignite(IgniteOptions),
-    Link(LinkOptions),
-    Update(UpdateOptions),
+    Whoami(whoami::Options),
+    Ignite(ignite::Options),
+    Link(link::Options),
+    Update(update::Options),
+    Containers(containers::Options),
 }
 
 pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
     match command {
-        Commands::Auth(options) => handle_auth(options, state).await,
-        Commands::Update(options) => handle_update(options, state).await,
+        Commands::Auth(options) => auth::handle(options, state).await,
+        Commands::Update(options) => update::handle(options, state).await,
 
         authorized_command => {
             // login so these commands can run
@@ -45,12 +38,13 @@ pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
 
             match authorized_command {
                 Commands::Auth(_) | Commands::Update(_) => unreachable!(),
-                Commands::Projects(options) => handle_projects(options, state).await,
-                Commands::Secrets(options) => handle_secrets(options, state).await,
-                Commands::Deploy(options) => handle_deploy(options, state).await,
-                Commands::Whoami(options) => handle_whoami(&options, state),
-                Commands::Ignite(options) => handle_ignite(options, state).await,
-                Commands::Link(options) => handle_link(options, state).await,
+                Commands::Projects(options) => projects::handle(options, state).await,
+                Commands::Secrets(options) => secrets::handle(options, state).await,
+                Commands::Deploy(options) => deploy::handle(options, state).await,
+                Commands::Whoami(options) => whoami::handle(&options, state),
+                Commands::Ignite(options) => ignite::handle(options, state).await,
+                Commands::Link(options) => link::handle(options, state).await,
+                Commands::Containers(options) => containers::handle(options, state).await,
             }
         }
     }

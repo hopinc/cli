@@ -8,23 +8,18 @@ pub mod util;
 
 use clap::{Parser, Subcommand};
 
-use self::create::{handle as handle_create, Options as CreateOptions};
-use self::delete::{handle as handle_delete, Options as DeleteOptions};
-use self::info::{handle as handle_info, Options as InfoOptions};
-use self::list::{handle as handle_list, Options as ListOptions};
-use self::switch::{handle as handle_switch, Options as SwitchOptions};
 use crate::state::State;
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {
     #[clap(name = "new", alias = "create")]
-    Create(CreateOptions),
-    Switch(SwitchOptions),
-    Info(InfoOptions),
+    Create(create::Options),
+    Switch(switch::Options),
+    Info(info::Options),
     #[clap(name = "ls", alias = "list")]
-    List(ListOptions),
+    List(list::Options),
     #[clap(name = "rm", alias = "delete")]
-    Delete(DeleteOptions),
+    Delete(delete::Options),
 }
 
 #[derive(Debug, Parser)]
@@ -36,16 +31,17 @@ pub struct Options {
 
 pub async fn handle(options: Options, state: State) -> anyhow::Result<()> {
     match options.commands {
-        Commands::Switch(options) => handle_switch(&options, state).await,
-        Commands::Delete(options) => handle_delete(&options, state).await,
-        Commands::Create(options) => handle_create(&options, state).await,
+        Commands::Switch(options) => switch::handle(&options, state).await,
+        Commands::Delete(options) => delete::handle(&options, state).await,
+        Commands::Create(options) => create::handle(&options, state).await,
+
         Commands::List(options) => {
-            handle_list(&options, state);
+            list::handle(&options, state);
             Ok(())
         }
 
         Commands::Info(options) => {
-            handle_info(&options, state);
+            info::handle(&options, state);
             Ok(())
         }
     }

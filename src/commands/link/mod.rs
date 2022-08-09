@@ -9,14 +9,14 @@ use crate::state::State;
 use crate::store::hopfile::HopFile;
 
 #[derive(Debug, Parser)]
-#[structopt(about = "Link an existing deployment to a hopfile")]
+#[clap(about = "Link an existing deployment to a hopfile")]
 pub struct Options {
-    #[structopt(
+    #[clap(
         name = "dir",
         help = "Directory to link, defaults to current directory"
     )]
     path: Option<PathBuf>,
-    #[structopt(short = 'n', long = "name", help = "Name of the deployment")]
+    #[clap(short = 'n', long = "name", help = "Name of the deployment")]
     name: Option<String>,
 }
 

@@ -8,19 +8,15 @@ mod utils;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
-use self::list::{handle as handle_list, Options as ListOptions};
-use self::login::{handle as handle_login, Options as LoginOptions};
-use self::logout::{handle as handle_logout, Options as LogoutOptions};
-use self::switch::{handle as handle_switch, Options as SwitchOptions};
 use crate::state::State;
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {
     #[clap(name = "ls", alias = "list")]
-    List(ListOptions),
-    Login(LoginOptions),
-    Logout(LogoutOptions),
-    Switch(SwitchOptions),
+    List(list::Options),
+    Login(login::Options),
+    Logout(logout::Options),
+    Switch(switch::Options),
 }
 
 #[derive(Debug, Parser)]
@@ -32,11 +28,11 @@ pub struct Options {
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
     match options.commands {
-        Commands::Login(options) => handle_login(options, state).await,
-        Commands::Logout(options) => handle_logout(options, state).await,
-        Commands::Switch(options) => handle_switch(options, state).await,
+        Commands::Login(options) => login::handle(options, state).await,
+        Commands::Logout(options) => logout::handle(options, state).await,
+        Commands::Switch(options) => switch::handle(options, state).await,
         Commands::List(options) => {
-            handle_list(&options, &state);
+            list::handle(&options, &state);
             Ok(())
         }
     }
