@@ -80,7 +80,7 @@ else
 fi
 
 chmod 0755 "${EXTRACTED_FILE}"
-if ! mv "${TEMP_FILE}" "${INSTALL_PATH}" 2> /dev/null; then
+if ! mv "${EXTRACTED_FILE}" "${INSTALL_PATH}" 2> /dev/null; then
     echo "sudo is required to install hop to ${INSTALL_DIR}"
     sudo -k mv "${EXTRACTED_FILE}" "${INSTALL_PATH}"
 fi
