@@ -23,10 +23,11 @@ async fn main() -> Result<()> {
     })
     .await;
 
-    // its okay for the notice to fail
-    if let Commands::Update(_) = cli.commands {
-        version_notice(state.ctx.clone()).await.ok();
-    }
+    match cli.commands {
+        Commands::Update(_) => None,
+        // its okay for the notice to fail
+        _ => version_notice(state.ctx.clone()).await.ok(),
+    };
 
     if let Err(error) = handle_command(cli.commands, state).await {
         log::error!("{}", error);
