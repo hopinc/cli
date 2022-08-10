@@ -168,7 +168,8 @@ pub struct CreateDeployment {
     pub container_strategy: ScalingStrategy,
     pub env: HashMap<String, String>,
     pub image: Image,
-    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
     pub resources: Resources,
     #[serde(rename = "type")]
     pub container_type: ContainerType,
@@ -180,7 +181,7 @@ impl CreateDeployment {
             container_strategy: deployment.config.container_strategy.clone(),
             env: deployment.config.env.clone(),
             image: deployment.config.image.clone(),
-            name: deployment.name.clone(),
+            name: Some(deployment.name.clone()),
             resources: deployment.config.resources.clone(),
             container_type: deployment.config.d_type.clone(),
         }

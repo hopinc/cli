@@ -131,7 +131,9 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
             deployment_config.image.name = format!(
                 "{}/{}/{}",
-                HOP_REGISTRY_URL, project.namespace, deployment_config.name
+                HOP_REGISTRY_URL,
+                project.namespace,
+                deployment_config.name.clone().unwrap()
             );
 
             if options.envfile {

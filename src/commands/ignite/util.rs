@@ -21,7 +21,7 @@ pub async fn get_all_deployments(http: &HttpClient, project_id: &str) -> Result<
     let response = http
         .request::<MultipleDeployments>(
             "GET",
-            &format!("/ignite/deployments?project={}", project_id),
+            &format!("/ignite/deployments?project={project_id}"),
             None,
         )
         .await?
@@ -38,7 +38,7 @@ pub async fn create_deployment(
     let response = http
         .request::<SingleDeployment>(
             "POST",
-            &format!("/ignite/deployments?project={}", project_id),
+            &format!("/ignite/deployments?project={project_id}"),
             Some((
                 serde_json::to_string(&config).unwrap().into(),
                 "application/json",
@@ -52,17 +52,13 @@ pub async fn create_deployment(
 
 pub async fn update_deployment(
     http: &HttpClient,
-    project_id: &str,
     deployment_id: &str,
     config: &CreateDeployment,
 ) -> Result<Deployment> {
     let response = http
         .request::<SingleDeployment>(
             "PATCH",
-            &format!(
-                "/ignite/deployments/{}?project={}",
-                deployment_id, project_id
-            ),
+            &format!("/ignite/deployments/{deployment_id}"),
             Some((
                 serde_json::to_string(&config).unwrap().into(),
                 "application/json",
@@ -77,7 +73,7 @@ pub async fn update_deployment(
 pub async fn rollout(http: &HttpClient, deployment_id: &str) -> Result<()> {
     http.request::<Value>(
         "POST",
-        &format!("/ignite/deployments/{}/rollouts", deployment_id),
+        &format!("/ignite/deployments/{deployment_id}/rollouts"),
         None,
     )
     .await?
@@ -89,7 +85,7 @@ pub async fn rollout(http: &HttpClient, deployment_id: &str) -> Result<()> {
 pub async fn scale(http: &HttpClient, deployment_id: &str, scale: u64) -> Result<()> {
     http.request::<()>(
         "PATCH",
-        &format!("/ignite/deployments/{}/scale", deployment_id),
+        &format!("/ignite/deployments/{deployment_id}/scale"),
         Some((
             serde_json::to_string(&ScaleRequest { scale })
                 .unwrap()
@@ -150,12 +146,12 @@ fn update_config_from_args(
     let is_update = deployment_config.clone() != CreateDeployment::default()
         || container_options.clone() != ContainerOptions::default();
 
-    deployment_config.name = options
+    let name = options
         .config
         .name
         .or_else(|| {
             if is_update {
-                Some(deployment_config.name.clone())
+                deployment_config.name.clone()
             } else {
                 None
             }
@@ -164,9 +160,13 @@ fn update_config_from_args(
         .to_lowercase();
 
     assert!(
-        validate_deployment_name(&deployment_config.name),
+        validate_deployment_name(&name),
         "Invalid deployment name, must be alphanumeric and hyphens only"
     );
+
+    if !is_update || deployment_config.name != Some(name.clone()) {
+        deployment_config.name = Some(name);
+    }
 
     deployment_config.image.name = options
         .image
@@ -299,12 +299,15 @@ fn update_config_from_guided(
     container_options: &mut ContainerOptions,
     fallback_name: &Option<String>,
 ) -> (CreateDeployment, ContainerOptions) {
+    let is_update = deployment_config.clone() != CreateDeployment::default()
+        || container_options.clone() != ContainerOptions::default();
+
     let name = fallback_name
         .clone()
-        .or_else(|| Some(deployment_config.name.clone()))
+        .or_else(|| deployment_config.name.clone())
         .unwrap_or_default();
 
-    deployment_config.name = dialoguer::Input::<String>::new()
+    let name = dialoguer::Input::<String>::new()
         .with_prompt("Deployment name")
         .default(name.clone())
         .show_default(!name.is_empty())
@@ -317,6 +320,14 @@ fn update_config_from_guided(
         })
         .interact_text()
         .expect("Failed to get deployment name");
+
+    if !is_update || deployment_config.name != Some(name.clone()) {
+        deployment_config.name = Some(name);
+    } else {
+        deployment_config.name = None;
+    }
+
+    log::debug!("Deployment name: {:?}", deployment_config.name);
 
     deployment_config.image.name =
         // if name is "" it's using hopdeploy ie. image is created on the fly

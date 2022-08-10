@@ -32,7 +32,7 @@ pub enum Commands {
 }
 
 #[derive(Debug, Parser)]
-#[clap(name = "ignite", about = "Interact with Ignite containers")]
+#[clap(name = "ignite", about = "Interact with Ignite deployments")]
 pub struct Options {
     #[clap(subcommand)]
     pub commands: Commands,

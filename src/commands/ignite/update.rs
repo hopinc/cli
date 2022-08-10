@@ -2,8 +2,10 @@ use anyhow::{anyhow, ensure, Result};
 use clap::Parser;
 
 use super::create::Options as CreateOptions;
-use crate::commands::ignite::types::{MultipleDeployments, ScalingStrategy};
-use crate::commands::ignite::util::{rollout, scale, update_deployment, update_deployment_config};
+use crate::commands::ignite::types::ScalingStrategy;
+use crate::commands::ignite::util::{
+    get_all_deployments, rollout, scale, update_deployment, update_deployment_config,
+};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
@@ -19,16 +21,7 @@ pub struct Options {
 pub async fn handle(options: Options, state: State) -> Result<()> {
     let project_id = state.ctx.current_project_error().id;
 
-    let deployments = state
-        .http
-        .request::<MultipleDeployments>(
-            "GET",
-            &format!("/ignite/deployments?project={}", project_id),
-            None,
-        )
-        .await?
-        .ok_or_else(|| anyhow!("Failed to parse response"))?
-        .deployments;
+    let deployments = get_all_deployments(&state.http, &project_id).await?;
 
     ensure!(!deployments.is_empty(), "No deployments found");
 
@@ -72,14 +65,9 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         &None,
     );
 
-    let deployment = update_deployment(
-        &state.http,
-        &project_id,
-        &old_deployment.id,
-        &deployment_config,
-    )
-    .await
-    .map_err(|e| anyhow!("Failed to update deployment: {}", e))?;
+    let deployment = update_deployment(&state.http, &old_deployment.id, &deployment_config)
+        .await
+        .map_err(|e| anyhow!("Failed to update deployment: {}", e))?;
 
     if deployment.container_count > 0 {
         log::info!("Rolling out new containers");
