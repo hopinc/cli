@@ -1,6 +1,6 @@
 mod create;
 mod delete;
-mod info;
+pub mod info;
 mod list;
 mod switch;
 pub mod types;

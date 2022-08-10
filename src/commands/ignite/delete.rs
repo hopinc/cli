@@ -59,7 +59,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     if !options.force {
         let confirm = dialoguer::Confirm::new()
-            .with_prompt(&format!(
+            .with_prompt(format!(
                 "Are you sure you want to delete deployment {}?",
                 deployment.name
             ))

@@ -20,6 +20,7 @@ use crate::commands::ignite::create::{
 };
 use crate::commands::ignite::types::{Deployment, SingleDeployment};
 use crate::commands::ignite::util::{create_deployment, rollout, update_deployment_config};
+use crate::commands::projects::util::format_project;
 use crate::state::State;
 use crate::store::hopfile::HopFile;
 
@@ -91,12 +92,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 log::warn!("Deployment exists, skipping arguments");
             }
 
-            log::info!(
-                "Deploying to project {} /{} ({})",
-                project.name,
-                project.namespace,
-                project.id
-            );
+            log::info!("Deploying to project {}", format_project(&project));
 
             // TODO: update when autoscaling is supported
             let container_options = ContainerOptions {
@@ -113,19 +109,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
             let project = state.ctx.current_project_error();
 
-            log::info!(
-                "Deploying to project {} /{} ({})",
-                project.name,
-                project.namespace,
-                project.id
-            );
-
-            let mut hopfile = HopFile::new(
-                dir.clone().join("hop.yml"),
-                project.clone().id,
-                // override later when created in the API
-                String::new(),
-            );
+            log::info!("Deploying to project {}", format_project(&project));
 
             let (mut deployment_config, container_options) = update_deployment_config(
                 CreateOptions {
@@ -157,16 +141,15 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             }
 
             let deployment =
-                create_deployment(&state.http, &hopfile.config.project_id, &deployment_config)
-                    .await?;
+                create_deployment(&state.http, &project.id, &deployment_config).await?;
 
-            hopfile.config.deployment_id = deployment.id.clone();
-
-            hopfile
-                .clone()
-                .save()
-                .await
-                .expect("Could not save hopfile");
+            HopFile::new(
+                dir.clone().join("hop.yml"),
+                project.id.clone(),
+                deployment.id.clone(),
+            )
+            .save()
+            .await?;
 
             (project, deployment, container_options, false)
         }
@@ -180,22 +163,17 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         .expect("Could not connect to Leap Edge");
 
     // deployment id is used not to colide if the user is deploying multiple items
-    let packed = compress(deployment.id.clone(), dir)
-        .await
-        .expect("Could not compress");
+    let packed = compress(deployment.id.clone(), dir).await?;
 
     log::info!("Packed to: {}", packed);
 
-    let bytes = fs::read(packed.clone())
-        .await
-        .expect("Could not read packed file");
+    let bytes = fs::read(packed.clone()).await?;
 
     let multipart = Form::new().part(
         "file",
         Part::bytes(bytes)
             .file_name("deployment.tar.gz")
-            .mime_str("application/x-gzip")
-            .unwrap(),
+            .mime_str("application/x-gzip")?,
     );
 
     log::info!("Uploading...");
@@ -214,14 +192,9 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         .header("content_type", "multipart/form-data".to_string())
         .multipart(multipart)
         .send()
-        .await
-        .expect("Failed to send data to build endpoint");
+        .await?;
 
-    state
-        .http
-        .handle_response::<()>(response)
-        .await
-        .expect("Failed to handle response");
+    state.http.handle_response::<()>(response).await?;
 
     log::info!("Deleting archive...");
     fs::remove_file(packed).await?;
@@ -236,10 +209,10 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
         let build_event: Event = serde_json::from_value(data.d).unwrap();
 
-        let build_data = if build_event.d.is_none() {
-            continue;
+        let build_data = if let Some(data) = build_event.d {
+            data
         } else {
-            build_event.d.unwrap()
+            continue;
         };
 
         match build_event.e.as_str() {

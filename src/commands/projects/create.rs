@@ -3,6 +3,7 @@ use clap::Parser;
 use serde::Serialize;
 
 use super::types::{Project, SingleProjectResponse};
+use crate::commands::projects::util::format_project;
 use crate::state::http::HttpClient;
 use crate::state::State;
 
@@ -47,14 +48,14 @@ pub async fn handle(options: &Options, mut state: State) -> anyhow::Result<()> {
         icon: None,
     };
 
-    let res = create_project(params, state.http.clone()).await?;
+    let project = create_project(params, state.http.clone()).await?;
 
     if options.default {
-        state.ctx.default_project = Some(res.id.clone());
+        state.ctx.default_project = Some(project.id.clone());
         state.ctx.save().await?;
     }
 
-    log::info!("Created project `{}` ({})", options.name, options.namespace);
+    log::info!("Created project {}", format_project(&project));
 
     Ok(())
 }

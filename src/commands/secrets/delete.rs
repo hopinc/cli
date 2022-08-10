@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{ensure, Result};
 use clap::Parser;
 
 use crate::commands::secrets::types::Secrets;
@@ -19,7 +19,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         validate_name(name).unwrap();
     }
 
-    let project_id = state.ctx.current_project().expect("Project not found").id;
+    let project_id = state.ctx.current_project_error().id;
 
     let secret_name = match options.name {
         Some(name) => name,
@@ -27,8 +27,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             let secrests = state
                 .http
                 .request::<Secrets>("GET", &format!("/projects/{}/secrets", project_id), None)
-                .await
-                .expect("Error while getting secrets")
+                .await?
                 .unwrap()
                 .secrets;
 
@@ -57,10 +56,9 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 "Are you sure you want to delete secret `{}`?",
                 secret_name
             ))
-            .interact_opt()
-            .expect("Failed to confirm");
+            .interact_opt()?;
 
-        assert!(
+        ensure!(
             (confirm.is_some() || confirm.unwrap()),
             "Aborted deletion of `{}`",
             secret_name
@@ -74,8 +72,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             &format!("/projects/{}/secrets/{}", project_id, secret_name),
             None,
         )
-        .await
-        .expect("Error while deleting secret");
+        .await?;
 
     log::info!("Secret `{}` deleted", secret_name);
 

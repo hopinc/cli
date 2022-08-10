@@ -1,7 +1,8 @@
+use anyhow::ensure;
 use clap::Parser;
 
 use super::util::format_projects;
-use crate::state::State;
+use crate::{commands::projects::util::format_project, state::State};
 
 static CONFIRM_DELETE_PROJECT_MESSAGE: &str = "I am sure I want to delete the project named ";
 
@@ -17,7 +18,7 @@ pub struct Options {
 pub async fn handle(options: &Options, mut state: State) -> anyhow::Result<()> {
     let projects = state.ctx.current.clone().unwrap().projects;
 
-    assert!(!projects.is_empty(), "No projects found");
+    ensure!(!projects.is_empty(), "No projects found");
 
     let project = match options.namespace.clone() {
         Some(namespace) => {
@@ -55,6 +56,7 @@ pub async fn handle(options: &Options, mut state: State) -> anyhow::Result<()> {
             "To confirm, input the following message `{}{}`",
             CONFIRM_DELETE_PROJECT_MESSAGE, project.name
         );
+
         let output = dialoguer::Input::<String>::new()
             .with_prompt("Message")
             .interact_text()
@@ -70,15 +72,14 @@ pub async fn handle(options: &Options, mut state: State) -> anyhow::Result<()> {
     state
         .http
         .request::<()>("DELETE", &format!("/projects/{}", project.id), None)
-        .await
-        .expect("Error while deleting project");
+        .await?;
 
     if state.ctx.default_project == Some(project.id.to_string()) {
         state.ctx.default_project = None;
         state.ctx.save().await?;
     }
 
-    log::info!("Project `{}` ({}) deleted", project.name, project.namespace);
+    log::info!("Project {} deleted", format_project(&project));
 
     Ok(())
 }

@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use clap::Parser;
 
 use crate::commands::secrets::types::SecretResponse;
@@ -31,7 +31,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             Some((options.value.into(), "text/plain")),
         )
         .await?
-        .ok_or_else(|| anyhow::anyhow!("Error while parsing response"))?
+        .ok_or_else(|| anyhow!("Error while parsing response"))?
         .secret;
 
     log::info!("Set secret: {} ({})", secret.name, secret.id);

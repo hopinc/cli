@@ -30,3 +30,7 @@ pub fn format_projects(projects: &Vec<Project>, title: bool) -> Vec<String> {
         .map(std::string::ToString::to_string)
         .collect()
 }
+
+pub fn format_project(project: &Project) -> String {
+    format_projects(&vec![project.clone()], false)[0].clone()
+}

@@ -1,6 +1,6 @@
 use clap::Parser;
 
-use crate::commands::projects::util::format_projects;
+use crate::commands::projects::util::{format_project, format_projects};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
@@ -24,6 +24,7 @@ pub async fn handle(options: &Options, mut state: State) -> anyhow::Result<()> {
             .ctx
             .clone()
             .find_project_by_id_or_namespace_error(project),
+
         None => {
             let projects_fmt = format_projects(&projects, false);
 
@@ -46,12 +47,7 @@ pub async fn handle(options: &Options, mut state: State) -> anyhow::Result<()> {
     state.ctx.default_project = Some(project.id.clone());
     state.ctx.save().await?;
 
-    log::info!(
-        "Switched to project {} /{} ({})",
-        project.name,
-        project.namespace,
-        project.id
-    );
+    log::info!("Switched to project {}", format_project(&project));
 
     Ok(())
 }
