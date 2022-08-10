@@ -1,8 +1,9 @@
-use std::str::FromStr;
+use std::{fmt::Display, str::FromStr};
 
+use crate::utils::deserialize_from_str;
 use anyhow::{anyhow, Result};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 use crate::commands::ignite::types::Deployment;
 
@@ -22,9 +23,13 @@ impl FromStr for ContainerType {
     }
 }
 
-impl ToString for ContainerType {
-    fn to_string(&self) -> String {
-        serde_json::to_string(self).unwrap().replace('"', "")
+impl Display for ContainerType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self).unwrap().replace('"', "")
+        )
     }
 }
 
@@ -40,7 +45,7 @@ impl ContainerType {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub enum ContainerState {
     #[serde(rename = "exited")]
     Exited,
@@ -48,14 +53,63 @@ pub enum ContainerState {
     Pending,
     #[serde(rename = "running")]
     Running,
+    #[serde(rename = "stopped")]
+    Stopped,
+    #[serde(rename = "terminating")]
+    Terminating,
 }
 
-impl ToString for ContainerState {
-    fn to_string(&self) -> String {
-        serde_json::to_string(self).unwrap().replace('"', "")
+impl Display for ContainerState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self).unwrap().replace('"', "")
+        )
     }
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+pub enum ChangeableContainerState {
+    #[serde(rename = "stopped")]
+    Stopped,
+
+    #[serde(rename = "running")]
+    Running,
+}
+
+impl Display for ChangeableContainerState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self).unwrap().replace('"', "")
+        )
+    }
+}
+
+impl FromStr for ChangeableContainerState {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        serde_json::from_str(&format!("\"{}\"", s.to_lowercase())).map_err(|e| anyhow!(e))
+    }
+}
+
+impl ChangeableContainerState {
+    pub fn values() -> Vec<ChangeableContainerState> {
+        vec![
+            ChangeableContainerState::Stopped,
+            ChangeableContainerState::Running,
+        ]
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Uptime {
+    #[serde(deserialize_with = "deserialize_from_str")]
+    pub last_start: DateTime<Utc>,
+}
 #[derive(Debug, Deserialize)]
 pub struct Container {
     pub id: String,
@@ -63,15 +117,15 @@ pub struct Container {
     pub state: ContainerState,
     pub deployment_id: String,
     pub internal_ip: Option<String>,
-    // TODO: types
-    pub uptime: Option<Value>,
+    pub region: String,
+    pub uptime: Option<Uptime>,
     #[serde(rename = "type")]
     pub c_type: ContainerType,
 }
 
 #[derive(Debug, Deserialize)]
 
-pub struct CreateContainersResponse {
+pub struct MultipleContainersResponse {
     pub containers: Vec<Container>,
 }
 
@@ -97,4 +151,22 @@ impl ContainerOptions {
 #[derive(Debug, Serialize)]
 pub struct CreateContainers {
     pub count: u64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UpdateContainerState<'a> {
+    pub preferred_state: &'a ChangeableContainerState,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Log {
+    pub nonce: String,
+    pub timestamp: DateTime<Utc>,
+    pub level: String,
+    pub message: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LogsResponse {
+    pub logs: Vec<Log>,
 }

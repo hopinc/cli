@@ -19,6 +19,7 @@ name = "hop"
 path = "./src/main.rs"
 
 [dependencies]
+ms = "0.1.1"
 log = "0.4.17"
 dirs = "4.0.0"
 regex = "1.6.0"
@@ -42,6 +43,7 @@ tokio = { version = "1.20.1", features = ["full"] }
 serde = { version = "1.0.141", features = ["derive"] }
 hyper = { version = "0.14.20", features = ["server"] }
 ctrlc = { version = "3.2.2", features = ["termination"] }
+chrono = { version = "0.4.21", features = ["serde"] }
 async-compression = { version = "0.3.14", features = ["tokio", "gzip", "zlib"] }
 
 # *nix only deps

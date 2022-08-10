@@ -1,22 +1,22 @@
-use anyhow::{bail, ensure, Result};
+use anyhow::{ensure, Result};
 use clap::Parser;
 
-use crate::commands::containers::utils::create_containers;
+use crate::commands::containers::utils::{format_containers, get_all_containers};
 use crate::commands::ignite::util::{format_deployments, get_all_deployments};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
-#[clap(about = "Create containers for a deployment")]
+#[clap(about = "List all containers")]
 pub struct Options {
-    #[clap(
-        short = 'd',
-        long = "deployment",
-        help = "NAME or ID of the deployment"
-    )]
+    #[clap(name = "deployment", help = "NAME or ID of the deployment")]
     pub deployment: Option<String>,
 
-    #[clap(name = "count", help = "Number of containers to create")]
-    pub count: Option<u64>,
+    #[clap(
+        short = 'q',
+        long = "quiet",
+        help = "Only print the IDs of the deployments"
+    )]
+    pub quiet: bool,
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
@@ -32,14 +32,13 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .iter()
                 .find(|p| p.name == name || p.id == name)
                 .expect("Deployment not found");
-
             deployment.clone()
         }
         None => {
             let deployments_fmt = format_deployments(&deployments, false);
 
             let idx = dialoguer::Select::new()
-                .with_prompt("Select a deployment to delete")
+                .with_prompt("Select a deployment to list containers of")
                 .items(&deployments_fmt)
                 .default(0)
                 .interact_opt()
@@ -50,21 +49,21 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         }
     };
 
-    let count = match options.count {
-        Some(count) => count,
-        None => dialoguer::Input::<u64>::new()
-            .with_prompt("Number of containers to create")
-            .interact()
-            .expect("Failed to select deployment"),
-    };
+    let containers = get_all_containers(&state.http, &deployment.id).await?;
 
-    if count < 1 {
-        bail!("Count must be greater than 0");
+    if options.quiet {
+        let ids = containers
+            .iter()
+            .map(|d| d.id.as_str())
+            .collect::<Vec<_>>()
+            .join(" ");
+
+        println!("{}", ids);
+    } else {
+        let containers_fmt = format_containers(&containers, true);
+
+        println!("{}", containers_fmt.join("\n"));
     }
-
-    create_containers(&state.http, &deployment.id, count).await?;
-
-    log::info!("Created {} containers", count);
 
     Ok(())
 }

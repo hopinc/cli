@@ -29,6 +29,9 @@ pub enum Commands {
     Scale(scale::Options),
     #[clap(name = "get-env")]
     GetEnv(get_env::Options),
+    // alias for hop containers
+    #[clap(name = "containers")]
+    Containers(super::containers::Options),
 }
 
 #[derive(Debug, Parser)]
@@ -47,5 +50,6 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Commands::Rollout(options) => rollout::handle(options, state).await,
         Commands::Scale(options) => scale::handle(options, state).await,
         Commands::GetEnv(options) => get_env::handle(options, state).await,
+        Commands::Containers(options) => super::containers::handle(options, state).await,
     }
 }

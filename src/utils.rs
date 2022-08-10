@@ -1,5 +1,14 @@
+use std::{
+    fmt::Display,
+    str::FromStr,
+    time::{SystemTime, UNIX_EPOCH},
+};
+
+use chrono::{DateTime, Utc};
 use fern::colors::{Color, ColoredLevelConfig};
 use log::{Level, LevelFilter};
+use ms::{__to_string__, ms};
+use serde::{de, Deserialize, Deserializer};
 
 pub fn set_hook() {
     // setup a panic hook to easily exit the program on panic
@@ -69,4 +78,24 @@ pub fn logs(verbose: bool) {
         .chain(std::io::stdout())
         .apply()
         .unwrap();
+}
+
+pub fn deserialize_from_str<'de, S, D>(deserializer: D) -> Result<S, D::Error>
+where
+    S: FromStr,
+    S::Err: Display,
+    D: Deserializer<'de>,
+{
+    let s: String = Deserialize::deserialize(deserializer)?;
+    S::from_str(&s).map_err(de::Error::custom)
+}
+
+pub fn relative_time(date: DateTime<Utc>) -> String {
+    let milis = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as u64
+        - date.timestamp_millis() as u64;
+
+    ms!(milis, true)
 }
