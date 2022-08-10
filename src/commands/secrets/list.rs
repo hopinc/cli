@@ -21,7 +21,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     let secrets = state
         .http
-        .request::<Secrets>("GET", &format!("/projects/{}/secrets", project_id), None)
+        .request::<Secrets>("GET", &format!("/projects/{project_id}/secrets"), None)
         .await?
         .unwrap()
         .secrets;

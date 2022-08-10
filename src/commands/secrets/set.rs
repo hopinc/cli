@@ -24,8 +24,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         .request::<SecretResponse>(
             "PUT",
             &format!(
-                "/projects/{}/secrets/{}",
-                project_id,
+                "/projects/{project_id}/secrets/{}",
                 options.name.to_uppercase()
             ),
             Some((options.value.into(), "text/plain")),
