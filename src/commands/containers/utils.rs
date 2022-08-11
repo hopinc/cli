@@ -81,16 +81,18 @@ pub async fn get_container_logs(
     http: &HttpClient,
     container_id: &str,
     limit: u64,
-    offset: u64,
     order_by: &str,
 ) -> Result<Vec<Log>> {
-    let response = http.request::<LogsResponse>(
-        "GET",
-        &format!("/ignite/containers/{container_id}/logs?limit={limit}&offset={offset}&orderBy={order_by}"),
-        None,
-    )
-    .await?
-    .ok_or_else(|| anyhow!("Error while parsing response"))?;
+    let response = http
+        .request::<LogsResponse>(
+            "GET",
+            &format!(
+                "/ignite/containers/{container_id}/logs?limit={limit}&orderBy={order_by}&offset=0"
+            ),
+            None,
+        )
+        .await?
+        .ok_or_else(|| anyhow!("Error while parsing response"))?;
 
     Ok(response.logs)
 }
@@ -136,19 +138,29 @@ pub fn format_containers(containers: &Vec<Container>, title: bool) -> Vec<String
         .collect()
 }
 
-pub fn format_log(log: &Log) -> String {
-    let log_level = match log.level.as_str() {
-        "info" => style("INFO").cyan(),
-        "error" => style("ERROR").red(),
-        // there are only info and error, this is left for future use
-        level => style(level).yellow(),
-    }
-    .bold();
+pub fn format_logs(log: &[Log], colors: bool) -> Vec<String> {
+    log.iter().map(|log| format_log(log, colors)).collect()
+}
 
-    format!(
-        "{} {} {}",
-        style(log.timestamp.to_rfc2822()).dim(),
-        log_level,
-        log.message
-    )
+fn format_log(log: &Log, colors: bool) -> String {
+    let log_level = if colors {
+        match log.level.as_str() {
+            "info" => style("INFO").cyan(),
+            "error" => style("ERROR").red(),
+            // there are only info and error, this is left for future use
+            level => style(level).yellow(),
+        }
+        .bold()
+        .to_string()
+    } else {
+        log.level.clone()
+    };
+
+    let timestamp = if colors {
+        style(log.timestamp.to_rfc2822()).dim().to_string()
+    } else {
+        log.timestamp.to_rfc2822()
+    };
+
+    format!("{timestamp} {log_level} {}", log.message)
 }
