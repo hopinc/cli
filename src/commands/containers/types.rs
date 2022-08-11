@@ -120,7 +120,7 @@ pub struct Container {
     pub region: String,
     pub uptime: Option<Uptime>,
     #[serde(rename = "type")]
-    pub c_type: ContainerType,
+    pub type_: ContainerType,
 }
 
 #[derive(Debug, Deserialize)]

@@ -31,7 +31,7 @@ async fn create_project(params: CreateParams, http: HttpClient) -> Result<Projec
             "POST",
             "/projects",
             Some((
-                serde_json::to_string(&params).unwrap().into(),
+                serde_json::to_vec(&params).unwrap().into(),
                 "application/json",
             )),
         )

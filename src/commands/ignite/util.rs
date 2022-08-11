@@ -4,7 +4,6 @@ use std::io::Write;
 use std::str::FromStr;
 
 use anyhow::{anyhow, Result};
-use serde::Serialize;
 use serde_json::Value;
 use tabwriter::TabWriter;
 
@@ -16,6 +15,7 @@ use crate::commands::deploy::util::validate_deployment_name;
 use crate::commands::ignite::create::Options;
 use crate::commands::ignite::types::{RamSizes, ScalingStrategy};
 use crate::state::http::HttpClient;
+use crate::utils::ask_question_iter;
 
 pub async fn get_all_deployments(http: &HttpClient, project_id: &str) -> Result<Vec<Deployment>> {
     let response = http
@@ -40,7 +40,7 @@ pub async fn create_deployment(
             "POST",
             &format!("/ignite/deployments?project={project_id}"),
             Some((
-                serde_json::to_string(&config).unwrap().into(),
+                serde_json::to_vec(&config).unwrap().into(),
                 "application/json",
             )),
         )
@@ -60,7 +60,7 @@ pub async fn update_deployment(
             "PATCH",
             &format!("/ignite/deployments/{deployment_id}"),
             Some((
-                serde_json::to_string(&config).unwrap().into(),
+                serde_json::to_vec(&config).unwrap().into(),
                 "application/json",
             )),
         )
@@ -87,9 +87,7 @@ pub async fn scale(http: &HttpClient, deployment_id: &str, scale: u64) -> Result
         "PATCH",
         &format!("/ignite/deployments/{deployment_id}/scale"),
         Some((
-            serde_json::to_string(&ScaleRequest { scale })
-                .unwrap()
-                .into(),
+            serde_json::to_vec(&ScaleRequest { scale }).unwrap().into(),
             "application/json",
         )),
     )
@@ -103,14 +101,19 @@ pub fn format_deployments(deployments: &Vec<Deployment>, title: bool) -> Vec<Str
     let mut tw = TabWriter::new(vec![]);
 
     if title {
-        writeln!(&mut tw, "NAME\tID\tCONTAINERS\tCREATED").unwrap();
+        writeln!(&mut tw, "NAME\tID\tCONTAINERS\tCREATED\tTYPE\tSTRATEGY").unwrap();
     }
 
     for deployment in deployments {
         writeln!(
             &mut tw,
-            "{}\t{}\t{}\t{}",
-            deployment.name, deployment.id, deployment.container_count, deployment.created_at,
+            "{}\t{}\t{}\t{}\t{}\t{}",
+            deployment.name,
+            deployment.id,
+            deployment.container_count,
+            deployment.created_at,
+            deployment.config.type_,
+            deployment.config.container_strategy
         )
         .unwrap();
     }
@@ -179,12 +182,12 @@ fn update_config_from_args(
         })
         .expect("The argument '--image <IMAGE>' requires a value but none was supplied");
 
-    deployment_config.container_type = options
+    deployment_config.type_ = options
         .config
         .container_type
         .or_else(|| {
             if is_update {
-                Some(deployment_config.container_type.clone())
+                Some(deployment_config.type_.clone())
             } else {
                 None
             }
@@ -342,10 +345,10 @@ fn update_config_from_guided(
                 .expect("Failed to get image name")
         };
 
-    deployment_config.container_type = ask_question_iter(
+    deployment_config.type_ = ask_question_iter(
         "Container type",
         &ContainerType::values(),
-        Some(deployment_config.container_type.clone()),
+        Some(deployment_config.type_.clone()),
     );
 
     deployment_config.container_strategy = ask_question_iter(
@@ -505,28 +508,4 @@ fn get_env_from_input() -> Option<(String, String)> {
     };
 
     Some((key, value))
-}
-
-fn ask_question_iter<T>(prompt: &str, choices: &[T], override_default: Option<T>) -> T
-where
-    T: PartialEq + Clone + Serialize + Default,
-{
-    let choices_txt: Vec<String> = choices
-        .iter()
-        .map(|c| serde_json::to_string(c).unwrap().replace('"', ""))
-        .collect();
-
-    let to_compare = match override_default {
-        Some(override_default) => override_default,
-        None => T::default(),
-    };
-
-    let choice = dialoguer::Select::new()
-        .with_prompt(prompt)
-        .default(choices.iter().position(|x| x == &to_compare).unwrap())
-        .items(&choices_txt)
-        .interact()
-        .expect("Failed to select");
-
-    choices[choice].clone()
 }

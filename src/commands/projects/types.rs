@@ -19,7 +19,7 @@ pub struct Project {
     pub icon: Option<String>,
     pub namespace: String,
     #[serde(rename = "type")]
-    pub p_type: String,
+    pub type_: String,
 }
 
 #[derive(Debug, Deserialize)]

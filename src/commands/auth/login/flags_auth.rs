@@ -44,7 +44,7 @@ async fn login_with_credentials(http: HttpClient, email: String, password: Strin
         "POST",
         "/auth",
         Some((
-            serde_json::to_string(&LoginRequest { email, password })
+            serde_json::to_vec(&LoginRequest { email, password })
                 .unwrap()
                 .into(),
             "application/json",

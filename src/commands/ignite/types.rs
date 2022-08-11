@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use std::str::FromStr;
+use std::{collections::HashMap, fmt::Display};
 
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
@@ -10,7 +10,7 @@ use crate::commands::containers::types::ContainerType;
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct Vgpu {
     #[serde(rename = "type")]
-    pub g_type: String,
+    pub type_: String,
     pub count: u32,
 }
 
@@ -110,9 +110,13 @@ impl FromStr for ScalingStrategy {
     }
 }
 
-impl ToString for ScalingStrategy {
-    fn to_string(&self) -> String {
-        serde_json::to_string(self).unwrap().replace('"', "")
+impl Display for ScalingStrategy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self).unwrap().replace('"', "")
+        )
     }
 }
 
@@ -137,7 +141,7 @@ pub struct Image {
 pub struct Config {
     pub version: String,
     #[serde(rename = "type")]
-    pub d_type: ContainerType,
+    pub type_: ContainerType,
     pub image: Image,
     pub env: HashMap<String, String>,
     pub container_strategy: ScalingStrategy,
@@ -172,7 +176,7 @@ pub struct CreateDeployment {
     pub name: Option<String>,
     pub resources: Resources,
     #[serde(rename = "type")]
-    pub container_type: ContainerType,
+    pub type_: ContainerType,
 }
 
 impl CreateDeployment {
@@ -183,7 +187,7 @@ impl CreateDeployment {
             image: deployment.config.image.clone(),
             name: Some(deployment.name.clone()),
             resources: deployment.config.resources.clone(),
-            container_type: deployment.config.d_type.clone(),
+            type_: deployment.config.type_.clone(),
         }
     }
 }

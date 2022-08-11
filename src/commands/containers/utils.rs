@@ -21,7 +21,7 @@ pub async fn create_containers(
             "POST",
             &format!("/ignite/deployments/{}/containers", deployment_id),
             Some((
-                serde_json::to_string(&CreateContainers { count })
+                serde_json::to_vec(&CreateContainers { count })
                     .unwrap()
                     .into(),
                 "application/json",
@@ -66,7 +66,7 @@ pub async fn update_container_state(
         "PUT",
         &format!("/ignite/containers/{container_id}/state"),
         Some((
-            serde_json::to_string(&UpdateContainerState { preferred_state })
+            serde_json::to_vec(&UpdateContainerState { preferred_state })
                 .unwrap()
                 .into(),
             "application/json",

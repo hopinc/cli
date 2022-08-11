@@ -8,7 +8,7 @@ use chrono::{DateTime, Utc};
 use fern::colors::{Color, ColoredLevelConfig};
 use log::{Level, LevelFilter};
 use ms::{__to_string__, ms};
-use serde::{de, Deserialize, Deserializer};
+use serde::{de, Deserialize, Deserializer, Serialize};
 
 pub fn set_hook() {
     // setup a panic hook to easily exit the program on panic
@@ -114,4 +114,28 @@ pub fn relative_time(date: DateTime<Utc>) -> String {
         - date.timestamp_millis() as u64;
 
     ms!(milis, true)
+}
+
+pub fn ask_question_iter<T>(prompt: &str, choices: &[T], override_default: Option<T>) -> T
+where
+    T: PartialEq + Clone + Serialize + Default,
+{
+    let choices_txt: Vec<String> = choices
+        .iter()
+        .map(|c| serde_json::to_string(c).unwrap().replace('"', ""))
+        .collect();
+
+    let to_compare = match override_default {
+        Some(override_default) => override_default,
+        None => T::default(),
+    };
+
+    let choice = dialoguer::Select::new()
+        .with_prompt(prompt)
+        .default(choices.iter().position(|x| x == &to_compare).unwrap())
+        .items(&choices_txt)
+        .interact()
+        .expect("Failed to select");
+
+    choices[choice].clone()
 }

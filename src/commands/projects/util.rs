@@ -19,7 +19,7 @@ pub fn format_projects(projects: &Vec<Project>, title: bool) -> Vec<String> {
             project.namespace,
             project.id,
             project.created_at,
-            project.p_type,
+            project.type_,
         )
         .unwrap();
     }
