@@ -1,4 +1,4 @@
-use anyhow::{bail, ensure, Result};
+use anyhow::{bail, Result};
 use clap::Parser;
 
 use crate::commands::containers::utils::create_containers;
@@ -20,33 +20,39 @@ pub struct Options {
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
-    let project_id = state.ctx.current_project_error().id;
-
-    let deployments = get_all_deployments(&state.http, &project_id).await?;
-
-    ensure!(!deployments.is_empty(), "No deployments found");
-
-    let deployment = match options.deployment {
+    let deployment_id = match options.deployment {
         Some(name) => {
-            let deployment = deployments
-                .iter()
-                .find(|p| p.name == name || p.id == name)
-                .expect("Deployment not found");
+            if name.starts_with("deployment_") {
+                name
+            } else {
+                let project_id = state.ctx.current_project_error().id;
 
-            deployment.clone()
+                let deployments = get_all_deployments(&state.http, &project_id).await?;
+
+                deployments
+                    .iter()
+                    .find(|p| p.name == name || p.id == name)
+                    .expect("Deployment not found")
+                    .id
+                    .clone()
+            }
         }
         None => {
+            let project_id = state.ctx.current_project_error().id;
+
+            let deployments = get_all_deployments(&state.http, &project_id).await?;
+
             let deployments_fmt = format_deployments(&deployments, false);
 
             let idx = dialoguer::Select::new()
-                .with_prompt("Select a deployment to delete")
+                .with_prompt("Select a deployment")
                 .items(&deployments_fmt)
                 .default(0)
                 .interact_opt()
                 .expect("Failed to select deployment")
                 .expect("No deployment selected");
 
-            deployments[idx].clone()
+            deployments[idx].id.clone()
         }
     };
 
@@ -62,7 +68,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         bail!("Count must be greater than 0");
     }
 
-    create_containers(&state.http, &deployment.id, count).await?;
+    create_containers(&state.http, &deployment_id, count).await?;
 
     log::info!("Created {} containers", count);
 

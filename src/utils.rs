@@ -77,20 +77,16 @@ pub fn logs(verbose: bool) {
         })
         .chain(
             fern::Dispatch::new()
-                .level(log::LevelFilter::Info)
-                .chain(
-                    fern::Dispatch::new()
-                        .filter(|metadata| {
-                            // Reject messages with the `Error` log level.
-                            metadata.level() != log::LevelFilter::Error
-                        })
-                        .chain(std::io::stderr()),
-                )
-                .chain(
-                    fern::Dispatch::new()
-                        .level(log::LevelFilter::Error)
-                        .chain(std::io::stdout()),
-                ),
+                .filter(|metadata| {
+                    // Reject messages with the `Error` log level.
+                    metadata.level() != log::LevelFilter::Error
+                })
+                .chain(std::io::stdout()),
+        )
+        .chain(
+            fern::Dispatch::new()
+                .level(log::LevelFilter::Error)
+                .chain(std::io::stderr()),
         )
         .apply()
         .unwrap();

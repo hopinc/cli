@@ -14,7 +14,7 @@ pub fn format_projects(projects: &Vec<Project>, title: bool) -> Vec<String> {
     for project in projects {
         writeln!(
             &mut tw,
-            "{}\t{}\t{}\t{}\t{}",
+            "{}\t/{}\t{}\t{}\t{}",
             project.name.clone(),
             project.namespace,
             project.id,

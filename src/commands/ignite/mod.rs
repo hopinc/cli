@@ -32,6 +32,8 @@ pub enum Commands {
     // alias for hop containers
     #[clap(name = "containers")]
     Containers(super::containers::Options),
+    #[clap(name = "gateways")]
+    Gateways(super::gateways::Options),
 }
 
 #[derive(Debug, Parser)]
@@ -51,5 +53,6 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Commands::Scale(options) => scale::handle(options, state).await,
         Commands::GetEnv(options) => get_env::handle(options, state).await,
         Commands::Containers(options) => super::containers::handle(options, state).await,
+        Commands::Gateways(options) => super::gateways::handle(options, state).await,
     }
 }

@@ -9,7 +9,7 @@ use crate::commands::{
 use crate::state::State;
 
 #[derive(Debug, Parser)]
-#[clap(about = "Delete container(s)")]
+#[clap(about = "Delete containers")]
 pub struct Options {
     #[clap(name = "containers", help = "IDs of the containers", min_values = 0)]
     containers: Vec<String>,
@@ -31,7 +31,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         let deployments_fmt = format_deployments(&deployments, false);
 
         let idx = dialoguer::Select::new()
-            .with_prompt("Select a deployment to list containers of")
+            .with_prompt("Select a deployment")
             .items(&deployments_fmt)
             .default(0)
             .interact_opt()
@@ -48,7 +48,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             .with_prompt("Select containers to delete")
             .items(&containers_fmt)
             .interact_opt()?
-            .expect("No containers selected");
+            .expect("No container selected");
 
         containers
             .iter()
@@ -68,11 +68,19 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             .ok_or_else(|| anyhow!("Aborted"))?;
     }
 
-    for container in containers {
+    let mut delete_count = 0;
+
+    for container in &containers {
         log::info!("Deleting container `{}`", container);
 
-        delete_container(&state.http, &container).await?;
+        if let Err(err) = delete_container(&state.http, container).await {
+            log::error!("Failed to delete container `{}`: {}", container, err);
+        } else {
+            delete_count += 1;
+        }
     }
+
+    log::info!("Deleted {delete_count}/{} gateways", containers.len());
 
     Ok(())
 }

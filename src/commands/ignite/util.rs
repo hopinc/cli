@@ -50,6 +50,17 @@ pub async fn create_deployment(
     Ok(response.deployment)
 }
 
+pub async fn delete_deployment(http: &HttpClient, deployment_id: &str) -> Result<()> {
+    http.request::<()>(
+        "DELETE",
+        &format!("/ignite/deployments/{deployment_id}",),
+        None,
+    )
+    .await?;
+
+    Ok(())
+}
+
 pub async fn update_deployment(
     http: &HttpClient,
     deployment_id: &str,
@@ -362,15 +373,15 @@ fn update_config_from_guided(
 
         container_options.min_containers = Some(
             dialoguer::Input::<u64>::new()
-                .with_prompt("Minimum container ammount")
+                .with_prompt("Minimum container amount")
                 .default(1)
                 .validate_with(|containers: &u64| -> Result<(), &str> {
                     if *containers > 0 {
                         Ok(())
                     } else if *containers > 10 {
-                        Err("Container ammount must be less than or equal to 10")
+                        Err("Container amount must be less than or equal to 10")
                     } else {
-                        Err("Container ammount must be greater than 0")
+                        Err("Container amount must be greater than 0")
                     }
                 })
                 .interact()
@@ -378,15 +389,15 @@ fn update_config_from_guided(
         );
         container_options.max_containers = Some(
             dialoguer::Input::<u64>::new()
-                .with_prompt("Maximum container ammount")
+                .with_prompt("Maximum container amount")
                 .default(10)
                 .validate_with(|containers: &u64| -> Result<(), &str> {
                     if *containers > 0 {
                         Ok(())
                     } else if *containers > 10 {
-                        Err("Container ammount must be less than or equal to 10")
+                        Err("Container amount must be less than or equal to 10")
                     } else {
-                        Err("Container ammount must be greater than 0")
+                        Err("Container amount must be greater than 0")
                     }
                 })
                 .interact()
@@ -398,13 +409,13 @@ fn update_config_from_guided(
 
         container_options.containers = Some(
             dialoguer::Input::<u64>::new()
-                .with_prompt("Container ammount")
+                .with_prompt("Container amount")
                 .default(1)
                 .validate_with(|containers: &u64| -> Result<(), &str> {
                     if *containers < 1 {
-                        Err("Container ammount must be at least 1")
+                        Err("Container amount must be at least 1")
                     } else if *containers > 10 {
-                        Err("Container ammount must be less than or equal to 10")
+                        Err("Container amount must be less than or equal to 10")
                     } else {
                         Ok(())
                     }

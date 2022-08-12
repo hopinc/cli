@@ -27,13 +27,10 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     ensure!(!deployments.is_empty(), "No deployments found");
 
     let deployment = match options.deployment {
-        Some(name) => {
-            let deployment = deployments
-                .iter()
-                .find(|p| p.name == name || p.id == name)
-                .expect("Deployment not found");
-            deployment.clone()
-        }
+        Some(name) => deployments
+            .iter()
+            .find(|p| p.name == name || p.id == name)
+            .expect("Deployment not found"),
         None => {
             let deployments_fmt = format_deployments(&deployments, false);
 
@@ -45,7 +42,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .expect("Failed to select deployment")
                 .expect("No deployment selected");
 
-            deployments[idx].clone()
+            &deployments[idx]
         }
     };
 

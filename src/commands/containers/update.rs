@@ -40,9 +40,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .expect("Failed to select deployment")
                 .expect("No deployment selected");
 
-            let deployment = deployments[idx].clone();
-
-            let containers = get_all_containers(&state.http, &deployment.id).await?;
+            let containers = get_all_containers(&state.http, &deployments[idx].id).await?;
 
             let containers_fmt = format_containers(&containers, false);
 
