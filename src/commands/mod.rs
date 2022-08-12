@@ -1,6 +1,7 @@
 pub mod auth;
 pub mod containers;
 pub mod deploy;
+mod gateways;
 pub mod ignite;
 mod link;
 pub mod projects;
@@ -25,6 +26,7 @@ pub enum Commands {
     Link(link::Options),
     Update(update::Options),
     Containers(containers::Options),
+    Gateways(gateways::Options),
 }
 
 pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
@@ -45,6 +47,7 @@ pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
                 Commands::Ignite(options) => ignite::handle(options, state).await,
                 Commands::Link(options) => link::handle(options, state).await,
                 Commands::Containers(options) => containers::handle(options, state).await,
+                Commands::Gateways(options) => gateways::handle(options, state).await,
             }
         }
     }
