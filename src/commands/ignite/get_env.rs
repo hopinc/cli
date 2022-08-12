@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::Parser;
 use std::io::Write;
 
-use crate::commands::ignite::types::MultipleDeployments;
+use crate::commands::ignite::util::{format_deployments, get_all_deployments};
 use crate::commands::secrets::util::get_secret_name;
 use crate::state::State;
 
@@ -19,33 +19,15 @@ pub struct Options {
 pub async fn handle(options: Options, state: State) -> Result<()> {
     let project_id = state.ctx.current_project_error().id;
 
-    let deployments = state
-        .http
-        .request::<MultipleDeployments>(
-            "GET",
-            &format!("/ignite/deployments?project={}", project_id),
-            None,
-        )
-        .await
-        .expect("Error while getting deployments")
-        .unwrap()
-        .deployments;
-
-    assert!(!deployments.is_empty(), "No deployments found");
+    let deployments = get_all_deployments(&state.http, &project_id).await?;
 
     let deployment = match options.deployment {
-        Some(name) => {
-            let deployment = deployments
-                .iter()
-                .find(|p| p.name == name || p.id == name)
-                .expect("Deployment not found");
-            deployment.clone()
-        }
+        Some(deployment) => deployments
+            .iter()
+            .find(|d| d.name == deployment || d.id == deployment)
+            .ok_or_else(|| anyhow::anyhow!("Deployment not found"))?,
         None => {
-            let deployments_fmt = deployments
-                .iter()
-                .map(|d| format!("{} ({})", d.name, d.id))
-                .collect::<Vec<_>>();
+            let deployments_fmt = format_deployments(&deployments, false);
 
             let idx = dialoguer::Select::new()
                 .with_prompt("Select a deployment to delete")
@@ -55,13 +37,13 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .expect("Failed to select deployment")
                 .expect("No deployment selected");
 
-            deployments[idx].clone()
+            &deployments[idx]
         }
     };
 
     let mut buff = vec![];
 
-    for (key, value) in deployment.config.env {
+    for (key, value) in deployment.config.env.clone() {
         let value = if let Some(secret_name) = get_secret_name(&value) {
             format!("{{{secret_name}}}")
         } else {

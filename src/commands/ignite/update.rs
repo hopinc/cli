@@ -1,10 +1,11 @@
-use anyhow::{anyhow, ensure, Result};
+use anyhow::{anyhow, Result};
 use clap::Parser;
 
 use super::create::Options as CreateOptions;
 use crate::commands::ignite::types::ScalingStrategy;
 use crate::commands::ignite::util::{
-    get_all_deployments, rollout, scale, update_deployment, update_deployment_config,
+    format_deployments, get_all_deployments, rollout, scale, update_deployment,
+    update_deployment_config,
 };
 use crate::state::State;
 
@@ -23,45 +24,30 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     let deployments = get_all_deployments(&state.http, &project_id).await?;
 
-    ensure!(!deployments.is_empty(), "No deployments found");
-
     let old_deployment = match options.deployment {
-        Some(name_or_id) => {
-            let deployment = deployments
-                .iter()
-                .find(|p| p.name == name_or_id || p.id == name_or_id)
-                .expect("Deployment not found");
-
-            log::info!(
-                "Updating deployment `{}` ({})",
-                deployment.name,
-                deployment.id
-            );
-
-            deployment.clone()
-        }
+        Some(deployment) => deployments
+            .iter()
+            .find(|d| d.name == deployment || d.id == deployment)
+            .ok_or_else(|| anyhow::anyhow!("Deployment not found"))?,
         None => {
-            let deployments_fmt = deployments
-                .iter()
-                .map(|d| format!("{} ({})", d.name, d.id))
-                .collect::<Vec<_>>();
+            let deployments_fmt = format_deployments(&deployments, false);
 
             let idx = dialoguer::Select::new()
-                .with_prompt("Select a deployment to update")
+                .with_prompt("Select a deployment to delete")
                 .items(&deployments_fmt)
                 .default(0)
                 .interact_opt()
                 .expect("Failed to select deployment")
                 .expect("No deployment selected");
 
-            deployments[idx].clone()
+            &deployments[idx]
         }
     };
 
     let (deployment_config, container_options) = update_deployment_config(
         options.config.clone(),
         options.config != CreateOptions::default(),
-        &old_deployment,
+        old_deployment,
         &None,
     );
 
