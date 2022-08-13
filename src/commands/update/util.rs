@@ -5,8 +5,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, ensure, Result};
 use runas::Command as SudoCmd;
-use tokio::fs::{self, File};
-use tokio::io::AsyncWriteExt;
+use tokio::fs;
 
 use super::types::{GithubRelease, Version};
 use crate::config::{ARCH, VERSION};
@@ -16,7 +15,7 @@ use crate::store::context::Context;
 const RELEASE_URL: &str = "https://api.github.com/repos/hopinc/hop_cli/releases";
 const BASE_DOWNLOAD_URL: &str = "https://github.com/hopinc/hop_cli/releases/download";
 
-pub async fn check_version(beta: bool) -> Result<(bool, String)> {
+pub async fn check_version(current: &Version, beta: bool) -> Result<(bool, Version)> {
     let http = HttpClient::new(None, None);
 
     let response = http
@@ -55,10 +54,12 @@ pub async fn check_version(beta: bool) -> Result<(bool, String)> {
             .ok_or_else(|| anyhow!("No release found"))?
     };
 
-    if compare_current_and(&latest) {
+    let latest = Version::from_string(&latest)?;
+
+    if latest.is_newer_than(current) {
         Ok((true, latest))
     } else {
-        Ok((false, VERSION.to_string()))
+        Ok((false, current.clone()))
     }
 }
 
@@ -78,12 +79,15 @@ pub async fn version_notice(mut ctx: Context) -> Result<()> {
         None => (now - HOUR_IN_SECONDS - 1, VERSION.to_string()),
     };
 
-    let new_version = if now - last_checked > HOUR_IN_SECONDS {
-        let (update, latest) = check_version(false)
-            .await
-            .unwrap_or((false, VERSION.to_string()));
+    let last_newest = Version::from_string(&last_newest)?;
+    let current = Version::from_string(VERSION)?;
 
-        ctx.last_version_check = Some((now.to_string(), latest.clone()));
+    let new_version = if now - last_checked > HOUR_IN_SECONDS {
+        let (update, latest) = check_version(&current, false)
+            .await
+            .unwrap_or((false, current));
+
+        ctx.last_version_check = Some((now.to_string(), latest.to_string()));
         ctx.save().await?;
 
         if !update {
@@ -91,8 +95,8 @@ pub async fn version_notice(mut ctx: Context) -> Result<()> {
         }
 
         latest
-    } else if compare_current_and(&last_newest) {
-        last_newest.to_string()
+    } else if last_newest.is_newer_than(&current) {
+        last_newest
     } else {
         // skip fs action
         return Ok(());
@@ -108,13 +112,6 @@ pub fn now_secs() -> u64 {
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs()
-}
-
-fn compare_current_and(version: &str) -> bool {
-    let current = Version::from_string(VERSION).unwrap();
-    let latest = Version::from_string(version).unwrap();
-
-    latest.is_newer_than(&current)
 }
 
 fn capitalize(s: &str) -> String {
@@ -140,7 +137,7 @@ pub async fn download(http: HttpClient, version: String) -> Result<PathBuf> {
 
     let response = http
         .client
-        .get(&format!("{BASE_DOWNLOAD_URL}/{version}/{filename}"))
+        .get(&format!("{BASE_DOWNLOAD_URL}/v{version}/{filename}"))
         .send()
         .await
         .expect("Failed to get latest release");
@@ -160,9 +157,7 @@ pub async fn download(http: HttpClient, version: String) -> Result<PathBuf> {
 
     log::debug!("Downloading to: {packed_temp:?}");
 
-    let mut file = File::create(&packed_temp).await?;
-
-    file.write_all(&data).await?;
+    fs::write(&packed_temp, &data).await?;
 
     Ok(packed_temp)
 }
@@ -173,7 +168,7 @@ pub async fn unpack(packed_temp: PathBuf) -> Result<PathBuf> {
     use tokio::io::BufReader;
     use tokio_tar::Archive;
 
-    let file = File::open(packed_temp).await?;
+    let file = fs::File::open(packed_temp).await?;
     let reader = BufReader::new(file);
     let gunzip = GzipDecoder::new(reader);
     let mut tar = Archive::new(gunzip);
@@ -208,23 +203,25 @@ pub async fn swap_executables(old_exe: PathBuf, new_exe: PathBuf) -> anyhow::Res
 
 #[cfg(windows)]
 pub async fn unpack(packed_temp: PathBuf) -> Result<PathBuf> {
-    use async_zip::read::fs::ZipFileReader;
+    use async_zip::read::stream::ZipFileReader;
 
-    let zip = ZipFileReader::new(packed_temp).await.unwrap();
+    log::debug!("Unpacking: {packed_temp:?}");
+
+    let stream = fs::File::open(packed_temp).await?;
+    // seeking breaks the zips since its a single file
+    let mut zip = ZipFileReader::new(stream);
 
     let exe = temp_dir().join("hop.exe");
 
     // unpack the only file
     let data = zip
-        .entry_reader(0)
-        .await
+        .entry_reader()
+        .await?
         .expect("brokey entry")
         .read_to_end_crc()
-        .await
-        .expect("failed to read entry");
+        .await?;
 
-    let mut file = File::create(&exe).await?;
-    file.write_all(&data).await?;
+    fs::write(&exe, &data).await?;
 
     log::debug!("Unpacked to: {exe:?}");
 

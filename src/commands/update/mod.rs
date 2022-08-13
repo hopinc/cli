@@ -6,6 +6,7 @@ use anyhow::Result;
 use clap::Parser;
 
 use self::util::{check_version, download, swap_executables, unpack};
+use crate::commands::update::types::Version;
 use crate::commands::update::util::now_secs;
 use crate::config::VERSION;
 use crate::state::http::HttpClient;
@@ -24,7 +25,7 @@ pub struct Options {
 pub async fn handle(options: Options, mut state: State) -> Result<()> {
     let http = HttpClient::new(None, None);
 
-    let (update, version) = check_version(options.beta).await?;
+    let (update, version) = check_version(&Version::from_string(VERSION)?, options.beta).await?;
 
     if !update && !options.force {
         log::info!("CLI is up to date");
@@ -34,7 +35,7 @@ pub async fn handle(options: Options, mut state: State) -> Result<()> {
     log::info!("Found new version {version} (current: {VERSION})");
 
     // download the new release
-    let packed_temp = download(http, version.clone())
+    let packed_temp = download(http, version.to_string())
         .await
         .expect("Failed to download");
 
@@ -44,7 +45,7 @@ pub async fn handle(options: Options, mut state: State) -> Result<()> {
     // swap the executables
     swap_executables(std::env::current_exe()?, unpacked).await?;
 
-    state.ctx.last_version_check = Some((now_secs().to_string(), version.clone()));
+    state.ctx.last_version_check = Some((now_secs().to_string(), version.to_string()));
     state.ctx.save().await?;
 
     log::info!("Updated to {version}");
