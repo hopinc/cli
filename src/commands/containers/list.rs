@@ -2,13 +2,13 @@ use anyhow::{ensure, Result};
 use clap::Parser;
 
 use crate::commands::containers::utils::{format_containers, get_all_containers};
-use crate::commands::ignite::util::{format_deployments, get_all_deployments};
+use crate::commands::ignite::util::{format_deployments, get_all_deployments, get_deployment};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "List all containers")]
 pub struct Options {
-    #[clap(name = "deployment", help = "NAME or ID of the deployment")]
+    #[clap(name = "deployment", help = "ID of the deployment")]
     pub deployment: Option<String>,
 
     #[clap(
@@ -20,18 +20,14 @@ pub struct Options {
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
-    let project_id = state.ctx.current_project_error().id;
-
-    let deployments = get_all_deployments(&state.http, &project_id).await?;
-
-    ensure!(!deployments.is_empty(), "No deployments found");
-
     let deployment = match options.deployment {
-        Some(name) => deployments
-            .iter()
-            .find(|p| p.name == name || p.id == name)
-            .expect("Deployment not found"),
+        Some(id) => get_deployment(&state.http, &id).await?,
+
         None => {
+            let project_id = state.ctx.current_project_error().id;
+
+            let deployments = get_all_deployments(&state.http, &project_id).await?;
+            ensure!(!deployments.is_empty(), "This project has no deployments");
             let deployments_fmt = format_deployments(&deployments, false);
 
             let idx = dialoguer::Select::new()
@@ -42,7 +38,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .expect("Failed to select deployment")
                 .expect("No deployment selected");
 
-            &deployments[idx]
+            deployments[idx].clone()
         }
     };
 

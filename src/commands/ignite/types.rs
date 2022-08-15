@@ -153,7 +153,7 @@ pub struct Deployment {
     pub id: String,
     pub name: String,
     pub created_at: String,
-    pub container_count: u32,
+    pub container_count: u64,
     pub config: Config,
 }
 

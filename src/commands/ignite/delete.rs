@@ -9,7 +9,7 @@ use crate::{
 #[derive(Debug, Parser)]
 #[clap(about = "Delete a deployment")]
 pub struct Options {
-    #[clap(name = "deployment", help = "NAME or ID of the deployment to delete")]
+    #[clap(name = "deployment", help = "ID of the deployment to delete")]
     deployment: Option<String>,
 
     #[clap(short = 'f', long = "force", help = "Skip confirmation")]
@@ -18,27 +18,12 @@ pub struct Options {
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
     let deployment_id = match options.deployment {
-        Some(name) => {
-            if name.starts_with("deployment_") {
-                name
-            } else {
-                let project_id = state.ctx.current_project_error().id;
+        Some(id) => id,
 
-                let deployments = get_all_deployments(&state.http, &project_id).await?;
-
-                deployments
-                    .iter()
-                    .find(|p| p.name == name || p.id == name)
-                    .expect("Deployment not found")
-                    .id
-                    .clone()
-            }
-        }
         None => {
             let project_id = state.ctx.current_project_error().id;
 
             let deployments = get_all_deployments(&state.http, &project_id).await?;
-
             let deployments_fmt = format_deployments(&deployments, false);
 
             let idx = dialoguer::Select::new()

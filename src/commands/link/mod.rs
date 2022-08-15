@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use anyhow::{ensure, Result};
 use clap::Parser;
 
-use crate::commands::ignite::util::{format_deployments, get_all_deployments};
+use crate::commands::ignite::util::{format_deployments, get_all_deployments, get_deployment};
 use crate::commands::projects::util::format_project;
 use crate::state::State;
 use crate::store::hopfile::HopFile;
@@ -17,12 +17,13 @@ pub struct Options {
         help = "Directory to link, defaults to current directory"
     )]
     path: Option<PathBuf>,
-    #[clap(short = 'n', long = "name", help = "Name of the deployment")]
-    name: Option<String>,
+
+    #[clap(name = "deployment", help = "ID of the deployment")]
+    deployment: Option<String>,
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
-    let mut dir = current_dir().expect("Could not get current directory");
+    let mut dir = current_dir()?;
 
     if let Some(path) = options.path {
         dir = dir.join(path).canonicalize()?;
@@ -38,24 +39,12 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     log::info!("Project: {}", format_project(&project));
 
-    let deployments = get_all_deployments(&state.http, &project.id).await?;
-
-    ensure!(
-        !deployments.is_empty(),
-        "No deployments found in this project"
-    );
-
-    let deployment = match options.name {
-        Some(name_or_id) => {
-            let deployment = deployments
-                .iter()
-                .find(|d| d.id == name_or_id || d.name == name_or_id)
-                .expect("Deployment not found");
-
-            deployment
-        }
+    let deployment = match options.deployment {
+        Some(id) => get_deployment(&state.http, &id).await?,
 
         None => {
+            let deployments = get_all_deployments(&state.http, &project.id).await?;
+
             let deployments_fmt = format_deployments(&deployments, false);
 
             let idx = dialoguer::Select::new()
@@ -65,7 +54,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .interact_opt()?
                 .expect("No deployment selected");
 
-            &deployments[idx]
+            deployments[idx].clone()
         }
     };
 

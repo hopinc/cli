@@ -1,10 +1,10 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, ensure, Result};
 use clap::Parser;
 
 use super::create::Options as CreateOptions;
 use crate::commands::ignite::types::ScalingStrategy;
 use crate::commands::ignite::util::{
-    format_deployments, get_all_deployments, rollout, scale, update_deployment,
+    format_deployments, get_all_deployments, get_deployment, rollout, scale, update_deployment,
     update_deployment_config,
 };
 use crate::state::State;
@@ -12,7 +12,7 @@ use crate::state::State;
 #[derive(Debug, Parser)]
 #[clap(about = "Update a deployment")]
 pub struct Options {
-    #[clap(name = "deployment", help = "NAME or ID of the deployment to update")]
+    #[clap(name = "deployment", help = "ID of the deployment to update")]
     deployment: Option<String>,
 
     #[clap(flatten)]
@@ -20,16 +20,14 @@ pub struct Options {
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
-    let project_id = state.ctx.current_project_error().id;
-
-    let deployments = get_all_deployments(&state.http, &project_id).await?;
-
     let old_deployment = match options.deployment {
-        Some(deployment) => deployments
-            .iter()
-            .find(|d| d.name == deployment || d.id == deployment)
-            .ok_or_else(|| anyhow::anyhow!("Deployment not found"))?,
+        Some(id) => get_deployment(&state.http, &id).await?,
+
         None => {
+            let project_id = state.ctx.current_project_error().id;
+
+            let deployments = get_all_deployments(&state.http, &project_id).await?;
+            ensure!(!deployments.is_empty(), "This project has no deployments");
             let deployments_fmt = format_deployments(&deployments, false);
 
             let idx = dialoguer::Select::new()
@@ -40,14 +38,14 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .expect("Failed to select deployment")
                 .expect("No deployment selected");
 
-            &deployments[idx]
+            deployments[idx].clone()
         }
     };
 
     let (deployment_config, container_options) = update_deployment_config(
         options.config.clone(),
         options.config != CreateOptions::default(),
-        old_deployment,
+        &old_deployment,
         &None,
     );
 

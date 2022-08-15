@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::{bail, ensure, Result};
 use clap::Parser;
 
 use crate::commands::containers::utils::create_containers;
@@ -8,11 +8,7 @@ use crate::state::State;
 #[derive(Debug, Parser)]
 #[clap(about = "Create containers for a deployment")]
 pub struct Options {
-    #[clap(
-        short = 'd',
-        long = "deployment",
-        help = "NAME or ID of the deployment"
-    )]
+    #[clap(short = 'd', long = "deployment", help = "ID of the deployment")]
     pub deployment: Option<String>,
 
     #[clap(name = "count", help = "Number of containers to create")]
@@ -21,27 +17,13 @@ pub struct Options {
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
     let deployment_id = match options.deployment {
-        Some(name) => {
-            if name.starts_with("deployment_") {
-                name
-            } else {
-                let project_id = state.ctx.current_project_error().id;
+        Some(id) => id,
 
-                let deployments = get_all_deployments(&state.http, &project_id).await?;
-
-                deployments
-                    .iter()
-                    .find(|p| p.name == name || p.id == name)
-                    .expect("Deployment not found")
-                    .id
-                    .clone()
-            }
-        }
         None => {
             let project_id = state.ctx.current_project_error().id;
 
             let deployments = get_all_deployments(&state.http, &project_id).await?;
-
+            ensure!(!deployments.is_empty(), "This project has no deployments");
             let deployments_fmt = format_deployments(&deployments, false);
 
             let idx = dialoguer::Select::new()

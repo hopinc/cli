@@ -96,7 +96,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
             // TODO: update when autoscaling is supported
             let container_options = ContainerOptions {
-                containers: Some(deployment.container_count.into()),
+                containers: Some(deployment.container_count),
                 min_containers: None,
                 max_containers: None,
             };

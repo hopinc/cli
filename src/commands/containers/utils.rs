@@ -66,9 +66,11 @@ pub async fn update_container_state(
         "PUT",
         &format!("/ignite/containers/{container_id}/state"),
         Some((
-            serde_json::to_vec(&UpdateContainerState { preferred_state })
-                .unwrap()
-                .into(),
+            serde_json::to_vec(&UpdateContainerState {
+                preferred_state: ContainerState::from_changeable_state(preferred_state),
+            })
+            .unwrap()
+            .into(),
             "application/json",
         )),
     )

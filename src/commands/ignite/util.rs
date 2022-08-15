@@ -30,6 +30,22 @@ pub async fn get_all_deployments(http: &HttpClient, project_id: &str) -> Result<
     Ok(response.deployments)
 }
 
+pub async fn get_deployment(http: &HttpClient, deployment_id: &str) -> Result<Deployment> {
+    let response = http
+        .request::<SingleDeployment>(
+            "GET",
+            &format!(
+                "/ignite/deployments/{deployment_id}",
+                deployment_id = deployment_id
+            ),
+            None,
+        )
+        .await?
+        .ok_or_else(|| anyhow!("Failed to parse response"))?;
+
+    Ok(response.deployment)
+}
+
 pub async fn create_deployment(
     http: &HttpClient,
     project_id: &str,

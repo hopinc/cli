@@ -57,6 +57,8 @@ pub enum ContainerState {
     Stopped,
     #[serde(rename = "terminating")]
     Terminating,
+    #[serde(rename = "failed")]
+    Failed,
 }
 
 impl Display for ContainerState {
@@ -69,13 +71,22 @@ impl Display for ContainerState {
     }
 }
 
+impl ContainerState {
+    pub fn from_changeable_state(state: &ChangeableContainerState) -> Self {
+        match state {
+            ChangeableContainerState::Start => ContainerState::Running,
+            ChangeableContainerState::Stop => ContainerState::Stopped,
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub enum ChangeableContainerState {
-    #[serde(rename = "stopped")]
-    Stopped,
+    #[serde(rename = "stop")]
+    Stop,
 
-    #[serde(rename = "running")]
-    Running,
+    #[serde(rename = "start")]
+    Start,
 }
 
 impl Display for ChangeableContainerState {
@@ -99,8 +110,8 @@ impl FromStr for ChangeableContainerState {
 impl ChangeableContainerState {
     pub fn values() -> Vec<ChangeableContainerState> {
         vec![
-            ChangeableContainerState::Stopped,
-            ChangeableContainerState::Running,
+            ChangeableContainerState::Stop,
+            ChangeableContainerState::Start,
         ]
     }
 }
@@ -154,8 +165,8 @@ pub struct CreateContainers {
 }
 
 #[derive(Debug, Serialize)]
-pub struct UpdateContainerState<'a> {
-    pub preferred_state: &'a ChangeableContainerState,
+pub struct UpdateContainerState {
+    pub preferred_state: ContainerState,
 }
 
 #[derive(Debug, Deserialize)]

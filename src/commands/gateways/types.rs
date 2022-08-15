@@ -3,6 +3,8 @@ use std::{fmt::Display, str::FromStr};
 use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 
+use crate::commands::domains::types::Domain;
+
 #[derive(Debug, Serialize, Clone, Default, PartialEq)]
 pub struct GatewayConfig {
     #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
@@ -40,6 +42,8 @@ pub struct Gateway {
     pub target_port: Option<u16>,
     #[serde(rename = "type")]
     pub type_: GatewayType,
+    #[serde(default)]
+    pub domains: Vec<Domain>,
 }
 
 #[derive(Debug, Deserialize)]

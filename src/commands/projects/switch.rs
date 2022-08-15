@@ -1,3 +1,4 @@
+use anyhow::Result;
 use clap::Parser;
 
 use crate::commands::projects::util::{format_project, format_projects};
@@ -10,29 +11,25 @@ pub struct Options {
     pub project: Option<String>,
 }
 
-pub async fn handle(options: &Options, mut state: State) -> anyhow::Result<()> {
+pub async fn handle(options: &Options, mut state: State) -> Result<()> {
     let projects = state.ctx.current.clone().unwrap().projects;
 
-    assert!(!projects.is_empty(), "No projects found");
-
-    let project = match options
-        .project
-        .clone()
-        .or(state.ctx.clone().project_override)
-    {
-        Some(project) => state
-            .ctx
-            .clone()
-            .find_project_by_id_or_namespace_error(project),
-
+    let project = match options.project.clone() {
+        Some(namespace) => projects
+            .iter()
+            .find(|p| p.namespace == namespace || p.id == namespace)
+            .expect("Project not found"),
         None => {
             let projects_fmt = format_projects(&projects, false);
 
             let idx = dialoguer::Select::new()
-                .with_prompt("Select a project to set as default")
+                .with_prompt("Select a project to delete")
                 .items(&projects_fmt)
-                .default(if let Some(id) = state.ctx.default_project {
-                    projects.iter().position(|p| p.id == id).unwrap_or(0)
+                .default(if let Some(current) = state.ctx.clone().current_project() {
+                    projects
+                        .iter()
+                        .position(|p| p.id == current.id)
+                        .unwrap_or(0)
                 } else {
                     0
                 })
@@ -40,14 +37,14 @@ pub async fn handle(options: &Options, mut state: State) -> anyhow::Result<()> {
                 .expect("Failed to select project")
                 .expect("No project selected");
 
-            projects[idx].clone()
+            &projects[idx]
         }
     };
 
     state.ctx.default_project = Some(project.id.clone());
     state.ctx.save().await?;
 
-    log::info!("Switched to project {}", format_project(&project));
+    log::info!("Switched to project {}", format_project(project));
 
     Ok(())
 }

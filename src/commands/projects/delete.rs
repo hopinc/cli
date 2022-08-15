@@ -1,4 +1,4 @@
-use anyhow::ensure;
+use anyhow::Result;
 use clap::Parser;
 
 use super::util::format_projects;
@@ -9,26 +9,21 @@ static CONFIRM_DELETE_PROJECT_MESSAGE: &str = "I am sure I want to delete the pr
 #[derive(Debug, Parser)]
 #[clap(about = "Delete a project")]
 pub struct Options {
-    #[clap(name = "namespace", help = "Namespace of the project")]
-    namespace: Option<String>,
+    #[clap(name = "project", help = "Namespace or ID of the project")]
+    project: Option<String>,
     #[clap(short = 'f', long = "force", help = "Skip confirmation")]
     force: bool,
 }
 
-pub async fn handle(options: &Options, mut state: State) -> anyhow::Result<()> {
+pub async fn handle(options: &Options, mut state: State) -> Result<()> {
     let projects = state.ctx.current.clone().unwrap().projects;
 
-    ensure!(!projects.is_empty(), "No projects found");
+    let project = match options.project.clone() {
+        Some(namespace) => projects
+            .iter()
+            .find(|p| p.namespace == namespace || p.id == namespace)
+            .expect("Project not found"),
 
-    let project = match options.namespace.clone() {
-        Some(namespace) => {
-            let project = projects
-                .iter()
-                .find(|p| p.namespace == namespace)
-                .expect("Project not found");
-
-            project.clone()
-        }
         None => {
             let projects_fmt = format_projects(&projects, false);
 
@@ -47,7 +42,7 @@ pub async fn handle(options: &Options, mut state: State) -> anyhow::Result<()> {
                 .expect("Failed to select project")
                 .expect("No project selected");
 
-            projects[idx].clone()
+            &projects[idx]
         }
     };
 
@@ -79,7 +74,7 @@ pub async fn handle(options: &Options, mut state: State) -> anyhow::Result<()> {
         state.ctx.save().await?;
     }
 
-    log::info!("Project {} deleted", format_project(&project));
+    log::info!("Project {} deleted", format_project(project));
 
     Ok(())
 }

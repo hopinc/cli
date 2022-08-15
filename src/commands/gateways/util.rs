@@ -86,9 +86,9 @@ pub async fn delete_gateway(http: &HttpClient, gateway_id: &str) -> Result<()> {
 pub fn update_gateway_config(
     options: &GatewayOptions,
     is_not_guided: bool,
-    gateway: &Gateway,
+    gateway_config: &GatewayConfig,
 ) -> Result<GatewayConfig> {
-    let mut gateway_config = GatewayConfig::from_gateway(gateway);
+    let mut gateway_config = gateway_config.clone();
 
     if is_not_guided {
         update_config_from_args(options, &mut gateway_config)?;
@@ -177,19 +177,7 @@ fn update_config_from_args(
 fn update_config_from_guided(gateway_config: &mut GatewayConfig) -> Result<()> {
     let is_update = gateway_config != &GatewayConfig::default();
 
-    let gateway_type = if !is_update {
-        let value = ask_question_iter("Gateway Type", &GatewayType::values(), None);
-
-        gateway_config.type_ = Some(value.clone());
-
-        value
-    } else {
-        let value = gateway_config.type_.clone().unwrap();
-
-        gateway_config.type_ = None;
-
-        value
-    };
+    log::debug!("is_update: {is_update}");
 
     let name = gateway_config.name.clone().unwrap_or_default();
 
@@ -204,6 +192,20 @@ fn update_config_from_guided(gateway_config: &mut GatewayConfig) -> Result<()> {
     if gateway_config.name == Some(String::new()) {
         gateway_config.name = None;
     }
+
+    let gateway_type = if !is_update {
+        let value = ask_question_iter("Gateway type", &GatewayType::values(), None);
+
+        gateway_config.type_ = Some(value.clone());
+
+        value
+    } else {
+        let value = gateway_config.type_.clone().unwrap();
+
+        gateway_config.type_ = None;
+
+        value
+    };
 
     match gateway_type {
         GatewayType::Internal => {
@@ -264,10 +266,6 @@ fn update_config_from_guided(gateway_config: &mut GatewayConfig) -> Result<()> {
             );
         }
     };
-
-    if is_update {
-        gateway_config.type_ = None;
-    }
 
     Ok(())
 }

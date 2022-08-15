@@ -1,13 +1,13 @@
-use anyhow::Result;
+use anyhow::{ensure, Result};
 use clap::Parser;
 
 use super::util::{format_deployments, get_all_deployments, scale};
-use crate::state::State;
+use crate::{commands::ignite::util::get_deployment, state::State};
 
 #[derive(Debug, Parser)]
 #[clap(about = "Scale a deployment")]
 pub struct Options {
-    #[clap(name = "deployment", help = "NAME or ID of the deployment to scale")]
+    #[clap(name = "deployment", help = "ID of the deployment to scale")]
     pub deployment: Option<String>,
 
     #[clap(name = "scale", help = "Number of replicas to scale to")]
@@ -15,19 +15,14 @@ pub struct Options {
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
-    let project_id = state.ctx.current_project_error().id;
+    let deployment = match options.deployment {
+        Some(id) => get_deployment(&state.http, &id).await?,
 
-    let deployments = get_all_deployments(&state.http, &project_id).await?;
-
-    let deployment_id = match options.deployment {
-        Some(deployment) => {
-            &deployments
-                .iter()
-                .find(|d| d.name == deployment || d.id == deployment)
-                .ok_or_else(|| anyhow::anyhow!("Deployment not found"))?
-                .id
-        }
         None => {
+            let project_id = state.ctx.current_project_error().id;
+
+            let deployments = get_all_deployments(&state.http, &project_id).await?;
+            ensure!(!deployments.is_empty(), "This project has no deployments");
             let deployments_fmt = format_deployments(&deployments, false);
 
             let idx = dialoguer::Select::new()
@@ -38,7 +33,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .expect("Failed to select deployment")
                 .expect("No deployment selected");
 
-            &deployments[idx].id
+            deployments[idx].clone()
         }
     };
 
@@ -46,11 +41,12 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Some(scale) => scale,
         None => dialoguer::Input::<u64>::new()
             .with_prompt("Enter the number of containers to scale to")
+            .default(deployment.container_count)
             .interact()
             .expect("Failed to select a deployment"),
     };
 
-    scale(&state.http, deployment_id, scale_count).await?;
+    scale(&state.http, &deployment.id, scale_count).await?;
 
     log::info!("Scaling deployment to {} containers", scale_count);
 
