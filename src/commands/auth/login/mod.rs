@@ -37,8 +37,8 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     let init_token = if Options::default() != options {
         flags_login(options, state.http.clone()).await
-    } else if let Some(env_token) = option_env!("HOP_TOKEN") {
-        env_token.to_string()
+    } else if let Ok(env_token) = std::env::var("HOP_TOKEN") {
+        env_token
     } else {
         browser_login().await
     };

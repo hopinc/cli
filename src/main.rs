@@ -19,7 +19,7 @@ async fn main() -> Result<()> {
 
     let state = State::new(StateOptions {
         override_project_id: cli.project,
-        override_token: option_env!("HOP_TOKEN").map(std::string::ToString::to_string),
+        override_token: std::env::var("HOP_TOKEN").ok(),
     })
     .await;
 
