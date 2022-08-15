@@ -19,6 +19,7 @@ pub enum Commands {
     #[clap(name = "ls", alias = "list")]
     List(list::Options),
     Update(update::Options),
+    Domains(super::domains::Options),
 }
 
 #[derive(Debug, Parser)]
@@ -34,5 +35,6 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Commands::Delete(options) => delete::handle(options, state).await,
         Commands::List(options) => list::handle(options, state).await,
         Commands::Update(options) => update::handle(options, state).await,
+        Commands::Domains(options) => super::domains::handle(options, state).await,
     }
 }
