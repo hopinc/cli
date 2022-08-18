@@ -71,6 +71,7 @@ pub async fn version_notice(mut ctx: Context) -> Result<()> {
 
     let last_check = ctx
         .last_version_check
+        .clone()
         .map(|(time, version)| (time.parse::<u64>().unwrap_or(now), version));
 
     let (last_checked, last_newest) = match last_check {
@@ -103,6 +104,7 @@ pub async fn version_notice(mut ctx: Context) -> Result<()> {
     };
 
     log::warn!("A new version is available: {new_version}");
+    log::warn!("Use `{}` to update", ctx.update_command());
 
     Ok(())
 }

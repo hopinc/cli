@@ -34,7 +34,7 @@ impl Context {
         home_path(".hop/context.json")
     }
 
-    pub fn find_project_by_id_or_namespace(self, id_or_namespace: String) -> Option<Project> {
+    pub fn find_project_by_id_or_namespace(&self, id_or_namespace: String) -> Option<Project> {
         self.current
             .as_ref()
             .and_then(|me| {
@@ -46,12 +46,12 @@ impl Context {
             .cloned()
     }
 
-    pub fn find_project_by_id_or_namespace_error(self, id_or_namespace: String) -> Project {
+    pub fn find_project_by_id_or_namespace_error(&self, id_or_namespace: String) -> Project {
         self.find_project_by_id_or_namespace(id_or_namespace)
             .expect("Project not found, please check your spelling or switch accounts")
     }
 
-    pub fn current_project(self) -> Option<Project> {
+    pub fn current_project(&self) -> Option<Project> {
         match self.project_override.clone() {
             Some(project) => Some(
                 self.find_project_by_id_or_namespace(project.clone())
@@ -81,8 +81,7 @@ impl Context {
                         .await
                         .expect("Failed to read auth store");
 
-                    let auth: Self = serde_json::from_str(&buffer).unwrap();
-                    auth
+                    serde_json::from_str(&buffer).unwrap()
                 }
 
                 Err(err) => {
@@ -93,7 +92,7 @@ impl Context {
         }
     }
 
-    pub async fn save(mut self) -> Result<Self> {
+    pub async fn save(&mut self) -> Result<Self> {
         if let Some(ref authorized) = self.current {
             self.default_user = Some(authorized.id.clone());
         }
@@ -118,6 +117,11 @@ impl Context {
 
         log::debug!("Saved context to {}", path.display());
 
-        Ok(self)
+        Ok(self.clone())
+    }
+
+    // for future use with external package managers
+    pub fn update_command(&self) -> String {
+        format!("{EXEC_NAME} update")
     }
 }

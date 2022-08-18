@@ -8,7 +8,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use super::utils::home_path;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct Auth {
     pub authorized: HashMap<String, String>,
 }
@@ -16,12 +16,6 @@ pub struct Auth {
 impl Auth {
     fn path() -> PathBuf {
         home_path(".hop/auth.json")
-    }
-
-    pub fn default() -> Auth {
-        Auth {
-            authorized: HashMap::new(),
-        }
     }
 
     pub async fn new() -> Self {
@@ -35,8 +29,7 @@ impl Auth {
                         .await
                         .expect("Failed to read auth store");
 
-                    let auth: Self = serde_json::from_str(&buffer).unwrap();
-                    auth
+                    serde_json::from_str(&buffer).unwrap()
                 }
 
                 Err(err) => {
@@ -47,7 +40,7 @@ impl Auth {
         }
     }
 
-    pub async fn save(self) -> Result<Self> {
+    pub async fn save(&self) -> Result<Self> {
         let path = Self::path();
 
         fs::create_dir_all(path.parent().unwrap())
@@ -68,6 +61,6 @@ impl Auth {
 
         log::debug!("Saved credentials to {}", path.display());
 
-        Ok(self)
+        Ok(self.clone())
     }
 }

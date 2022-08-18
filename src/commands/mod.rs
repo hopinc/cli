@@ -1,4 +1,5 @@
 pub mod auth;
+mod completions;
 pub mod containers;
 pub mod deploy;
 mod domains;
@@ -29,19 +30,27 @@ pub enum Commands {
     Containers(containers::Options),
     Gateways(gateways::Options),
     Domains(domains::Options),
+    #[clap(name = "completions", alias = "complete")]
+    Completions(completions::Options),
 }
 
 pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
     match command {
         Commands::Auth(options) => auth::handle(options, state).await,
         Commands::Update(options) => update::handle(options, state).await,
+        Commands::Completions(options) => {
+            completions::handle(options, state);
+            Ok(())
+        }
 
         authorized_command => {
             // login so these commands can run
             state.login(None).await?;
 
             match authorized_command {
-                Commands::Auth(_) | Commands::Update(_) => unreachable!(),
+                Commands::Auth(_) | Commands::Update(_) | Commands::Completions(_) => {
+                    unreachable!()
+                }
                 Commands::Projects(options) => projects::handle(options, state).await,
                 Commands::Secrets(options) => secrets::handle(options, state).await,
                 Commands::Deploy(options) => deploy::handle(options, state).await,

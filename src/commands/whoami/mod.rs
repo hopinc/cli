@@ -22,7 +22,7 @@ pub fn handle(_options: &Options, state: State) -> Result<()> {
         authorized.email.unwrap_or(authorized.id)
     );
 
-    let project = state.ctx.clone().current_project();
+    let project = state.ctx.current_project();
 
     match project {
         Some(_) => info::handle(&info::Options {}, state),
