@@ -65,7 +65,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     log::info!("Attached domain `{}` to gateway `{}`", domain, gateway_id);
     log::info!("Please create a non-proxied DNS record pointing to bellow");
-    println!("\tCNAME {domain} border.hop.io");
+    println!("\tCNAME {domain} -> border.hop.io");
 
     Ok(())
 }

@@ -1,4 +1,7 @@
 {
     "rust-analyzer.checkOnSave.command": "clippy",
     "editor.defaultFormatter": "rust-lang.rust-analyzer",
+    "rust-analyzer.server.extraEnv": {
+        "RUSTUP_TOOLCHAIN": "1.62.1-x86_64-unknown-linux-gnu"
+    }
 }

@@ -60,7 +60,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     update_gateway(&state.http, &gateway.id, &gateway_config).await?;
 
-    log::info!("Created gateway `{}`", gateway.id);
+    log::info!("Updated gateway `{}`", gateway.id);
 
     Ok(())
 }

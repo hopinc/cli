@@ -34,8 +34,7 @@ pub async fn get_all_domains(http: &HttpClient, gateway_id: &str) -> Result<Vec<
 
 pub async fn delete_domain(http: &HttpClient, domain_id: &str) -> Result<()> {
     http.request::<Value>("DELETE", &format!("/ignite/domains/{domain_id}"), None)
-        .await?
-        .ok_or_else(|| anyhow::anyhow!("Error while parsing response"))?;
+        .await?;
 
     Ok(())
 }
