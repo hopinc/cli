@@ -85,6 +85,42 @@ if ! mv "${EXTRACTED_FILE}" "${INSTALL_PATH}" 2> /dev/null; then
     sudo -k mv "${EXTRACTED_FILE}" "${INSTALL_PATH}"
 fi
 
+# check if the current version supports completions
+set +e
+$INSTALL_PATH completions --help &> /dev/null
+EXIT_CODE=$?
+set -e
+
+# omit on CI, Windows and on unsupported versions
+if [[ -z "${CI:-""}" ]] && [ $PLATFORM != "Windows" ] && [  $EXIT_CODE -eq 0 ]; then
+    # checks if any of the supported shells exists and if so, adds the hop completions to it
+    
+    if command -v fish 2> /dev/null; then
+        echo "Installing fish completion"
+
+        CMD="$INSTALL_PATH completions fish > /usr/share/fish/completions/hop.fish 2> /dev/null"
+
+        sh -c "$CMD" 2> /dev/null || sudo sh -c "$CMD" 2> /dev/null
+    fi
+    
+    if command -v zsh 2> /dev/null; then
+        echo "Installing zsh completion"
+
+        CMD="$INSTALL_PATH completions zsh > /usr/share/zsh/site-functions/_hop 2> /dev/null"
+
+        sh -c "$CMD" 2> /dev/null || sudo sh -c "$CMD" 2> /dev/null
+    fi
+
+    if command -v bash 2> /dev/null; then
+        echo "Installing bash completion"
+
+        CMD="$INSTALL_PATH completions bash > /usr/share/bash-completion/completions/hop 2> /dev/null"
+
+        sh -c "$CMD" 2> /dev/null || sudo sh -c "$CMD" 2> /dev/null
+    fi
+fi
+
+
 echo "
              \\\\
         ,-~~~-\\\\_
