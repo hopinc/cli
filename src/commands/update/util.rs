@@ -233,7 +233,7 @@ pub async fn unpack(packed_temp: PathBuf) -> Result<PathBuf> {
 }
 
 #[cfg(windows)]
-pub async fn swap_files(old_exe: PathBuf, new_exe: PathBuf) -> anyhow::Result<()> {
+pub async fn swap_file(old_exe: PathBuf, new_exe: PathBuf) -> anyhow::Result<()> {
     let elevate = !is_writable(&old_exe).await;
 
     let temp_delete = temp_dir().join(".hop.tmp");
