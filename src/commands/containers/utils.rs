@@ -140,29 +140,39 @@ pub fn format_containers(containers: &Vec<Container>, title: bool) -> Vec<String
         .collect()
 }
 
-pub fn format_logs(log: &[Log], colors: bool) -> Vec<String> {
-    log.iter().map(|log| format_log(log, colors)).collect()
+pub fn format_logs(log: &[Log], colors: bool, timestamps: bool, details: bool) -> Vec<String> {
+    log.iter()
+        .map(|log| format_log(log, colors, timestamps, details))
+        .collect()
 }
 
-fn format_log(log: &Log, colors: bool) -> String {
-    let log_level = if colors {
-        match log.level.as_str() {
-            "info" => style("INFO").cyan(),
-            "error" => style("ERROR").red(),
-            // there are only info and error, this is left for future use
-            level => style(level).yellow(),
-        }
-        .bold()
-        .to_string()
+fn format_log(log: &Log, colors: bool, timestamps: bool, details: bool) -> String {
+    let log_level = if details {
+        (if colors {
+            match log.level.as_str() {
+                "info" => style("INFO").cyan(),
+                "error" => style("ERROR").red(),
+                // there are only info and error, this is left for future use
+                level => style(level).yellow(),
+            }
+            .bold()
+            .to_string()
+        } else {
+            log.level.clone()
+        } + " ")
     } else {
-        log.level.clone()
+        String::new()
     };
 
-    let timestamp = if colors {
-        style(log.timestamp.to_rfc2822()).dim().to_string()
+    let timestamp = if timestamps {
+        (if colors {
+            style(log.timestamp.to_rfc2822()).dim().to_string()
+        } else {
+            log.timestamp.to_rfc2822()
+        } + " ")
     } else {
-        log.timestamp.to_rfc2822()
+        String::new()
     };
 
-    format!("{timestamp} {log_level} {}", log.message)
+    format!("{timestamp}{log_level}{}", log.message)
 }
