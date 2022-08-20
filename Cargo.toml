@@ -18,6 +18,12 @@ FileDescription = "Interact with Hop in your terminal"
 name = "hop"
 path = "./src/main.rs"
 
+[features]
+default = []
+
+# vendored for package managers to disable internal updates
+vendored = ["default"]
+
 [dependencies]
 ms = "0.1.1"
 log = "0.4.17"

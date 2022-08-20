@@ -295,8 +295,8 @@ fn update_config_from_args(
         .expect("The argument '--cpu <CPU>' requires a value but none was supplied");
 
     assert!(
-        deployment_config.resources.vcpu >= 0.1,
-        "The argument '--cpu <CPU>' must be at least 0.1"
+        deployment_config.resources.vcpu >= 0.5,
+        "The argument '--cpu <CPU>' must be at least 0.5"
     );
 
     deployment_config.resources.ram = options
@@ -445,10 +445,10 @@ fn update_config_from_guided(
         .with_prompt("CPUs")
         .default(deployment_config.resources.vcpu)
         .validate_with(|cpu: &f64| -> Result<(), &str> {
-            if *cpu >= 0.1 {
+            if *cpu >= 0.5 {
                 Ok(())
             } else {
-                Err("CPUs must be at least 0.1")
+                Err("CPUs must be at least 0.5")
             }
         })
         .interact_text()

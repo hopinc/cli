@@ -6,6 +6,7 @@ use clap::Parser;
 
 use crate::commands::ignite::util::{format_deployments, get_all_deployments, get_deployment};
 use crate::commands::projects::util::format_project;
+use crate::config::EXEC_NAME;
 use crate::state::State;
 use crate::store::hopfile::HopFile;
 
@@ -32,7 +33,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     ensure!(dir.is_dir(), "{dir:?} is not a directory");
 
     if HopFile::find(dir.clone()).await.is_some() {
-        log::warn!("A hopfile was found in {dir:?}");
+        log::warn!("A hopfile was found {dir:?}, did you mean to `{EXEC_NAME} deploy`?");
     }
 
     let project = state.ctx.current_project_error();

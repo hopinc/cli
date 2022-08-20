@@ -2,8 +2,10 @@
 
 use anyhow::Result;
 use clap::Parser;
+use hop_cli::commands::handle_command;
 use hop_cli::commands::update::util::version_notice;
-use hop_cli::commands::{handle_command, Commands};
+#[cfg(not(feature = "vendored"))]
+use hop_cli::commands::Commands;
 use hop_cli::state::{State, StateOptions};
 use hop_cli::{utils, CLI};
 
@@ -24,6 +26,7 @@ async fn main() -> Result<()> {
     .await;
 
     match cli.commands {
+        #[cfg(not(feature = "vendored"))]
         Commands::Update(_) => None,
         // its okay for the notice to fail
         _ => version_notice(state.ctx.clone()).await.ok(),

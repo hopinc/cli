@@ -1,6 +1,17 @@
 #!/usr/bin/env sh
 set -eu
 
+if [ "x$(id -u)" == "x0" ]; then
+    echo "Warning: this script is currently running as root. This is dangerous. "
+    echo "         Instead run it as normal user. We will sudo as needed."
+fi
+
+if command -v hop 2> /dev/null; then
+    echo "error: hop is already installed, please uninstall it first or"
+    echo "  run \"hop update\" to update to latest version"
+    exit 1
+fi
+
 # If the install directory is not set, set it to a default value
 INSTALL_DIR=${HOP_INSTALL_DIR:-"/usr/local/bin"}
 
@@ -33,17 +44,6 @@ fi
 
 echo "This script will automatically install hop (${VERSION}) for you."
 echo "Installation path: ${INSTALL_PATH}"
-
-if [ "x$(id -u)" == "x0" ]; then
-    echo "Warning: this script is currently running as root. This is dangerous. "
-    echo "         Instead run it as normal user. We will sudo as needed."
-fi
-
-if [ -f "$INSTALL_PATH" ]; then
-    echo "error: hop is already installed."
-    echo "  run \"hop update\" to update to latest version"
-    exit 1
-fi
 
 if ! command -v curl 2> /dev/null; then
     echo "error: you do not have 'curl' installed which is required for this script."

@@ -14,9 +14,10 @@ pub struct Vgpu {
     pub count: u32,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, Default)]
 #[repr(u32)]
 pub enum RamSizes {
+    #[default]
     #[serde(rename = "128M")]
     M128,
     #[serde(rename = "256M")]
@@ -50,12 +51,6 @@ impl FromStr for RamSizes {
 impl ToString for RamSizes {
     fn to_string(&self) -> String {
         serde_json::to_string(self).unwrap().replace('"', "")
-    }
-}
-
-impl Default for RamSizes {
-    fn default() -> Self {
-        RamSizes::M512
     }
 }
 

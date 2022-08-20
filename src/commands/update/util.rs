@@ -104,6 +104,8 @@ pub async fn version_notice(mut ctx: Context) -> Result<()> {
     };
 
     log::warn!("A new version is available: {new_version}");
+
+    #[cfg(not(feature = "vendored"))]
     log::warn!("Use `{}` to update", ctx.update_command());
 
     Ok(())
@@ -191,7 +193,7 @@ pub async fn unpack(packed_temp: PathBuf) -> Result<PathBuf> {
 }
 
 #[cfg(not(windows))]
-pub async fn swap_executables(old_exe: PathBuf, new_exe: PathBuf) -> anyhow::Result<()> {
+pub async fn swap_file(old_exe: PathBuf, new_exe: PathBuf) -> anyhow::Result<()> {
     let elevate = !is_writable(&old_exe).await;
 
     if elevate {
@@ -231,7 +233,7 @@ pub async fn unpack(packed_temp: PathBuf) -> Result<PathBuf> {
 }
 
 #[cfg(windows)]
-pub async fn swap_executables(old_exe: PathBuf, new_exe: PathBuf) -> anyhow::Result<()> {
+pub async fn swap_files(old_exe: PathBuf, new_exe: PathBuf) -> anyhow::Result<()> {
     let elevate = !is_writable(&old_exe).await;
 
     let temp_delete = temp_dir().join(".hop.tmp");

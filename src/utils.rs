@@ -9,6 +9,7 @@ use fern::colors::{Color, ColoredLevelConfig};
 use log::{Level, LevelFilter};
 use ms::{__to_string__, ms};
 use serde::{de, Deserialize, Deserializer, Serialize};
+use tokio::fs;
 
 pub fn set_hook() {
     // setup a panic hook to easily exit the program on panic
@@ -134,4 +135,17 @@ where
         .expect("Failed to select");
 
     choices[choice].clone()
+}
+
+pub async fn in_path(program: &str) -> bool {
+    let path = std::env::var("PATH").unwrap();
+    let paths: Vec<&str> = path.split(':').collect();
+
+    for path in paths {
+        if fs::metadata(format!("{path}/{program}")).await.is_ok() {
+            return true;
+        }
+    }
+
+    false
 }

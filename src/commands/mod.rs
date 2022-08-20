@@ -26,6 +26,7 @@ pub enum Commands {
     Whoami(whoami::Options),
     Ignite(ignite::Options),
     Link(link::Options),
+    #[cfg(not(feature = "vendored"))]
     Update(update::Options),
     Containers(containers::Options),
     Gateways(gateways::Options),
@@ -37,6 +38,7 @@ pub enum Commands {
 pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
     match command {
         Commands::Auth(options) => auth::handle(options, state).await,
+        #[cfg(not(feature = "vendored"))]
         Commands::Update(options) => update::handle(options, state).await,
         Commands::Completions(options) => {
             completions::handle(options, state);
@@ -48,9 +50,12 @@ pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
             state.login(None).await?;
 
             match authorized_command {
-                Commands::Auth(_) | Commands::Update(_) | Commands::Completions(_) => {
+                Commands::Auth(_) | Commands::Completions(_) => {
                     unreachable!()
                 }
+
+                #[cfg(not(feature = "vendored"))]
+                Commands::Update(_) => unreachable!(),
                 Commands::Projects(options) => projects::handle(options, state).await,
                 Commands::Secrets(options) => secrets::handle(options, state).await,
                 Commands::Deploy(options) => deploy::handle(options, state).await,

@@ -5,7 +5,7 @@ pub mod util;
 use anyhow::Result;
 use clap::Parser;
 
-use self::util::{check_version, download, swap_executables, unpack};
+use self::util::{check_version, download, swap_file, unpack};
 use crate::commands::update::types::Version;
 use crate::commands::update::util::now_secs;
 use crate::config::VERSION;
@@ -43,7 +43,7 @@ pub async fn handle(options: Options, mut state: State) -> Result<()> {
     let unpacked = unpack(packed_temp).await?;
 
     // swap the executables
-    swap_executables(std::env::current_exe()?, unpacked).await?;
+    swap_file(std::env::current_exe()?, unpacked).await?;
 
     state.ctx.last_version_check = Some((now_secs().to_string(), version.to_string()));
     state.ctx.save().await?;
