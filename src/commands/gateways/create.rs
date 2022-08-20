@@ -1,12 +1,12 @@
 use anyhow::{ensure, Result};
 use clap::Parser;
+use console::style;
 
+use super::types::{GatewayProtocol, GatewayType};
 use crate::commands::gateways::types::GatewayConfig;
 use crate::commands::gateways::util::{create_gateway, update_gateway_config};
 use crate::commands::ignite::util::{format_deployments, get_all_deployments};
 use crate::state::State;
-
-use super::types::{GatewayProtocol, GatewayType};
 
 #[derive(Debug, Parser, Default, PartialEq)]
 pub struct GatewayOptions {
@@ -71,9 +71,8 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     if gateway.type_ == GatewayType::External {
         log::info!(
-            "You can now access your app at `{}`",
-            // all texternal gateways have a hopsh domain
-            gateway.hopsh_domain.unwrap()
+            "You can now access your app at {}",
+            style(gateway.full_url()).underlined().bold()
         );
     }
 

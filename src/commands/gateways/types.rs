@@ -46,6 +46,19 @@ pub struct Gateway {
     pub domains: Vec<Domain>,
 }
 
+impl Gateway {
+    pub fn full_url(&self) -> String {
+        match self.type_ {
+            GatewayType::Internal => self.internal_domain.as_ref().unwrap().clone(),
+            GatewayType::External => format!(
+                "{}://{}",
+                self.protocol.as_ref().unwrap(),
+                self.internal_domain.as_ref().unwrap()
+            ),
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct SingleGateway {
     pub gateway: Gateway,
@@ -89,8 +102,9 @@ impl GatewayType {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub enum GatewayProtocol {
+    #[default]
     #[serde(rename = "http")]
     Http,
 }
@@ -110,12 +124,6 @@ impl Display for GatewayProtocol {
             "{}",
             serde_json::to_string(self).unwrap().replace('"', "")
         )
-    }
-}
-
-impl Default for GatewayProtocol {
-    fn default() -> Self {
-        GatewayProtocol::Http
     }
 }
 

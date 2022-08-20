@@ -15,6 +15,9 @@ use self::types::{Event, Message};
 use self::util::{compress, env_file_to_map};
 use crate::commands::containers::types::ContainerOptions;
 use crate::commands::containers::utils::create_containers;
+use crate::commands::gateways::create::GatewayOptions;
+use crate::commands::gateways::types::{GatewayConfig, GatewayType};
+use crate::commands::gateways::util::{create_gateway, update_gateway_config};
 use crate::commands::ignite::create::{
     DeploymentConfig, Options as CreateOptions, WEB_DEPLOYMENTS_URL,
 };
@@ -144,6 +147,28 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
             let deployment =
                 create_deployment(&state.http, &project.id, &deployment_config).await?;
+
+            if dialoguer::Confirm::new()
+                .with_prompt("Do you want to create a gateway? (You can always add one later)")
+                .interact()?
+            {
+                let gateway_config = update_gateway_config(
+                    &GatewayOptions::default(),
+                    false,
+                    &GatewayConfig::default(),
+                )?;
+
+                let gateway = create_gateway(&state.http, &deployment.id, &gateway_config).await?;
+
+                log::info!("Created gateway `{}`", gateway.id);
+
+                if gateway.type_ == GatewayType::External {
+                    log::info!(
+                        "Your deployment will be accesible via {}",
+                        style(gateway.full_url()).underlined().bold()
+                    );
+                }
+            }
 
             HopFile::new(
                 dir.clone().join("hop.yml"),
