@@ -6,13 +6,37 @@ The Hop CLI allows you to interface with Hop services through your command line.
 
 ## Installation
 
-During development, the Hop CLI can only be installed by directly compiling the binary on your machine. To do this, you'll first need to install [Rust](https://www.rust-lang.org/tools/install). Then, once you've cloned the repository, you can execute this command within the directory:
+> Any of the following will make the `hop` command available to you.
+
+### Linux, MacOS and FreeBSD
+
+It can be installed with our universal install script:
+
+```bash
+$ curl -fsSL https://download.hop.sh/install | sh
+```
+
+### Arch Linux
+
+Use your favourite AUR helper to install the package:
+
+```bash
+# yay example
+$ yay -S hop-cli
+```
+
+
+### Windows
+
+Install with the [Hop Windows Installer 64bit](https://download.hop.sh/windows/x86_64) or the [Hop Windows Installer 32bit](https://download.hop.sh/windows/i686)
+
+### Source
+
+The Hop CLI can only be installed by directly compiling the binary on your machine. To do this, you'll first need to install [Rust](https://www.rust-lang.org/tools/install). Then, once you've cloned the repository, you can execute this command within the directory:
 
 ```bash
 cargo install --path .
 ```
-
-This will make the `hop` command available to you.
 
 ## Logging In
 
@@ -47,3 +71,17 @@ hop deploy
 ```
 
 This will deploy the project to Hop, or create a new one if you don't have a Hopfile (`hop.yml`) already.
+
+### Linking
+
+To link a project to a service, first navigate to the directory through `cd` and then execute:
+
+```bash
+hop link
+```
+
+This will link the directory to the deployment and create a Hopfile (`hop.yml`).
+
+## Contributing
+
+Contributions are welcome! Please open an issue or pull request if you find any bugs or have any suggestions.
