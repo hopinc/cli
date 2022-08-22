@@ -20,7 +20,7 @@ async fn main() -> Result<()> {
     utils::logs(cli.verbose);
 
     let state = State::new(StateOptions {
-        override_project_id: cli.project,
+        override_project: cli.project,
         override_token: std::env::var("HOP_TOKEN").ok(),
     })
     .await;

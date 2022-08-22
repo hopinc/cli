@@ -53,7 +53,7 @@ impl Gateway {
             GatewayType::External => format!(
                 "{}://{}",
                 self.protocol.as_ref().unwrap(),
-                self.internal_domain.as_ref().unwrap()
+                self.hopsh_domain.as_ref().unwrap()
             ),
         }
     }

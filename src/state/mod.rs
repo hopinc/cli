@@ -21,7 +21,7 @@ pub struct State {
 }
 
 pub struct StateOptions {
-    pub override_project_id: Option<String>,
+    pub override_project: Option<String>,
     pub override_token: Option<String>,
 }
 
@@ -32,8 +32,8 @@ impl State {
         let mut ctx = Context::new().await;
 
         // override the project id if provided
-        if options.override_project_id.is_some() {
-            ctx.project_override = Some(options.override_project_id.unwrap());
+        if options.override_project.is_some() {
+            ctx.project_override = Some(options.override_project.unwrap());
         }
 
         // use the override token if provided

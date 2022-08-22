@@ -21,7 +21,9 @@ use crate::commands::gateways::util::{create_gateway, update_gateway_config};
 use crate::commands::ignite::create::{
     DeploymentConfig, Options as CreateOptions, WEB_DEPLOYMENTS_URL,
 };
-use crate::commands::ignite::types::{Deployment, SingleDeployment};
+use crate::commands::ignite::types::{
+    CreateDeployment, Deployment, ScalingStrategy, SingleDeployment,
+};
 use crate::commands::ignite::util::{create_deployment, rollout, update_deployment_config};
 use crate::commands::projects::util::format_project;
 use crate::state::State;
@@ -48,6 +50,13 @@ pub struct Options {
         help = "Load environment variables from a .env file in the current directory, in the form of KEY=VALUE"
     )]
     envfile: bool,
+
+    #[clap(
+        short = 'y',
+        long = "yes",
+        help = "Use the default yes answer to all prompts"
+    )]
+    yes: bool,
 }
 
 #[allow(clippy::too_many_lines)]
@@ -114,23 +123,47 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
             log::info!("Deploying to project {}", format_project(&project));
 
-            let (mut deployment_config, container_options) = update_deployment_config(
-                CreateOptions {
-                    config: options.config.clone(),
-                    // temporary value that gets replaced after we get the name
-                    image: Some("".to_string()),
-                },
-                is_not_guided,
-                &Deployment::default(),
-                &Some(
-                    dir.clone()
-                        .file_name()
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                        .to_string(),
-                ),
-            );
+            let default_name = dir
+                .clone()
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_string()
+                // make the filename semi safe
+                .replace('_', "-")
+                .replace(' ', "-")
+                .replace('.', "-")
+                .to_lowercase();
+
+            let (mut deployment_config, container_options) = if options.yes {
+                log::warn!("Using default config, skipping arguments");
+
+                (
+                    CreateDeployment {
+                        name: Some(default_name),
+                        // TODO: remove after autoscaling is supported
+                        container_strategy: ScalingStrategy::Manual,
+                        ..Default::default()
+                    },
+                    ContainerOptions {
+                        containers: Some(1),
+                        min_containers: None,
+                        max_containers: None,
+                    },
+                )
+            } else {
+                update_deployment_config(
+                    CreateOptions {
+                        config: options.config.clone(),
+                        // temporary value that gets replaced after we get the name
+                        image: Some("".to_string()),
+                    },
+                    is_not_guided,
+                    &Deployment::default(),
+                    &Some(default_name),
+                )
+            };
 
             deployment_config.image.name = format!(
                 "{}/{}/{}",
@@ -148,9 +181,11 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             let deployment =
                 create_deployment(&state.http, &project.id, &deployment_config).await?;
 
-            if dialoguer::Confirm::new()
-                .with_prompt("Do you want to create a gateway? (You can always add one later)")
-                .interact()?
+            // skip gateway creation if using default config
+            if !options.yes
+                && dialoguer::Confirm::new()
+                    .with_prompt("Do you want to create a gateway? (You can always add one later)")
+                    .interact()?
             {
                 let gateway_config = update_gateway_config(
                     &GatewayOptions::default(),
