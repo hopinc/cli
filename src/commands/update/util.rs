@@ -193,13 +193,75 @@ pub async fn unpack(packed_temp: PathBuf) -> Result<PathBuf> {
 }
 
 #[cfg(not(windows))]
-pub async fn swap_file(old_exe: PathBuf, new_exe: PathBuf) -> anyhow::Result<()> {
-    let elevate = !is_writable(&old_exe).await;
-
-    if elevate {
-        SudoCmd::new("mv").arg(&new_exe).arg(&old_exe).status()?;
+pub async fn swap_exe_command(
+    non_elevated_args: &mut Vec<String>,
+    elevated_args: &mut Vec<String>,
+    old_exe: PathBuf,
+    new_exe: PathBuf,
+) {
+    if is_writable(&old_exe).await {
+        non_elevated_args
     } else {
-        Cmd::new("mv").arg(&new_exe).arg(&old_exe).status()?;
+        elevated_args
+    }
+    .push(format!("mv {} {}", new_exe.display(), old_exe.display()));
+}
+
+#[cfg(not(windows))]
+pub async fn create_completions_commands(
+    non_elevated_args: &mut Vec<String>,
+    elevated_args: &mut Vec<String>,
+    exe_path: PathBuf,
+) {
+    let command = format!(
+        "mkdir -p /usr/share/zsh/site-functions && {} completions zsh > /usr/share/zsh/site-functions/_hop 2> /dev/null && chmod 644 /usr/share/zsh/site-functions/_hop",
+        exe_path.display()
+    );
+
+    if is_writable(&PathBuf::from("/usr/share/zsh/site-functions/_hop")).await {
+        non_elevated_args.push(command);
+    } else {
+        elevated_args.push(command);
+    };
+
+    let command = format!(
+        "mkdir -p /usr/share/fish/completions && {} completions fish > /usr/share/fish/completions/hop.fish 2> /dev/null && chmod 644 /usr/share/fish/completions/hop.fish",
+        exe_path.display()
+    );
+
+    if is_writable(&PathBuf::from("/usr/share/fish/completions/hop.fish")).await {
+        non_elevated_args.push(command);
+    } else {
+        elevated_args.push(command);
+    };
+
+    let command = format!(
+        "mkdir -p /usr/share/bash-completion/completions && {} completions bash > /usr/share/bash-completion/completions/hop 2> /dev/null && chmod 644 /usr/share/bash-completion/completions/hop",
+        exe_path.display()
+    );
+
+    if is_writable(&PathBuf::from("/usr/share/bash-completion/completions/hop")).await {
+        non_elevated_args.push(command);
+    } else {
+        elevated_args.push(command);
+    };
+}
+
+#[cfg(not(windows))]
+pub async fn execute_commands(
+    non_elevated_args: &Vec<String>,
+    elevated_args: &Vec<String>,
+) -> Result<()> {
+    if !non_elevated_args.is_empty() {
+        Cmd::new("sh")
+            .args(&["-c", &non_elevated_args.join(" && ")])
+            .status()?;
+    }
+
+    if !elevated_args.is_empty() {
+        SudoCmd::new("sh")
+            .args(&["-c", &elevated_args.join(" && ")])
+            .status()?;
     }
 
     Ok(())
@@ -233,38 +295,53 @@ pub async fn unpack(packed_temp: PathBuf) -> Result<PathBuf> {
 }
 
 #[cfg(windows)]
-pub async fn swap_file(old_exe: PathBuf, new_exe: PathBuf) -> anyhow::Result<()> {
-    let elevate = !is_writable(&old_exe).await;
-
+pub async fn swap_exe_command(
+    non_elevated_args: &mut Vec<String>,
+    elevated_args: &mut Vec<String>,
+    old_exe: PathBuf,
+    new_exe: PathBuf,
+) {
     let temp_delete = temp_dir().join(".hop.tmp");
 
-    if elevate {
-        SudoCmd::new("cmd")
-            .arg("/c")
-            .arg("move")
-            .arg(&old_exe)
-            .arg(&temp_delete)
-            .arg("&")
-            .arg("move")
-            .arg(&new_exe)
-            .arg(&old_exe)
-            .arg("&")
-            .arg("del")
-            .arg(&temp_delete)
-            .status()?;
+    if is_writable(&old_exe).await {
+        non_elevated_args
     } else {
+        elevated_args
+    }
+    .push(
+        vec![
+            format!("move {} {}", old_exe.display(), temp_delete.display()),
+            format!("move {} {}", new_exe.display(), old_exe.display()),
+            format!("del {}", temp_delete.display()),
+        ]
+        .join(" & "),
+    );
+}
+
+// is windows autocomplete even supported?
+#[cfg(windows)]
+#[inline]
+pub async fn create_completions_commands(
+    _non_elevated_args: &mut Vec<String>,
+    _elevated_args: &mut Vec<String>,
+    _exe_path: PathBuf,
+) {
+}
+
+#[cfg(windows)]
+pub async fn execute_commands(
+    non_elevated_args: &Vec<String>,
+    elevated_args: &Vec<String>,
+) -> Result<()> {
+    if !non_elevated_args.is_empty() {
         Cmd::new("cmd")
-            .arg("/c")
-            .arg("move")
-            .arg(&old_exe)
-            .arg(&temp_delete)
-            .arg("&")
-            .arg("move")
-            .arg(&new_exe)
-            .arg(&old_exe)
-            .arg("&")
-            .arg("del")
-            .arg(&temp_delete)
+            .args(&["/c", &non_elevated_args.join(" & ")])
+            .status()?;
+    }
+
+    if !elevated_args.is_empty() {
+        SudoCmd::new("cmd")
+            .args(&["/c", &elevated_args.join(" & ")])
             .status()?;
     }
 

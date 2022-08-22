@@ -5,9 +5,11 @@ pub mod util;
 use anyhow::Result;
 use clap::Parser;
 
-use self::util::{check_version, download, swap_file, unpack};
-use crate::commands::update::types::Version;
-use crate::commands::update::util::now_secs;
+use self::types::Version;
+use self::util::{
+    check_version, create_completions_commands, download, execute_commands, now_secs,
+    swap_exe_command, unpack,
+};
 use crate::config::VERSION;
 use crate::state::http::HttpClient;
 use crate::state::State;
@@ -42,8 +44,25 @@ pub async fn handle(options: Options, mut state: State) -> Result<()> {
     // unpack the new release
     let unpacked = unpack(packed_temp).await?;
 
+    let mut non_elevated_args: Vec<String> = vec![];
+    let mut elevated_args: Vec<String> = vec![];
+
+    let current = std::env::current_exe()?;
+
     // swap the executables
-    swap_file(std::env::current_exe()?, unpacked).await?;
+    swap_exe_command(
+        &mut non_elevated_args,
+        &mut elevated_args,
+        current.clone(),
+        unpacked,
+    )
+    .await;
+
+    // create completions
+    create_completions_commands(&mut non_elevated_args, &mut elevated_args, current).await;
+
+    // execute the commands
+    execute_commands(&non_elevated_args, &elevated_args).await?;
 
     state.ctx.last_version_check = Some((now_secs().to_string(), version.to_string()));
     state.ctx.save().await?;

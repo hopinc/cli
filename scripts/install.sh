@@ -98,6 +98,11 @@ if [[ -z "${CI:-""}" ]] && [ $PLATFORM != "Windows" ] && [  $EXIT_CODE -eq 0 ]; 
     if command -v fish 2> /dev/null; then
         echo "Installing fish completion"
 
+        CMD="mkdir -p /usr/share/fish/completions"
+
+        sh -c "$CMD" 2> /dev/null || sudo sh -c "$CMD" 2> /dev/null
+
+        # redirect the possible warnings of update to /dev/null (shouldnt happen)
         CMD="$INSTALL_PATH completions fish > /usr/share/fish/completions/hop.fish 2> /dev/null"
 
         sh -c "$CMD" 2> /dev/null || sudo sh -c "$CMD" 2> /dev/null
@@ -106,6 +111,10 @@ if [[ -z "${CI:-""}" ]] && [ $PLATFORM != "Windows" ] && [  $EXIT_CODE -eq 0 ]; 
     if command -v zsh 2> /dev/null; then
         echo "Installing zsh completion"
 
+        CMD="mkdir -p /usr/share/zsh/site-functions"
+
+        sh -c "$CMD" 2> /dev/null || sudo sh -c "$CMD" 2> /dev/null
+
         CMD="$INSTALL_PATH completions zsh > /usr/share/zsh/site-functions/_hop 2> /dev/null"
 
         sh -c "$CMD" 2> /dev/null || sudo sh -c "$CMD" 2> /dev/null
@@ -113,6 +122,10 @@ if [[ -z "${CI:-""}" ]] && [ $PLATFORM != "Windows" ] && [  $EXIT_CODE -eq 0 ]; 
 
     if command -v bash 2> /dev/null; then
         echo "Installing bash completion"
+
+        CMD="mkdir -p /usr/share/bash-completion/completions"
+
+        sh -c "$CMD" 2> /dev/null || sudo sh -c "$CMD" 2> /dev/null
 
         CMD="$INSTALL_PATH completions bash > /usr/share/bash-completion/completions/hop 2> /dev/null"
 
