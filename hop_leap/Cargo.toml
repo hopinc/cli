@@ -10,6 +10,13 @@ homepage = "https://hop.io"
 
 [dependencies]
 serde_json = "^1.0"
+async-trait = "^0.1"
+log = "^0.4"
+
+[dependencies.futures]
+version = "0.3"
+default-features = false
+features = ["std"]
 
 [dependencies.async-tungstenite]
 version = "^0.17"
@@ -21,6 +28,7 @@ version = "^1.0"
 features = ["derive"]
 
 [dependencies.async-compression]
+optional = true
 version = "^0.3"
 features = ["tokio", "zlib"]
 
@@ -29,7 +37,11 @@ version = "^1.20"
 features = ["macros", "net", "time", "sync"]
 
 [features]
+# default to webpki roots for easy cross compilation
 default = ["rustls-tls-webpki-roots"]
+
+# compression reduces the size of the websocket payloads 
+zlib = ["async-compression"]
 
 # allow for multiple different TLS backends
 native-tls = ["async-tungstenite/tokio-native-tls"]
