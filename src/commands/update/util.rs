@@ -268,7 +268,7 @@ pub async fn execute_commands(
     Ok(())
 }
 
-#[cfg(any(target_os = "windows", target_os = "macos"))]
+#[cfg(windows)]
 pub async fn unpack(packed_temp: PathBuf) -> Result<PathBuf> {
     use async_zip::read::stream::ZipFileReader;
 
@@ -320,7 +320,7 @@ pub async fn swap_exe_command(
 }
 
 // is windows autocomplete even supported?
-#[cfg(windows)]
+#[cfg(any(target_os = "windows", target_os = "macos"))]
 #[inline]
 pub async fn create_completions_commands(
     _non_elevated_args: &mut Vec<String>,
