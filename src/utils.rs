@@ -5,6 +5,7 @@ use std::{
 };
 
 use chrono::{DateTime, Utc};
+use console::style;
 use fern::colors::{Color, ColoredLevelConfig};
 use log::{Level, LevelFilter};
 use ms::{__to_string__, ms};
@@ -146,4 +147,8 @@ pub async fn in_path(program: &str) -> bool {
     }
 
     false
+}
+
+pub fn urlify(s: &str) -> String {
+    style(s).bold().underlined().to_string()
 }

@@ -6,7 +6,6 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::Parser;
-use console::style;
 use hyper::Method;
 use reqwest::multipart::{Form, Part};
 use tokio::fs;
@@ -28,6 +27,7 @@ use crate::commands::ignite::util::{create_deployment, rollout, update_deploymen
 use crate::commands::projects::util::format_project;
 use crate::state::State;
 use crate::store::hopfile::HopFile;
+use crate::utils::urlify;
 
 const HOP_BUILD_BASE_URL: &str = "https://builder.hop.io/v1";
 const HOP_REGISTRY_URL: &str = "registry.hop.io";
@@ -201,7 +201,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 if gateway.type_ == GatewayType::External {
                     log::info!(
                         "Your deployment will be accesible via {}",
-                        style(gateway.full_url()).underlined().bold()
+                        urlify(&gateway.full_url())
                     );
                 }
             }
@@ -297,7 +297,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 println!();
                 panic!(
                     "Push failed, for help contact us on {} and mention the deployment id: {}",
-                    style("https://discord.gg/hop").underlined().bold(),
+                    urlify("https://discord.gg/hop"),
                     deployment.id
                 );
             }
@@ -321,12 +321,10 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     log::info!(
         "Deployed successfuly, you can find it at: {}",
-        style(format!(
+        urlify(&format!(
             "{}{}?project={}",
             WEB_DEPLOYMENTS_URL, deployment.id, project.namespace
         ))
-        .underlined()
-        .bold()
     );
 
     Ok(())

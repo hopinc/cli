@@ -4,6 +4,7 @@ pub mod util;
 
 use anyhow::Result;
 use clap::Parser;
+use tokio::fs;
 
 use self::types::Version;
 use self::util::{
@@ -42,7 +43,10 @@ pub async fn handle(options: Options, mut state: State) -> Result<()> {
         .expect("Failed to download");
 
     // unpack the new release
-    let unpacked = unpack(packed_temp).await?;
+    let unpacked = unpack(packed_temp.clone()).await?;
+
+    // remove the tarball since it's no longer needed
+    fs::remove_file(packed_temp).await?;
 
     let mut non_elevated_args: Vec<String> = vec![];
     let mut elevated_args: Vec<String> = vec![];

@@ -1,6 +1,5 @@
 use anyhow::Result;
 use clap::Parser;
-use console::style;
 
 use super::types::{Env, RamSizes, ScalingStrategy};
 use crate::commands::containers::types::ContainerType;
@@ -8,6 +7,7 @@ use crate::commands::containers::utils::create_containers;
 use crate::commands::ignite::types::Deployment;
 use crate::commands::ignite::util::{create_deployment, update_deployment_config};
 use crate::state::State;
+use crate::utils::urlify;
 
 pub const WEB_DEPLOYMENTS_URL: &str = "https://console.hop.io/ignite/deployment/";
 
@@ -115,12 +115,10 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     log::info!(
         "Deployed successfuly, you can find it at: {}",
-        style(format!(
+        urlify(&format!(
             "{}{}?project={}",
             WEB_DEPLOYMENTS_URL, deployment.id, project.namespace
         ))
-        .underlined()
-        .bold()
     );
 
     Ok(())
