@@ -207,7 +207,8 @@ pub async fn swap_exe_command(
     .push(format!("mv {} {}", new_exe.display(), old_exe.display()));
 }
 
-#[cfg(not(windows))]
+// disable on macos because its doesnt allow to edit completions like this
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
 pub async fn create_completions_commands(
     non_elevated_args: &mut Vec<String>,
     elevated_args: &mut Vec<String>,
@@ -267,7 +268,7 @@ pub async fn execute_commands(
     Ok(())
 }
 
-#[cfg(windows)]
+#[cfg(any(target_os = "windows", target_os = "macos"))]
 pub async fn unpack(packed_temp: PathBuf) -> Result<PathBuf> {
     use async_zip::read::stream::ZipFileReader;
 

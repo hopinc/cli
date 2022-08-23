@@ -18,15 +18,15 @@ INSTALL_DIR=${HOP_INSTALL_DIR:-"/usr/local/bin"}
 PLATFORM=`uname -s`
 ARCH=`uname -m`
 
-if [[ $PLATFORM == CYGWIN* ]] || [[ $PLATFORM == MINGW* ]] || [[ $PLATFORM == MSYS* ]]; then
+if [ $PLATFORM == CYGWIN* ] || [ $PLATFORM == MINGW* ] || [ $PLATFORM == MSYS* ]; then
     PLATFORM="Windows"
 fi
 
-if [[ $ARCH == armv8* ]] || [[ $ARCH == arm64* ]] || [[ $ARCH == aarch64* ]]; then
+if [ $ARCH == armv8* ] || [ $ARCH == arm64* ] || [ $ARCH == aarch64* ]; then
     ARCH="aarch64"
 fi
 
-if [[ $ARCH == armv6* ]] || [[ $ARCH == armv7* ]] || [[ $ARCH == arm7* ]]; then
+if [ $ARCH == armv6* ] || [ $ARCH == armv7* ] || [ $ARCH == arm7* ]; then
     ARCH="arm"
 fi
 
@@ -34,7 +34,7 @@ if [ -z ${INSTALL_PATH+x} ]; then
     INSTALL_PATH="${INSTALL_DIR}/hop"
 fi
 
-if [[ -z "${HOP_VERSION:-""}" ]]; then
+if [ -z "${HOP_VERSION:-""}" ]; then
     VERSION="latest"
     DOWNLOAD_URL="https://github.com/hopinc/hop_cli/releases/latest/download/hop-${ARCH}-${PLATFORM}.$([ $PLATFORM = "Windows" ] && echo "zip" || echo "tar.gz"  )"
 else
@@ -62,7 +62,7 @@ echo "Downloading $DOWNLOAD_URL"
 
 trap cleanup EXIT
 HTTP_CODE=$(curl -SL --progress-bar "$DOWNLOAD_URL" -D "$TEMP_HEADER_FILE" --output "$TEMP_FILE" --write-out "%{http_code}")
-if [[ ${HTTP_CODE} -lt 200 || ${HTTP_CODE} -gt 299 ]]; then
+if [ ${HTTP_CODE} -lt 200 ] || [ ${HTTP_CODE} -gt 299 ]; then
     echo "error: your platform and architecture (${ARCH}-${PLATFORM}) is unsupported."
     exit 1
 fi
@@ -92,7 +92,7 @@ EXIT_CODE=$?
 set -e
 
 # omit on CI, Windows and on unsupported versions
-if [[ -z "${CI:-""}" ]] && [ $PLATFORM != "Windows" ] && [  $EXIT_CODE -eq 0 ]; then
+if [ -z "${CI:-""}" ] && [ $PLATFORM != "Windows" ] && [ $PLATFORM != "Darwin" ] && [  $EXIT_CODE -eq 0 ]; then
     # checks if any of the supported shells exists and if so, adds the hop completions to it
     
     if command -v fish 2> /dev/null; then
