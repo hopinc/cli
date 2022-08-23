@@ -89,8 +89,9 @@ impl Default for Resources {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, Default)]
 pub enum ScalingStrategy {
+    #[default]
     #[serde(rename = "manual")]
     Manual,
     #[serde(rename = "autoscale")]
@@ -112,12 +113,6 @@ impl Display for ScalingStrategy {
             "{}",
             serde_json::to_string(self).unwrap().replace('"', "")
         )
-    }
-}
-
-impl Default for ScalingStrategy {
-    fn default() -> Self {
-        ScalingStrategy::Autoscaled
     }
 }
 

@@ -31,7 +31,7 @@ pub enum Commands {
     Containers(containers::Options),
     Gateways(gateways::Options),
     Domains(domains::Options),
-    #[clap(name = "completions", alias = "complete")]
+    #[clap(name = "completions", alias = "complete", hide = cfg!(feature = "vendored"))]
     Completions(completions::Options),
 }
 

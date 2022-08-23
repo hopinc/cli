@@ -4,6 +4,7 @@ use std::io::Write;
 use std::str::FromStr;
 
 use anyhow::{anyhow, Result};
+use regex::Regex;
 use serde_json::Value;
 use tabwriter::TabWriter;
 
@@ -11,7 +12,6 @@ use super::types::{
     CreateDeployment, Deployment, MultipleDeployments, ScaleRequest, SingleDeployment,
 };
 use crate::commands::containers::types::{ContainerOptions, ContainerType};
-use crate::commands::deploy::util::validate_deployment_name;
 use crate::commands::ignite::create::Options;
 use crate::commands::ignite::types::{RamSizes, ScalingStrategy};
 use crate::state::http::HttpClient;
@@ -294,10 +294,9 @@ fn update_config_from_args(
         })
         .expect("The argument '--cpu <CPU>' requires a value but none was supplied");
 
-    assert!(
-        deployment_config.resources.vcpu >= 0.5,
-        "The argument '--cpu <CPU>' must be at least 0.5"
-    );
+    if let Err(why) = validate_cpu_count(&deployment_config.resources.vcpu) {
+        panic!("{why}")
+    };
 
     deployment_config.resources.ram = options
         .config
@@ -444,13 +443,7 @@ fn update_config_from_guided(
     deployment_config.resources.vcpu = dialoguer::Input::<f64>::new()
         .with_prompt("CPUs")
         .default(deployment_config.resources.vcpu)
-        .validate_with(|cpu: &f64| -> Result<(), &str> {
-            if *cpu >= 0.5 {
-                Ok(())
-            } else {
-                Err("CPUs must be at least 0.5")
-            }
-        })
+        .validate_with(validate_cpu_count)
         .interact_text()
         .expect("Failed to get CPUs");
 
@@ -535,4 +528,20 @@ fn get_env_from_input() -> Option<(String, String)> {
     };
 
     Some((key, value))
+}
+
+fn validate_deployment_name(name: &str) -> bool {
+    let regex = Regex::new(r"(?i)^[a-z0-9-]*$").unwrap();
+
+    regex.is_match(name)
+}
+
+fn validate_cpu_count(cpu: &f64) -> Result<(), &'static str> {
+    if cpu < &0.5 {
+        Err("CPUs must be at least 0.5")
+    } else if cpu % 0.5 != 0.0 {
+        Err("CPUs must be a multiple of 0.5")
+    } else {
+        Ok(())
+    }
 }

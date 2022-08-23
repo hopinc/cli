@@ -5,7 +5,6 @@ use std::path::{Path, PathBuf};
 use anyhow::Result;
 use async_compression::tokio::write::GzipEncoder;
 use ignore::WalkBuilder;
-use regex::Regex;
 use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
 use tokio_tar::Builder as TarBuilder;
@@ -88,12 +87,6 @@ async fn create_global_ignore_file() -> PathBuf {
         .expect("Could not close global ignore file");
 
     path
-}
-
-pub fn validate_deployment_name(name: &str) -> bool {
-    let regex = Regex::new(r"^[a-zA-Z0-9-]*$").unwrap();
-
-    regex.is_match(name)
 }
 
 pub async fn env_file_to_map(path: PathBuf) -> HashMap<String, String> {

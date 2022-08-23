@@ -214,7 +214,7 @@ fn update_config_from_guided(gateway_config: &mut GatewayConfig) -> Result<()> {
 
             let internal_domain = gateway_config.internal_domain.clone().unwrap_or_default();
 
-            let internal_domain_regex = Regex::new(r"^(?i)[a-z0-9-.]+.hop$").unwrap();
+            let internal_domain_regex = Regex::new(r"(?i)^[a-z0-9-.]+.hop$").unwrap();
 
             gateway_config.internal_domain = Some(
                 dialoguer::Input::<String>::new()

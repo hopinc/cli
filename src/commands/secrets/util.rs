@@ -7,7 +7,7 @@ use tabwriter::TabWriter;
 use super::types::Secret;
 
 pub fn validate_name(name: &str) -> Result<()> {
-    let regex = regex::Regex::new(r"^[a-zA-Z0-9_]{1,64}$").unwrap();
+    let regex = regex::Regex::new(r"(?i)^[a-z0-9_]{1,64}$").unwrap();
 
     if !regex.is_match(name) {
         bail!("Invalid name. Secret names are limited to 64 characters in length, must be alphanumeric (with underscores) and are automatically uppercased.")
@@ -40,7 +40,7 @@ pub fn format_secrets(secrets: &Vec<Secret>, title: bool) -> Vec<String> {
 }
 
 pub fn get_secret_name(secret: &str) -> Option<String> {
-    let regex = Regex::new(r"^(?i)\$\{secrets\.(\w+)}$").unwrap();
+    let regex = Regex::new(r"(?i)^\$\{secrets\.(\w+)}$").unwrap();
 
     regex.captures(secret).map(|c| c[1].to_string())
 }

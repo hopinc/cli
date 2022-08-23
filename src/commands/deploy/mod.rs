@@ -183,6 +183,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
             // skip gateway creation if using default config
             if !options.yes
+                && !is_not_guided
                 && dialoguer::Confirm::new()
                     .with_prompt("Do you want to create a gateway? (You can always add one later)")
                     .interact()?
@@ -311,7 +312,10 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             log::info!("Rolling out new containers");
             rollout(&state.http, &deployment.id).await?;
         }
-    } else if let Some(containers) = container_options.containers {
+    } else if let Some(containers) = container_options
+        .containers
+        .or(container_options.min_containers)
+    {
         create_containers(&state.http, &deployment.id, containers).await?;
     }
 
