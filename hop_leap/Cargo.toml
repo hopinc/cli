@@ -1,0 +1,37 @@
+[package]
+name = "hop_leap"
+version = "0.1.0"
+edition = "2021"
+license = "MPL-2.0"
+authors = ["Hop Inc."]
+description = "Easily connect to Leap Edge"
+repository = "https://github.com/hopinc/hop_cli/tree/main/hop_leap"
+homepage = "https://hop.io"
+
+[dependencies]
+serde_json = "^1.0"
+
+[dependencies.async-tungstenite]
+version = "^0.17"
+default-features = false
+features = ["tokio-runtime"]
+
+[dependencies.serde]
+version = "^1.0"
+features = ["derive"]
+
+[dependencies.async-compression]
+version = "^0.3"
+features = ["tokio", "zlib"]
+
+[dependencies.tokio]
+version = "^1.20"
+features = ["macros", "net", "time", "sync"]
+
+[features]
+default = ["rustls-tls-webpki-roots"]
+
+# allow for multiple different TLS backends
+native-tls = ["async-tungstenite/tokio-native-tls"]
+rustls-tls-native-roots = ["async-tungstenite/tokio-rustls-native-certs"]
+rustls-tls-webpki-roots = ["async-tungstenite/tokio-rustls-webpki-roots"]
