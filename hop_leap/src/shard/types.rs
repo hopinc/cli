@@ -3,6 +3,13 @@ use std::fmt;
 use serde::Deserialize;
 use serde_json::Value;
 
+#[derive(Clone, Debug)]
+pub enum InterMessage {
+    #[cfg(feature = "client")]
+    Client(Box<ShardClientMessage>),
+    Json(Value),
+}
+
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 pub enum ConnectionStage {

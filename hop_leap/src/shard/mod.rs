@@ -1,5 +1,5 @@
 pub mod error;
-mod socket;
+pub mod socket;
 pub mod types;
 
 use std::sync::Arc;
