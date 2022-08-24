@@ -241,7 +241,8 @@ jobs:
 
           curl -fsSL https://github.com/hopinc/hop_cli/archive/refs/tags/${{ needs.draft-release.outputs.tag_name }}.tar.gz -o hop-cli-archive.tar.gz
           CHECKSUM=$(sha256sum hop-cli-archive.tar.gz | awk '{ print $1 }')
-          sed -i 's/pkgver=.*/pkgver=${{ needs.draft-release.outputs.tag_name }}/' PKGBUILD
+          VERSION=$(echo ${{ needs.draft-release.outputs.tag_name }} | sed 's/v//')
+          sed -i "s/pkgver=.*/pkgver=$VERSION/" PKGBUILD
           sed -i "s/sha256sums=.*/sha256sums=(\"$CHECKSUM\")/" PKGBUILD
           makepkg --printsrcinfo > .SRCINFO
 
