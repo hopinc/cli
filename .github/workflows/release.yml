@@ -163,6 +163,7 @@ jobs:
     needs: ["draft-release", "build-release"]
     runs-on: ubuntu-latest
     continue-on-error: true
+    environment: prod
     steps:
       - name: Download Artifacts
         uses: actions/download-artifact@v3
@@ -186,6 +187,7 @@ jobs:
     needs: ["draft-release", "build-release"]
     runs-on: ubuntu-latest
     continue-on-error: true
+    environment: prod
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v2
@@ -217,6 +219,7 @@ jobs:
     needs: ["draft-release", "build-release"]
     runs-on: ubuntu-latest
     continue-on-error: true
+    environment: prod
     steps:
       - name: Setup SSH
         run: |
