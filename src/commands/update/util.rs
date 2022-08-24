@@ -105,7 +105,7 @@ pub async fn version_notice(mut ctx: Context) -> Result<()> {
 
     log::warn!("A new version is available: {new_version}");
 
-    #[cfg(not(feature = "vendored"))]
+    #[cfg(feature = "update")]
     log::warn!("Use `{}` to update", ctx.update_command());
 
     Ok(())

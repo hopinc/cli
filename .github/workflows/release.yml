@@ -47,34 +47,42 @@ jobs:
           - target: x86_64-unknown-linux-musl
             os: ubuntu-latest
             platform: x86_64-Linux
+            flags: --all-features
 
           - target: i686-unknown-linux-musl
             os: ubuntu-latest
             platform: i686-Linux
+            flags: --all-features
 
           - target: aarch64-unknown-linux-musl
             os: ubuntu-latest
             platform: aarch64-Linux
+            flags: --all-features
 
           - target: arm-unknown-linux-musleabihf
             os: ubuntu-latest
             platform: arm-Linux
+            flags: --all-features
 
           - target: x86_64-apple-darwin
             os: macOS-latest
             platform: x86_64-Darwin
+            flags: --all-features
 
           - target: aarch64-apple-darwin
             os: macOS-latest
             platform: aarch64-Darwin
+            flags: --all-features
 
           - target: x86_64-pc-windows-msvc
             os: windows-latest
             platform: x86_64-Windows
+            flags: --all-features
 
           - target: i686-pc-windows-msvc
             os: windows-latest
             platform: i686-Windows
+            flags: --all-features
 
           # ARM WINDOWS xD
           # - target: aarch64-pc-windows-msvc
@@ -84,6 +92,7 @@ jobs:
           - target: x86_64-unknown-freebsd
             os: ubuntu-latest
             platform: x86_64-FreeBSD
+            flags: --all-features
 
     steps:
       - name: Checkout repository
@@ -110,7 +119,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release --locked --features default  --target ${{ matrix.target }}
+          args: --release --locked ${{ matrix.flags }} --target ${{ matrix.target }}
           use-cross: ${{ matrix.os == 'ubuntu-latest' }}
 
       - name: Prepare binaries [*nix]

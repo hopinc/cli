@@ -20,9 +20,7 @@ path = "./src/main.rs"
 
 [features]
 default = []
-
-# vendored for package managers to disable internal updates
-vendored = ["default"]
+updates = []
 
 [dependencies]
 ms = "0.1.1"

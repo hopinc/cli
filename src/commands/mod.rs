@@ -26,19 +26,19 @@ pub enum Commands {
     Whoami(whoami::Options),
     Ignite(ignite::Options),
     Link(link::Options),
-    #[cfg(not(feature = "vendored"))]
+    #[cfg(feature = "update")]
     Update(update::Options),
     Containers(containers::Options),
     Gateways(gateways::Options),
     Domains(domains::Options),
-    #[clap(name = "completions", alias = "complete", hide = cfg!(feature = "vendored"))]
+    #[clap(name = "completions", alias = "complete", hide = !cfg!(feature = "update"))]
     Completions(completions::Options),
 }
 
 pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
     match command {
         Commands::Auth(options) => auth::handle(options, state).await,
-        #[cfg(not(feature = "vendored"))]
+        #[cfg(feature = "update")]
         Commands::Update(options) => update::handle(options, state).await,
         Commands::Completions(options) => {
             completions::handle(options, state);
@@ -54,7 +54,7 @@ pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
                     unreachable!()
                 }
 
-                #[cfg(not(feature = "vendored"))]
+                #[cfg(feature = "update")]
                 Commands::Update(_) => unreachable!(),
                 Commands::Projects(options) => projects::handle(options, state).await,
                 Commands::Secrets(options) => secrets::handle(options, state).await,
