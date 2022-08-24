@@ -240,11 +240,19 @@ jobs:
           cd hop-cli
 
           curl -fsSL https://github.com/hopinc/hop_cli/archive/refs/tags/${{ needs.draft-release.outputs.tag_name }}.tar.gz -o hop-cli-archive.tar.gz
-          CHECKSUM=$(sha256sum hop-cli-archive.tar.gz | awk '{ print $1 }')
+
           VERSION=$(echo ${{ needs.draft-release.outputs.tag_name }} | sed 's/v//')
+          OLD_VERSION=$(cat .SRCINFO | awk '/pkgver = (.*)/{ print $3 }')
+
           sed -i "s/pkgver=.*/pkgver=$VERSION/" PKGBUILD
+          sed -i "s/pkgrel=.*/pkgrel=1/" PKGBUILD
+          sed -i "s/$OLD_VERSION/$VERSION/g" .SRCINFO
+          sed -i "s/pkgrel = .*/pkgrel = 1/" .SRCINFO
+
+          CHECKSUM=$(sha256sum hop-cli-archive.tar.gz | awk '{ print $1 }')
           sed -i "s/sha256sums=.*/sha256sums=(\"$CHECKSUM\")/" PKGBUILD
-          makepkg --printsrcinfo > .SRCINFO
+          sed -i "s/sha256sums = .*/sha256sums = $CHECKSUM/" .SRCINFO
+
 
       - name: Push to AUR
         run: |
