@@ -205,7 +205,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: login
-          arguments: --token ${{ secrets.CARGO_TOKEN }}
+          args: --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
       - name: Publish Crates
         uses: actions-rs/cargo@v1
@@ -234,6 +234,7 @@ jobs:
           git config --global user.name "${{ secrets.AUR_GIT_USER }}"
           git config --global user.email "${{ secrets.AUR_GIT_EMAIL }}"
           git clone ssh://aur@aur.archlinux.org:/hop-cli.git
+          cd hop-cli
 
       - name: Update PKGBUILD
         run: |
