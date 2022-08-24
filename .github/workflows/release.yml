@@ -180,3 +180,58 @@ jobs:
         with:
           files: hop-*/hop-*
           tag_name: ${{ needs.draft-release.outputs.tag_name }}
+
+  publish-crates:
+    name: Publish Crates
+    needs: ["draft-release", "build-release"]
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Publish Crates
+        uses: actions-rs/cargo@v1
+        with:
+          command: publish
+          args: --no-verify
+          use-cross: ${{ matrix.os == 'ubuntu-latest' }}
+          env:
+            CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+  publish-aur:
+    name: Publish to AUR
+    needs: ["draft-release", "build-release"]
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout the AUR repo
+        uses: actions/checkout@v2
+        with:
+          repository: aur@aur.archlinux.org:/hop-cli.git
+          ssh-key: ${{ secrets.AUR_SSH_KEY }}
+          ssh-known-hosts: ${{ secrets.AUR_SSH_KNOWN_HOSTS }}
+          fetch-depth: 1
+
+      - name: Update PKGBUILD
+        run: |
+          curl -fsSL https://github.com/hopinc/hop_cli/archive/refs/tags/${{ needs.draft-release.outputs.tag_name }}.tar.gz > hop-cli-archive.tar.gz
+          sha256sum hop-cli-archive.tar.gz | awk '{ print $1 }' > checksum.sha256
+          sed -i 's/pkgver=.*/pkgver=${{ needs.draft-release.outputs.tag_name }}/' PKGBUILD
+          sed -i 's/sha256sums=.*/sha256sums=("$(cat checksum.sha256)")/' PKGBUILD
+          makepkg --printsrcinfo > .SRCINFO
+
+      - name: Push to AUR
+        run: |
+          git add PKGBUILD .SRCINFO
+          git commit -m "Update PKGBUILD for ${{ needs.draft-release.outputs.tag_name }}"
+          git push origin master
