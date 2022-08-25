@@ -7,13 +7,14 @@ use async_trait::async_trait;
 use async_tungstenite::{tokio::ConnectStream, tungstenite::Message, WebSocketStream};
 use futures::{SinkExt, StreamExt};
 use serde_json::{json, to_string, Value};
-use tokio::{
-    io::AsyncReadExt,
-    time::{timeout, Duration},
-};
+use tokio::io::AsyncReadExt;
+use tokio::time::{timeout, Duration};
 
 use super::error::Error as LeapError;
-use crate::errors::{Error, Result};
+use crate::{
+    errors::{Error, Result},
+    shard::types::OpCode,
+};
 
 pub type WsStream = WebSocketStream<ConnectStream>;
 
@@ -69,6 +70,8 @@ pub(crate) async fn convert_message(message: Option<Message>) -> Result<Option<V
 #[async_trait]
 impl SenderExt for WsStream {
     async fn send_json(&mut self, value: &Value) -> Result<()> {
+        log::debug!("[Shard] Sending: {value}");
+
         Ok(to_string(value)
             .map(Message::Text)
             .map_err(Error::from)
@@ -80,19 +83,46 @@ impl SenderExt for WsStream {
 #[async_trait]
 pub trait WsStreamExt {
     async fn send_heartbeat(&mut self, tag: Option<&str>) -> Result<()>;
+    async fn send_identify(&mut self, project: &str, token: Option<&str>) -> Result<()>;
 }
 
 #[async_trait]
 impl WsStreamExt for WsStream {
     async fn send_heartbeat(&mut self, tag: Option<&str>) -> Result<()> {
-        self.send_json(&json!({
-            "op": 3,
-            "d": {
-                "tag": tag,
-            },
-        }))
-        .await?;
+        let payload = if let Some(tag) = tag {
+            json!({
+                "op": OpCode::Heartbeat.number(),
+                "d": {
+                    "tag": tag,
+                },
+            })
+        } else {
+            json!({
+                "op": OpCode::Heartbeat.number(),
+            })
+        };
 
-        Ok(())
+        self.send_json(&payload).await
+    }
+
+    async fn send_identify(&mut self, project: &str, token: Option<&str>) -> Result<()> {
+        let payload = if let Some(token) = token {
+            json!({
+                "op": OpCode::Identify.number(),
+                "d": {
+                    "project_id": project,
+                    "token": token,
+                },
+            })
+        } else {
+            json!({
+                "op": OpCode::Identify.number(),
+                "d": {
+                    "project_id": project,
+                },
+            })
+        };
+
+        self.send_json(&payload).await
     }
 }

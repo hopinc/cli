@@ -11,6 +11,7 @@ homepage = "https://hop.io"
 [dependencies]
 serde_json = "^1.0"
 async-trait = "^0.1"
+serde_repr = "^0.1"
 log = "^0.4"
 
 [dependencies.futures]
@@ -34,7 +35,7 @@ features = ["tokio", "zlib"]
 
 [dependencies.tokio]
 version = "^1.20"
-features = ["macros", "net", "time", "sync"]
+features = ["macros", "net", "time", "sync", "io-util", "rt"]
 
 [features]
 # default to webpki roots for easy cross compilation
@@ -47,3 +48,10 @@ zlib = ["async-compression"]
 native-tls = ["async-tungstenite/tokio-native-tls"]
 rustls-tls-native-roots = ["async-tungstenite/tokio-rustls-native-certs"]
 rustls-tls-webpki-roots = ["async-tungstenite/tokio-rustls-webpki-roots"]
+
+[dev-dependencies]
+fern = "^0.6"
+
+[dev-dependencies.tokio]
+version = "^1.20"
+features = ["macros", "net", "time", "sync", "io-util", "rt", "rt-multi-thread"]

@@ -3,6 +3,7 @@ use std::fmt;
 use serde::de::Error as SerdeError;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use serde_repr::Deserialize_repr;
 
 #[derive(Clone, Debug)]
 pub enum InterMessage {
@@ -19,7 +20,15 @@ pub enum ConnectionStage {
     Disconnected,
     Handshake,
     Identifying,
-    Resuming,
+}
+
+impl ConnectionStage {
+    pub fn is_connecting(&self) -> bool {
+        match self {
+            Self::Connecting | Self::Handshake | Self::Identifying => true,
+            _ => false,
+        }
+    }
 }
 
 impl fmt::Display for ConnectionStage {
@@ -30,15 +39,14 @@ impl fmt::Display for ConnectionStage {
             Self::Disconnected => "disconnected",
             Self::Handshake => "handshaking",
             Self::Identifying => "identifying",
-            Self::Resuming => "resuming",
         })
     }
 }
 
 #[derive(Debug)]
 pub enum ShardAction {
+    Heartbeat(Option<String>),
     Identify,
-    Resume,
     Reconnect(ReconnectType),
 }
 
@@ -46,11 +54,10 @@ pub enum ShardAction {
 pub enum ReconnectType {
     /// send IDENTIFY.
     Reidentify,
-    ///send a RESUME. (N\A)
-    Resume,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize_repr)]
+#[repr(u8)]
 pub enum OpCode {
     Dispatch = 0,
     Hello = 1,
@@ -58,6 +65,12 @@ pub enum OpCode {
     Heartbeat = 3,
     HeartbeatAck = 4,
     Unknown = !0,
+}
+
+impl OpCode {
+    pub fn number(&self) -> u8 {
+        *self as u8
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -100,7 +113,7 @@ impl<'de> Deserialize<'de> for GatewayEvent {
 
                 let heartbeat_interval = d
                     .get("heartbeat_interval")
-                    .and_then(|v| v.as_u64())
+                    .and_then(serde_json::Value::as_u64)
                     .ok_or_else(|| SerdeError::custom("missing heartbeat_interval"))?;
 
                 GatewayEvent::Hello(heartbeat_interval)

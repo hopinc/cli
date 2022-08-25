@@ -1,13 +1,13 @@
 use async_tungstenite::tungstenite::Error as TungsteniteError;
-use futures::channel::mpsc::UnboundedReceiver;
+use futures::channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender};
+use futures::SinkExt;
 use serde::Deserialize;
-use tokio::sync::mpsc::UnboundedSender;
 
 use crate::errors::Error;
 use crate::manager::types::ShardManagerMessage;
 use crate::shard::socket::{RecieverExt, SenderExt};
 
-use crate::shard::types::{Event, GatewayEvent, ShardAction};
+use crate::shard::types::{Event, GatewayEvent, ReconnectType, ShardAction};
 use crate::{
     errors::Result,
     shard::{types::InterMessage, Shard},
@@ -21,12 +21,9 @@ pub struct ShardRunner {
 }
 
 impl ShardRunner {
-    pub fn new(
-        manager_tx: UnboundedSender<ShardManagerMessage>,
-        runner_rx: UnboundedReceiver<InterMessage>,
-        runner_tx: UnboundedSender<InterMessage>,
-        shard: Shard,
-    ) -> Self {
+    pub fn new(manager_tx: UnboundedSender<ShardManagerMessage>, shard: Shard) -> Self {
+        let (runner_tx, runner_rx) = unbounded();
+
         Self {
             manager_tx,
             runner_rx,
@@ -42,6 +39,39 @@ impl ShardRunner {
             }
 
             if !self.shard.check_heartbeat().await {
+                return self.request_restart().await;
+            }
+
+            let previous_stage = self.shard.stage();
+            let (event, action, success) = self.recieve_event().await?;
+            let current_stage = self.shard.stage();
+
+            if previous_stage != current_stage {
+                // TODO: update manager
+            }
+
+            match action {
+                Some(ShardAction::Reconnect(ReconnectType::Reidentify)) => {
+                    return self.request_restart().await;
+                }
+                Some(other) => {
+                    if let Err(e) = self.action(&other).await {
+                        match self.shard.reconnection_type() {
+                            ReconnectType::Reidentify => return self.request_restart().await,
+                        };
+                    }
+                }
+                None => {}
+            }
+
+            if let Some(event) = event {
+                self.manager_tx
+                    .send(ShardManagerMessage::Event(event))
+                    .await
+                    .ok();
+            }
+
+            if !success && !self.shard.stage().is_connecting() {
                 return self.request_restart().await;
             }
         }
@@ -93,10 +123,10 @@ impl ShardRunner {
         let action = match self.shard.handle_event(&event) {
             Ok(Some(action)) => Some(action),
             Ok(None) => None,
-            Err(why) => match why {
-                _ => return Ok((None, None, true)),
-            },
+            Err(_) => return Ok((None, None, true)),
         };
+
+        log::debug!("[Shard] GatewayEvent: {event:?}");
 
         let event = match event {
             Ok(GatewayEvent::Dispatch(event)) => Some(event),
@@ -106,6 +136,18 @@ impl ShardRunner {
         Ok((event, action, true))
     }
 
+    async fn action(&mut self, action: &ShardAction) -> Result<()> {
+        match action {
+            ShardAction::Reconnect(ReconnectType::Reidentify) => self.request_restart().await,
+            ShardAction::Heartbeat(tag) => self.shard.heartbeat(tag.as_deref()).await,
+            ShardAction::Identify => self.shard.identify().await,
+        }
+    }
+
+    async fn dispatch(&mut self) {
+        todo!()
+    }
+
     async fn handle_rx_message(&mut self, message: InterMessage) -> bool {
         match message {
             InterMessage::Json(json) => self.shard.client.send_json(&json).await.is_ok(),
@@ -113,8 +155,15 @@ impl ShardRunner {
     }
 
     async fn request_restart(&mut self) -> Result<()> {
-        self.manager_tx.send(ShardManagerMessage::Restart).ok();
+        self.manager_tx
+            .send(ShardManagerMessage::Restart)
+            .await
+            .ok();
 
         Ok(())
+    }
+
+    pub fn get_runner_tx(&self) -> UnboundedSender<InterMessage> {
+        self.runner_tx.clone()
     }
 }

@@ -1,6 +1,7 @@
 #![warn(clippy::pedantic)]
+#![allow(clippy::missing_errors_doc, clippy::module_name_repetitions)]
 
-mod errors;
-mod manager;
-mod runner;
-mod shard;
+pub mod errors;
+pub mod manager;
+pub mod runner;
+pub mod shard;

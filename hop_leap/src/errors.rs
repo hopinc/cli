@@ -59,7 +59,6 @@ impl StdError for Error {
             Self::Json(inner) => Some(inner),
             Self::Tungstenite(inner) => Some(inner),
             Self::Leap(inner) => Some(inner),
-            _ => None,
         }
     }
 }

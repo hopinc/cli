@@ -29,12 +29,17 @@ pub struct Shard {
     last_heartbeat_acknowledged: bool,
     stage: ConnectionStage,
     pub started: Instant,
-    pub token: String,
+    pub token: Option<String>,
+    pub project: String,
     ws_url: String,
 }
 
 impl Shard {
-    pub async fn new(ws_url: Arc<Mutex<String>>, token: &str) -> Result<Self> {
+    pub async fn new(
+        ws_url: Arc<Mutex<String>>,
+        project: &str,
+        token: Option<&str>,
+    ) -> Result<Self> {
         let ws_url = ws_url.lock().await.clone();
         let client = connect(&ws_url).await?;
 
@@ -51,12 +56,13 @@ impl Shard {
             stage,
             ws_url,
             started: Instant::now(),
-            token: token.to_string(),
+            project: project.to_string(),
+            token: token.map(std::string::ToString::to_string),
         })
     }
 
-    pub async fn heartbeat(&mut self) -> Result<()> {
-        match self.client.send_heartbeat(None).await {
+    pub async fn heartbeat(&mut self, tag: Option<&str>) -> Result<()> {
+        match self.client.send_heartbeat(tag).await {
             Ok(()) => {
                 self.heartbeat_instants.0 = Some(Instant::now());
                 self.last_heartbeat_acknowledged = false;
@@ -82,6 +88,17 @@ impl Shard {
         }
     }
 
+    pub async fn identify(&mut self) -> Result<()> {
+        self.client
+            .send_identify(&self.project, self.token.as_deref())
+            .await?;
+
+        self.heartbeat_instants.0 = Some(Instant::now());
+        self.stage = ConnectionStage::Identifying;
+
+        Ok(())
+    }
+
     pub async fn check_heartbeat(&mut self) -> bool {
         let wait = {
             let heartbeat_interval = match self.heartbeat_interval {
@@ -104,7 +121,7 @@ impl Shard {
             return false;
         }
 
-        if let Err(why) = self.heartbeat().await {
+        if let Err(why) = self.heartbeat(None).await {
             log::warn!("[Shard] Err heartbeating: {why:?}");
 
             false
@@ -129,11 +146,7 @@ impl Shard {
                 Ok(None)
             }
             Ok(GatewayEvent::Hello(interval)) => {
-                log::debug!("[Shard] Received a Hello; interval",);
-
-                if self.stage == ConnectionStage::Resuming {
-                    return Ok(None);
-                }
+                log::debug!("[Shard] Received a Hello; {interval}",);
 
                 if interval > &0 {
                     self.heartbeat_interval = Some(*interval);
@@ -179,16 +192,26 @@ impl Shard {
         None
     }
 
-    fn handle_closed(&mut self, data: &Option<CloseFrame<'static>>) -> Result<Option<ShardAction>> {
+    fn handle_closed(&self, data: &Option<CloseFrame<'static>>) -> Result<Option<ShardAction>> {
         let num = data.as_ref().map(|d| d.code.into());
         let clean = num == Some(1000);
+
+        if !clean {
+            log::warn!("[Shard] Closed with code: {num:?}");
+
+            return Err(Error::Leap(LeapError::Closed(data.clone())));
+        }
 
         Ok(Some(ShardAction::Reconnect(ReconnectType::Reidentify)))
     }
 
-    fn reconnection_type(&self) -> ReconnectType {
+    pub fn reconnection_type(&self) -> ReconnectType {
         // resumes are not supported yet
         ReconnectType::Reidentify
+    }
+
+    pub fn stage(&self) -> ConnectionStage {
+        self.stage.clone()
     }
 }
 
