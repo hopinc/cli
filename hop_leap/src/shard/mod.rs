@@ -3,15 +3,17 @@ pub mod socket;
 pub mod types;
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use async_tungstenite::tokio::connect_async_with_config;
 use async_tungstenite::tungstenite::error::Error as TungsteniteError;
-use async_tungstenite::tungstenite::protocol::WebSocketConfig;
+use async_tungstenite::tungstenite::protocol::{CloseFrame, WebSocketConfig};
 use tokio::sync::Mutex;
 use tokio::time::Instant;
 
 use self::error::Error as LeapError;
 use self::socket::WsStreamExt;
+use self::types::{Event, GatewayEvent, ReconnectType, ShardAction};
 use self::{socket::WsStream, types::ConnectionStage};
 use crate::errors::{Error, Result};
 
@@ -78,6 +80,115 @@ impl Shard {
                 Err(Error::Leap(LeapError::HeartbeatFailed))
             }
         }
+    }
+
+    pub async fn check_heartbeat(&mut self) -> bool {
+        let wait = {
+            let heartbeat_interval = match self.heartbeat_interval {
+                Some(interval) => interval,
+                None => {
+                    return self.started.elapsed() < Duration::from_secs(15);
+                }
+            };
+
+            Duration::from_secs(heartbeat_interval / 1000)
+        };
+
+        if let Some(last_sent) = self.heartbeat_instants.0 {
+            if last_sent.elapsed() <= wait {
+                return true;
+            }
+        }
+
+        if !self.last_heartbeat_acknowledged {
+            return false;
+        }
+
+        if let Err(why) = self.heartbeat().await {
+            log::warn!("[Shard] Err heartbeating: {why:?}");
+
+            false
+        } else {
+            true
+        }
+    }
+
+    pub(crate) fn handle_event(
+        &mut self,
+        event: &Result<GatewayEvent>,
+    ) -> Result<Option<ShardAction>> {
+        match event {
+            Ok(GatewayEvent::Dispatch(ref event)) => Ok(self.handle_dispatch(event)),
+            Ok(GatewayEvent::Heartbeat(tag)) => Ok(self.handle_heartbeat_event(tag)),
+            Ok(GatewayEvent::HeartbeatAck(..)) => {
+                self.heartbeat_instants.1 = Some(Instant::now());
+                self.last_heartbeat_acknowledged = true;
+
+                log::trace!("[Shard] Received heartbeat ack");
+
+                Ok(None)
+            }
+            Ok(GatewayEvent::Hello(interval)) => {
+                log::debug!("[Shard] Received a Hello; interval",);
+
+                if self.stage == ConnectionStage::Resuming {
+                    return Ok(None);
+                }
+
+                if interval > &0 {
+                    self.heartbeat_interval = Some(*interval);
+                }
+
+                Ok(Some(if self.stage == ConnectionStage::Handshake {
+                    ShardAction::Identify
+                } else {
+                    log::debug!("[Shard] Received late Hello; autoreconnecting");
+
+                    ShardAction::Reconnect(self.reconnection_type())
+                }))
+            }
+
+            Err(Error::Leap(LeapError::Closed(ref data))) => self.handle_closed(data),
+            Err(Error::Tungstenite(ref why)) => {
+                log::warn!("[Shard] Websocket error: {why:?}");
+                log::info!("[Shard] Will attempt to auto-reconnect",);
+
+                Ok(Some(ShardAction::Reconnect(self.reconnection_type())))
+            }
+            Err(ref why) => {
+                log::warn!("[Shard] Unhandled error: {why:?}");
+
+                Ok(None)
+            }
+        }
+    }
+
+    fn handle_heartbeat_event(&mut self, _tag: &Option<String>) -> Option<ShardAction> {
+        None
+    }
+
+    fn handle_dispatch(&mut self, event: &Event) -> Option<ShardAction> {
+        match event.e.as_str() {
+            "INIT" => {
+                self.stage = ConnectionStage::Connected;
+            }
+
+            _ => {}
+        }
+
+        None
+    }
+
+    fn handle_closed(&mut self, data: &Option<CloseFrame<'static>>) -> Result<Option<ShardAction>> {
+        let num = data.as_ref().map(|d| d.code.into());
+        let clean = num == Some(1000);
+
+        Ok(Some(ShardAction::Reconnect(ReconnectType::Reidentify)))
+    }
+
+    fn reconnection_type(&self) -> ReconnectType {
+        // resumes are not supported yet
+        ReconnectType::Reidentify
     }
 }
 

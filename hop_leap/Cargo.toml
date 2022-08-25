@@ -38,7 +38,7 @@ features = ["macros", "net", "time", "sync"]
 
 [features]
 # default to webpki roots for easy cross compilation
-default = ["rustls-tls-webpki-roots"]
+default = ["rustls-tls-webpki-roots", "zlib"]
 
 # compression reduces the size of the websocket payloads 
 zlib = ["async-compression"]
