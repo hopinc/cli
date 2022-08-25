@@ -20,7 +20,7 @@ path = "./src/main.rs"
 
 [features]
 default = []
-updates = []
+update = []
 
 [dependencies]
 ms = "0.1.1"
