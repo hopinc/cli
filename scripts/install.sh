@@ -18,15 +18,15 @@ INSTALL_DIR=${HOP_INSTALL_DIR:-"/usr/local/bin"}
 PLATFORM=`uname -s`
 ARCH=`uname -m`
 
-if [ $PLATFORM == CYGWIN* ] || [ $PLATFORM == MINGW* ] || [ $PLATFORM == MSYS* ]; then
+if [[ $PLATFORM == CYGWIN* ]] || [[ $PLATFORM == MINGW* ]] || [[ $PLATFORM == MSYS* ]]; then
     PLATFORM="Windows"
 fi
 
-if [ $ARCH == armv8* ] || [ $ARCH == arm64* ] || [ $ARCH == aarch64* ]; then
+if [[ $ARCH == armv8* ]] || [[ $ARCH == arm64* ]] || [[ $ARCH == aarch64* ]]; then
     ARCH="aarch64"
 fi
 
-if [ $ARCH == armv6* ] || [ $ARCH == armv7* ] || [ $ARCH == arm7* ]; then
+if [[ $ARCH == armv6* ]] || [[ $ARCH == armv7* ]] || [[ $ARCH == arm7* ]]; then
     ARCH="arm"
 fi
 
