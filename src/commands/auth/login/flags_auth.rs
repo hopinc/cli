@@ -1,13 +1,24 @@
 use super::types::{LoginRequest, LoginResponse};
 use super::Options;
-use crate::config::EXEC_NAME;
 use crate::state::http::HttpClient;
 
 pub async fn flags_login(options: Options, http: HttpClient) -> String {
     match options {
-        Options {
-            token: Some(token), ..
-        } => token,
+        Options { token: Some(_), .. }
+        | Options {
+            email: None,
+            token: None,
+            ..
+        } => {
+            if options.token.is_none() || options.token.as_ref().unwrap().is_empty() {
+                dialoguer::Password::new()
+                    .with_prompt("Token")
+                    .interact()
+                    .expect("Error getting token")
+            } else {
+                options.token.unwrap()
+            }
+        }
 
         Options {
             email: Some(username),
@@ -32,10 +43,10 @@ pub async fn flags_login(options: Options, http: HttpClient) -> String {
             login_with_credentials(http, username, password).await
         }
 
-        _ => panic!(
-            "Invalid login options, run `{} auth login --help` for more info",
-            EXEC_NAME
-        ),
+        // _ => panic!(
+        //     "Invalid login options, run `{} auth login --help` for more info",
+        //     EXEC_NAME
+        // ),
     }
 }
 

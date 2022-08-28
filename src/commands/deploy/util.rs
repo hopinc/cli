@@ -4,12 +4,17 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use async_compression::tokio::write::GzipEncoder;
+use hyper::Method;
 use ignore::WalkBuilder;
+use reqwest::multipart::{Form, Part};
+use serde_json::Value;
 use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
 use tokio_tar::Builder as TarBuilder;
 
+use crate::commands::deploy::HOP_BUILD_BASE_URL;
 use crate::commands::ignite::util::parse_key_val;
+use crate::state::http::HttpClient;
 use crate::store::hopfile::VALID_HOP_FILENAMES;
 
 // default ignore list for tar files
@@ -116,4 +121,30 @@ pub async fn env_file_to_map(path: PathBuf) -> HashMap<String, String> {
     }
 
     env
+}
+
+pub async fn builder_post(http: &HttpClient, deployment_id: &str, bytes: Vec<u8>) -> Result<()> {
+    let multipart = Form::new().part(
+        "file",
+        Part::bytes(bytes)
+            .file_name("deployment.tar.gz")
+            .mime_str("application/x-gzip")?,
+    );
+
+    let response = http
+        .client
+        .request(
+            Method::POST,
+            format!("{HOP_BUILD_BASE_URL}/deployments/{deployment_id}/builds",).as_str(),
+        )
+        .header("content_type", "multipart/form-data".to_string())
+        .multipart(multipart)
+        .send()
+        .await?;
+
+    http.handle_response::<Value>(response).await?;
+
+    //.ok_or_else(|| anyhow!("Could not create build"))
+
+    Ok(())
 }

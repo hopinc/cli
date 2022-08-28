@@ -18,3 +18,8 @@ pub struct Message {
     pub d: Value,
     pub e: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct Build {
+    // id: String,
+}

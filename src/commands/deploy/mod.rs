@@ -6,14 +6,13 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::Parser;
-use hyper::Method;
-use reqwest::multipart::{Form, Part};
 use tokio::fs;
 
 use self::types::{Event, Message};
 use self::util::{compress, env_file_to_map};
 use crate::commands::containers::types::ContainerOptions;
 use crate::commands::containers::utils::create_containers;
+use crate::commands::deploy::util::builder_post;
 use crate::commands::gateways::create::GatewayOptions;
 use crate::commands::gateways::types::{GatewayConfig, GatewayType};
 use crate::commands::gateways::util::{create_gateway, update_gateway_config};
@@ -232,32 +231,9 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     let bytes = fs::read(packed.clone()).await?;
 
-    let multipart = Form::new().part(
-        "file",
-        Part::bytes(bytes)
-            .file_name("deployment.tar.gz")
-            .mime_str("application/x-gzip")?,
-    );
-
     log::info!("Uploading...");
 
-    let response = state
-        .http
-        .client
-        .request(
-            Method::POST,
-            format!(
-                "{}/deployments/{}/builds",
-                HOP_BUILD_BASE_URL, deployment.id
-            )
-            .as_str(),
-        )
-        .header("content_type", "multipart/form-data".to_string())
-        .multipart(multipart)
-        .send()
-        .await?;
-
-    state.http.handle_response::<()>(response).await?;
+    builder_post(&state.http, &deployment.id, bytes).await?;
 
     log::info!("Deleting archive...");
     fs::remove_file(packed).await?;
