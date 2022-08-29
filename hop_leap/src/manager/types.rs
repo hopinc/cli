@@ -1,4 +1,5 @@
 use futures::channel::mpsc::UnboundedSender;
+use serde_json::Value;
 use tokio::time::Duration;
 
 use crate::shard::types::{ConnectionStage, Event, InterMessage};
@@ -7,6 +8,8 @@ use crate::shard::types::{ConnectionStage, Event, InterMessage};
 pub enum ShardManagerMessage {
     Restart,
     Event(Event),
+    Update(ShardRunnerUpdate),
+    Json(Value),
 }
 
 #[derive(Debug)]
@@ -18,5 +21,11 @@ pub struct ShardRunnerInfo {
     /// what to do with regards to its status.
     pub runner_tx: UnboundedSender<InterMessage>,
     /// The current connection stage of the shard.
+    pub stage: ConnectionStage,
+}
+
+#[derive(Debug)]
+pub struct ShardRunnerUpdate {
+    pub latency: Option<Duration>,
     pub stage: ConnectionStage,
 }

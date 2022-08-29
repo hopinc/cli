@@ -10,7 +10,7 @@ use serde_json::{json, to_string, Value};
 use tokio::io::AsyncReadExt;
 use tokio::time::{timeout, Duration};
 
-use super::error::Error as LeapError;
+use super::error::Error as GatewayError;
 use crate::{
     errors::{Error, Result},
     shard::types::OpCode,
@@ -58,7 +58,7 @@ pub(crate) async fn convert_message(message: Option<Message>) -> Result<Option<V
         Some(Message::Text(text)) => serde_json::from_str(&text)?,
 
         Some(Message::Close(Some(frame))) => {
-            return Err(Error::Leap(LeapError::Closed(Some(frame))));
+            return Err(Error::Gateway(GatewayError::Closed(Some(frame))));
         }
 
         _ => None,

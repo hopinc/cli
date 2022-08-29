@@ -4,7 +4,7 @@ use futures::SinkExt;
 use serde::Deserialize;
 
 use crate::errors::Error;
-use crate::manager::types::ShardManagerMessage;
+use crate::manager::types::{ShardManagerMessage, ShardRunnerUpdate};
 use crate::shard::socket::{RecieverExt, SenderExt};
 
 use crate::shard::types::{Event, GatewayEvent, ReconnectType, ShardAction};
@@ -47,15 +47,16 @@ impl ShardRunner {
             let current_stage = self.shard.stage();
 
             if previous_stage != current_stage {
-                // TODO: update manager
+                self.update_manager().await?;
             }
 
             match action {
                 Some(ShardAction::Reconnect(ReconnectType::Reidentify)) => {
                     return self.request_restart().await;
                 }
+
                 Some(other) => {
-                    if let Err(e) = self.action(&other).await {
+                    if let Err(_e) = self.action(&other).await {
                         match self.shard.reconnection_type() {
                             ReconnectType::Reidentify => return self.request_restart().await,
                         };
@@ -120,13 +121,13 @@ impl ShardRunner {
             Err(why) => Err(why),
         };
 
-        let action = match self.shard.handle_event(&event) {
+        log::debug!("[Shard] GatewayEvent: {event:?}");
+
+        let action = match self.shard.handle_event(&event).await {
             Ok(Some(action)) => Some(action),
             Ok(None) => None,
             Err(_) => return Ok((None, None, true)),
         };
-
-        log::debug!("[Shard] GatewayEvent: {event:?}");
 
         let event = match event {
             Ok(GatewayEvent::Dispatch(event)) => Some(event),
@@ -140,12 +141,9 @@ impl ShardRunner {
         match action {
             ShardAction::Reconnect(ReconnectType::Reidentify) => self.request_restart().await,
             ShardAction::Heartbeat(tag) => self.shard.heartbeat(tag.as_deref()).await,
-            ShardAction::Identify => self.shard.identify().await,
+            ShardAction::Identify => self.shard.identify().await.and(self.update_manager().await),
+            ShardAction::Update => self.update_manager().await,
         }
-    }
-
-    async fn dispatch(&mut self) {
-        todo!()
     }
 
     async fn handle_rx_message(&mut self, message: InterMessage) -> bool {
@@ -160,6 +158,17 @@ impl ShardRunner {
             .await
             .ok();
 
+        Ok(())
+    }
+
+    async fn update_manager(&mut self) -> Result<()> {
+        self.manager_tx
+            .send(ShardManagerMessage::Update(ShardRunnerUpdate {
+                latency: self.shard.latency(),
+                stage: self.shard.stage(),
+            }))
+            .await
+            .ok();
         Ok(())
     }
 

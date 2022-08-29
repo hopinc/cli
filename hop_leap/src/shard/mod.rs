@@ -11,7 +11,7 @@ use async_tungstenite::tungstenite::protocol::{CloseFrame, WebSocketConfig};
 use tokio::sync::Mutex;
 use tokio::time::Instant;
 
-use self::error::Error as LeapError;
+use self::error::Error as GatewayError;
 use self::socket::WsStreamExt;
 use self::types::{Event, GatewayEvent, ReconnectType, ShardAction};
 use self::{socket::WsStream, types::ConnectionStage};
@@ -28,10 +28,9 @@ pub struct Shard {
     heartbeat_instants: (Option<Instant>, Option<Instant>),
     last_heartbeat_acknowledged: bool,
     stage: ConnectionStage,
-    pub started: Instant,
+    started: Instant,
     pub token: Option<String>,
     pub project: String,
-    ws_url: String,
 }
 
 impl Shard {
@@ -54,7 +53,6 @@ impl Shard {
             heartbeat_instants,
             last_heartbeat_acknowledged,
             stage,
-            ws_url,
             started: Instant::now(),
             project: project.to_string(),
             token: token.map(std::string::ToString::to_string),
@@ -83,7 +81,7 @@ impl Shard {
                     }
                 }
 
-                Err(Error::Leap(LeapError::HeartbeatFailed))
+                Err(Error::Gateway(GatewayError::HeartbeatFailed))
             }
         }
     }
@@ -130,24 +128,22 @@ impl Shard {
         }
     }
 
-    pub(crate) fn handle_event(
+    pub(crate) async fn handle_event(
         &mut self,
         event: &Result<GatewayEvent>,
     ) -> Result<Option<ShardAction>> {
         match event {
             Ok(GatewayEvent::Dispatch(ref event)) => Ok(self.handle_dispatch(event)),
-            Ok(GatewayEvent::Heartbeat(tag)) => Ok(self.handle_heartbeat_event(tag)),
+            Ok(GatewayEvent::Heartbeat(tag)) => Ok(self.handle_heartbeat_event(tag).await),
             Ok(GatewayEvent::HeartbeatAck(..)) => {
                 self.heartbeat_instants.1 = Some(Instant::now());
                 self.last_heartbeat_acknowledged = true;
 
                 log::trace!("[Shard] Received heartbeat ack");
 
-                Ok(None)
+                Ok(Some(ShardAction::Update))
             }
             Ok(GatewayEvent::Hello(interval)) => {
-                log::debug!("[Shard] Received a Hello; {interval}",);
-
                 if interval > &0 {
                     self.heartbeat_interval = Some(*interval);
                 }
@@ -161,13 +157,14 @@ impl Shard {
                 }))
             }
 
-            Err(Error::Leap(LeapError::Closed(ref data))) => self.handle_closed(data),
+            Err(Error::Gateway(GatewayError::Closed(ref data))) => self.handle_closed(data),
             Err(Error::Tungstenite(ref why)) => {
                 log::warn!("[Shard] Websocket error: {why:?}");
                 log::info!("[Shard] Will attempt to auto-reconnect",);
 
                 Ok(Some(ShardAction::Reconnect(self.reconnection_type())))
             }
+
             Err(ref why) => {
                 log::warn!("[Shard] Unhandled error: {why:?}");
 
@@ -176,17 +173,17 @@ impl Shard {
         }
     }
 
-    fn handle_heartbeat_event(&mut self, _tag: &Option<String>) -> Option<ShardAction> {
+    async fn handle_heartbeat_event(&mut self, tag: &Option<String>) -> Option<ShardAction> {
+        if let Some(tag) = tag {
+            return Some(ShardAction::Heartbeat(Some(tag.clone())));
+        }
+
         None
     }
 
     fn handle_dispatch(&mut self, event: &Event) -> Option<ShardAction> {
-        match event.e.as_str() {
-            "INIT" => {
-                self.stage = ConnectionStage::Connected;
-            }
-
-            _ => {}
+        if event.e.as_str() == "INIT" {
+            self.stage = ConnectionStage::Connected;
         }
 
         None
@@ -199,7 +196,7 @@ impl Shard {
         if !clean {
             log::warn!("[Shard] Closed with code: {num:?}");
 
-            return Err(Error::Leap(LeapError::Closed(data.clone())));
+            return Err(Error::Gateway(GatewayError::Closed(data.clone())));
         }
 
         Ok(Some(ShardAction::Reconnect(ReconnectType::Reidentify)))
@@ -212,6 +209,13 @@ impl Shard {
 
     pub fn stage(&self) -> ConnectionStage {
         self.stage.clone()
+    }
+
+    pub fn latency(&self) -> Option<Duration> {
+        match self.heartbeat_instants {
+            (Some(start), Some(end)) => Some(end.duration_since(start)),
+            _ => None,
+        }
     }
 }
 

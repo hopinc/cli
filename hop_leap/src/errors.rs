@@ -5,7 +5,7 @@ use std::io::Error as IoError;
 use async_tungstenite::tungstenite::error::Error as TungsteniteError;
 use serde_json::Error as JsonError;
 
-use crate::shard::error::Error as LeapError;
+use crate::shard::error::Error as GatewayError;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -13,7 +13,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     Io(IoError),
     Json(JsonError),
-    Leap(LeapError),
+    Gateway(GatewayError),
     Tungstenite(TungsteniteError),
 }
 
@@ -29,9 +29,9 @@ impl From<JsonError> for Error {
     }
 }
 
-impl From<LeapError> for Error {
-    fn from(e: LeapError) -> Self {
-        Self::Leap(e)
+impl From<GatewayError> for Error {
+    fn from(e: GatewayError) -> Self {
+        Self::Gateway(e)
     }
 }
 
@@ -47,7 +47,7 @@ impl fmt::Display for Error {
             Self::Io(inner) => fmt::Display::fmt(&inner, f),
             Self::Json(inner) => fmt::Display::fmt(&inner, f),
             Self::Tungstenite(inner) => fmt::Display::fmt(&inner, f),
-            Self::Leap(inner) => fmt::Display::fmt(&inner, f),
+            Self::Gateway(inner) => fmt::Display::fmt(&inner, f),
         }
     }
 }
@@ -58,7 +58,7 @@ impl StdError for Error {
             Self::Io(inner) => Some(inner),
             Self::Json(inner) => Some(inner),
             Self::Tungstenite(inner) => Some(inner),
-            Self::Leap(inner) => Some(inner),
+            Self::Gateway(inner) => Some(inner),
         }
     }
 }

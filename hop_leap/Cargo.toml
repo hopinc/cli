@@ -54,4 +54,4 @@ fern = "^0.6"
 
 [dev-dependencies.tokio]
 version = "^1.20"
-features = ["macros", "net", "time", "sync", "io-util", "rt", "rt-multi-thread"]
+features = ["full"]

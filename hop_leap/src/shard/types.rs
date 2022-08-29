@@ -7,8 +7,6 @@ use serde_repr::Deserialize_repr;
 
 #[derive(Clone, Debug)]
 pub enum InterMessage {
-    #[cfg(feature = "client")]
-    Client(Box<ShardClientMessage>),
     Json(Value),
 }
 
@@ -24,10 +22,11 @@ pub enum ConnectionStage {
 
 impl ConnectionStage {
     pub fn is_connecting(&self) -> bool {
-        match self {
-            Self::Connecting | Self::Handshake | Self::Identifying => true,
-            _ => false,
-        }
+        matches!(self, Self::Connecting | Self::Handshake | Self::Identifying)
+    }
+
+    pub fn is_connected(&self) -> bool {
+        matches!(self, Self::Connected)
     }
 }
 
@@ -48,6 +47,7 @@ pub enum ShardAction {
     Heartbeat(Option<String>),
     Identify,
     Reconnect(ReconnectType),
+    Update,
 }
 
 #[derive(Debug)]
@@ -68,8 +68,8 @@ pub enum OpCode {
 }
 
 impl OpCode {
-    pub fn number(&self) -> u8 {
-        *self as u8
+    pub fn number(self) -> u8 {
+        self as u8
     }
 }
 
