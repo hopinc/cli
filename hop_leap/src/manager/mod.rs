@@ -2,22 +2,15 @@ pub mod types;
 
 use std::sync::Arc;
 
-use futures::{
-    channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender},
-    SinkExt, StreamExt,
-};
-use serde_json::Value;
+use futures::channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender};
+use futures::{SinkExt, StreamExt};
 use tokio::{spawn, sync::Mutex};
 
 use self::types::{ShardManagerMessage, ShardRunnerInfo};
-use crate::{
-    errors::Result,
-    runner::ShardRunner,
-    shard::{
-        types::{Event, InterMessage},
-        Shard,
-    },
-};
+use crate::errors::Result;
+use crate::messenger::{types::ShardMessengerMessage, ShardMessenger};
+use crate::runner::ShardRunner;
+use crate::shard::{types::Event, Shard};
 
 #[derive(Debug)]
 pub struct ManagerOptions<'a> {
@@ -41,6 +34,7 @@ pub struct ShardManager {
     manager_rx: UnboundedReceiver<ShardManagerMessage>,
     manager_tx: UnboundedSender<ShardManagerMessage>,
     event_tx: UnboundedSender<Event>,
+    messenger_tx: UnboundedSender<ShardMessengerMessage>,
     token: Option<String>,
     project: String,
     ws_url: Arc<Mutex<String>>,
@@ -60,41 +54,21 @@ impl ShardManager {
         })
         .await?;
 
+        let mut messenger = ShardMessenger::new(runner_info.clone()).await;
+        let messenger_tx = messenger.get_tx();
+
+        spawn(async move { messenger.run().await });
+
         Ok(Self {
             ws_url,
             manager_rx,
             manager_tx,
+            messenger_tx,
             event_tx: options.event_tx,
             project: options.project.to_string(),
             token: options.token.map(std::string::ToString::to_string),
             runner_info,
         })
-    }
-
-    pub async fn send<D>(&mut self, data: D) -> Result<()>
-    where
-        D: Into<Value>,
-    {
-        loop {
-            let runner = self.runner_info.clone();
-
-            if runner.lock().await.stage.is_connected() {
-                // sleep until we can send the message
-                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-            } else {
-                break;
-            }
-        }
-
-        self.runner_info
-            .lock()
-            .await
-            .runner_tx
-            .send(InterMessage::Json(data.into()))
-            .await
-            .ok();
-
-        Ok(())
     }
 
     pub async fn run(&mut self) -> Result<()> {
@@ -105,9 +79,10 @@ impl ShardManager {
                 }
 
                 Some(ShardManagerMessage::Json(data)) => {
-                    if let Err(e) = self.manager_tx.send(ShardManagerMessage::Json(data)).await {
-                        log::error!("[MANAGER] Error sending message: {}", e);
-                    }
+                    self.messenger_tx
+                        .send(ShardMessengerMessage::Json(data))
+                        .await
+                        .ok();
                 }
 
                 Some(ShardManagerMessage::Restart) => {
@@ -121,6 +96,11 @@ impl ShardManager {
                 }
 
                 Some(ShardManagerMessage::Update(data)) => {
+                    self.messenger_tx
+                        .send(ShardMessengerMessage::Update(data.clone()))
+                        .await
+                        .ok();
+
                     let runner = ShardRunnerInfo {
                         latency: data.latency,
                         runner_tx: self.runner_info.lock().await.runner_tx.clone(),
@@ -141,7 +121,7 @@ impl ShardManager {
         let mut runner = ShardRunner::new(options.manager_tx.clone(), shard);
 
         let stage = runner.shard.stage();
-        let runner_tx = runner.get_runner_tx();
+        let runner_tx = runner.get_tx();
 
         spawn(async move {
             if let Err(why) = runner.run().await {

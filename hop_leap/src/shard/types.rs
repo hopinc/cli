@@ -14,15 +14,13 @@ pub enum InterMessage {
 #[non_exhaustive]
 pub enum ConnectionStage {
     Connected,
-    Connecting,
-    Disconnected,
     Handshake,
     Identifying,
 }
 
 impl ConnectionStage {
     pub fn is_connecting(&self) -> bool {
-        matches!(self, Self::Connecting | Self::Handshake | Self::Identifying)
+        matches!(self, Self::Handshake | Self::Identifying)
     }
 
     pub fn is_connected(&self) -> bool {
@@ -34,8 +32,6 @@ impl fmt::Display for ConnectionStage {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match *self {
             Self::Connected => "connected",
-            Self::Connecting => "connecting",
-            Self::Disconnected => "disconnected",
             Self::Handshake => "handshaking",
             Self::Identifying => "identifying",
         })

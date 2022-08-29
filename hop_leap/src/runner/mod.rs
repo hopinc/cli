@@ -162,6 +162,8 @@ impl ShardRunner {
     }
 
     async fn update_manager(&mut self) -> Result<()> {
+        log::debug!("[Shard] Latency: {:?}", self.shard.latency());
+
         self.manager_tx
             .send(ShardManagerMessage::Update(ShardRunnerUpdate {
                 latency: self.shard.latency(),
@@ -172,7 +174,7 @@ impl ShardRunner {
         Ok(())
     }
 
-    pub fn get_runner_tx(&self) -> UnboundedSender<InterMessage> {
+    pub fn get_tx(&self) -> UnboundedSender<InterMessage> {
         self.runner_tx.clone()
     }
 }

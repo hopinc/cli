@@ -1,7 +1,4 @@
-use futures::{channel::mpsc::unbounded, SinkExt, StreamExt};
-use hop_leap::manager::{types::ShardManagerMessage, ManagerOptions, ShardManager};
-use serde_json::json;
-use tokio::spawn;
+use hop_leap::{LeapEdge, LeapOptions};
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
@@ -11,39 +8,29 @@ async fn main() -> Result<(), std::io::Error> {
         .apply()
         .ok();
 
-    let (event_tx, mut event_rx) = unbounded();
-
-    let mut manager = ShardManager::new(ManagerOptions {
+    let mut manager = LeapEdge::new(LeapOptions {
         project: &std::env::var("PROJECT").unwrap(),
         token: std::env::var("TOKEN").ok().as_deref(),
-        ws_url: "wss://leap.hop.io/ws",
-        event_tx,
+        ..Default::default()
     })
     .await
     .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
 
-    let mut manager_tx = manager.get_manager_tx();
+    manager
+        .channel_subscribe("gsdgsdhghsjdkfsgdgsdgsdfg", &None)
+        .await
+        .ok();
 
-    spawn(async move { manager.run().await.ok() });
+    if let Ok(channel) = std::env::var("CHANNEL") {
+        for _ in 1..10 {
+            manager.channel_subscribe(&channel, &None).await.ok();
+        }
+    }
 
-    spawn(async move {
-        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-
-        manager_tx
-            .send(ShardManagerMessage::Json(json!({
-                "op": 0,
-                "d": {
-                    "c": "project_NDQ0NzA4NDg3NTU4MjI1OTM",
-                    "e": "SUBSCRIBE",
-                    "d": null
-                }
-            })))
-            .await
-            .ok();
-    });
-
-    while let Some(event) = event_rx.next().await {
-        println!("[EXAMPLE] Event: {event:?}");
+    while let Some(event) = manager.listen().await {
+        if matches!(event.e.as_str(), "MESSAGE" | "DIRECT_MESSAGE") {
+            println!("[EXAMPLE] Event: {event:?}");
+        }
     }
 
     Ok(())

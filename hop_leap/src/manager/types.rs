@@ -24,7 +24,7 @@ pub struct ShardRunnerInfo {
     pub stage: ConnectionStage,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ShardRunnerUpdate {
     pub latency: Option<Duration>,
     pub stage: ConnectionStage,

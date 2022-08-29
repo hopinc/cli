@@ -7,6 +7,10 @@
 )]
 
 pub mod errors;
-pub mod manager;
+pub(crate) mod leap;
+pub(crate) mod manager;
+pub(crate) mod messenger;
 pub(crate) mod runner;
 pub(crate) mod shard;
+
+pub use leap::{LeapEdge, LeapOptions};
