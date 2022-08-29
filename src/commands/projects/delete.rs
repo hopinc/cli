@@ -28,7 +28,7 @@ pub async fn handle(options: &Options, mut state: State) -> Result<()> {
             let projects_fmt = format_projects(&projects, false);
 
             let idx = dialoguer::Select::new()
-                .with_prompt("Select a project to delete")
+                .with_prompt("Select a project")
                 .items(&projects_fmt)
                 .default(if let Some(current) = state.ctx.clone().current_project() {
                     projects

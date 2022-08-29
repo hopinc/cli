@@ -31,7 +31,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             let deployments_fmt = format_deployments(&deployments, false);
 
             let idx = dialoguer::Select::new()
-                .with_prompt("Select a deployment to list containers of")
+                .with_prompt("Select a deployment")
                 .items(&deployments_fmt)
                 .default(0)
                 .interact_opt()
@@ -42,7 +42,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             let containers_fmt = format_containers(&containers, false);
 
             let idx = dialoguer::Select::new()
-                .with_prompt("Select a container to update")
+                .with_prompt("Select a container")
                 .default(0)
                 .items(&containers_fmt)
                 .interact_opt()?

@@ -39,7 +39,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .collect::<Vec<_>>();
 
             let idx = dialoguer::Select::new()
-                .with_prompt("Select a secret to delete")
+                .with_prompt("Select a secret")
                 .items(&secrets_fmt)
                 .default(0)
                 .interact_opt()

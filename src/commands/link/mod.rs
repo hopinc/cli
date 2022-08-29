@@ -49,7 +49,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             let deployments_fmt = format_deployments(&deployments, false);
 
             let idx = dialoguer::Select::new()
-                .with_prompt("Select a deployment to link")
+                .with_prompt("Select a deployment")
                 .items(&deployments_fmt)
                 .default(0)
                 .interact_opt()?
