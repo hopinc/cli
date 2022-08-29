@@ -7,7 +7,7 @@ use serde_json::Error as JsonError;
 
 use crate::shard::error::Error as GatewayError;
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
 pub enum Error {

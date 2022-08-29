@@ -6,11 +6,12 @@
     clippy::unused_self
 )]
 
-pub mod errors;
+pub(crate) mod errors;
 pub(crate) mod leap;
 pub(crate) mod manager;
 pub(crate) mod messenger;
 pub(crate) mod runner;
 pub(crate) mod shard;
 
-pub use leap::{LeapEdge, LeapOptions};
+pub use errors::*;
+pub use leap::*;

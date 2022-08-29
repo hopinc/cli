@@ -3,15 +3,11 @@ use futures::channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender};
 use futures::SinkExt;
 use serde::Deserialize;
 
-use crate::errors::Error;
+use crate::errors::{Error, Result};
 use crate::manager::types::{ShardManagerMessage, ShardRunnerUpdate};
 use crate::shard::socket::{RecieverExt, SenderExt};
-
 use crate::shard::types::{Event, GatewayEvent, ReconnectType, ShardAction};
-use crate::{
-    errors::Result,
-    shard::{types::InterMessage, Shard},
-};
+use crate::shard::{types::InterMessage, Shard};
 
 pub struct ShardRunner {
     manager_tx: UnboundedSender<ShardManagerMessage>,

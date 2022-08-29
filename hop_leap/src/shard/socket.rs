@@ -11,10 +11,8 @@ use tokio::io::AsyncReadExt;
 use tokio::time::{timeout, Duration};
 
 use super::error::Error as GatewayError;
-use crate::{
-    errors::{Error, Result},
-    shard::types::OpCode,
-};
+use crate::errors::{Error, Result};
+use crate::shard::types::OpCode;
 
 pub type WsStream = WebSocketStream<ConnectStream>;
 
