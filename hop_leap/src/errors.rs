@@ -3,6 +3,7 @@ use std::fmt;
 use std::io::Error as IoError;
 
 use async_tungstenite::tungstenite::error::Error as TungsteniteError;
+use futures::channel::mpsc::SendError;
 use serde_json::Error as JsonError;
 
 use crate::shard::error::Error as GatewayError;
@@ -38,6 +39,12 @@ impl From<GatewayError> for Error {
 impl From<TungsteniteError> for Error {
     fn from(e: TungsteniteError) -> Self {
         Self::Tungstenite(e)
+    }
+}
+
+impl From<SendError> for Error {
+    fn from(e: SendError) -> Self {
+        Self::Io(IoError::new(std::io::ErrorKind::Other, e))
     }
 }
 

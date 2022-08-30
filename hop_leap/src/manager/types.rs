@@ -2,7 +2,8 @@ use futures::channel::mpsc::UnboundedSender;
 use serde_json::Value;
 use tokio::time::Duration;
 
-use crate::shard::types::{ConnectionStage, Event, InterMessage};
+use crate::leap::types::Event;
+use crate::shard::types::{ConnectionStage, InterMessage};
 
 #[derive(Debug)]
 pub enum ShardManagerMessage {
@@ -10,6 +11,7 @@ pub enum ShardManagerMessage {
     Event(Event),
     Update(ShardRunnerUpdate),
     Json(Value),
+    Close,
 }
 
 #[derive(Debug)]

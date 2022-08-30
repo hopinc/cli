@@ -6,4 +6,5 @@ use crate::manager::types::ShardRunnerUpdate;
 pub enum ShardMessengerMessage {
     Json(Value),
     Update(ShardRunnerUpdate),
+    Close,
 }

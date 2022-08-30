@@ -13,9 +13,10 @@ use tokio::time::Instant;
 
 use self::error::Error as GatewayError;
 use self::socket::WsStreamExt;
-use self::types::{Event, GatewayEvent, ReconnectType, ShardAction};
+use self::types::{GatewayEvent, ReconnectType, ShardAction};
 use self::{socket::WsStream, types::ConnectionStage};
 use crate::errors::{Error, Result};
+use crate::leap::types::Event;
 
 #[cfg(feature = "zlib")]
 const ENCODING: &str = "none";
@@ -182,14 +183,16 @@ impl Shard {
     }
 
     fn handle_dispatch(&mut self, event: &Event) -> Option<ShardAction> {
-        if event.e.as_str() == "INIT" {
+        if matches!(event, Event::Init(_)) {
             self.stage = ConnectionStage::Connected;
         }
 
         None
     }
 
-    fn handle_closed(&self, data: &Option<CloseFrame<'static>>) -> Result<Option<ShardAction>> {
+    fn handle_closed(&mut self, data: &Option<CloseFrame<'static>>) -> Result<Option<ShardAction>> {
+        self.stage = ConnectionStage::Disconnected;
+
         let num = data.as_ref().map(|d| d.code.into());
         let clean = num == Some(1000);
 

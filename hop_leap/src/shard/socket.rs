@@ -29,7 +29,7 @@ pub trait SenderExt {
 #[async_trait]
 impl RecieverExt for WsStream {
     async fn recieve_json(&mut self) -> Result<Option<Value>> {
-        const TIMEOUT: tokio::time::Duration = Duration::from_millis(500);
+        const TIMEOUT: Duration = Duration::from_millis(1);
 
         let message = match timeout(TIMEOUT, self.next()).await {
             Ok(Some(Ok(message))) => Some(message),

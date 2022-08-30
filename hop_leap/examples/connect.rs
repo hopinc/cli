@@ -1,12 +1,13 @@
 use hop_leap::{LeapEdge, LeapOptions};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use tokio::time::sleep;
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
     fern::Dispatch::new()
         .format(|out, message, _| {
             out.finish(format_args!(
-                "({}): {}",
+                "{} - {}",
                 SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
@@ -27,22 +28,15 @@ async fn main() -> Result<(), std::io::Error> {
     .await
     .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
 
-    manager
-        .channel_subscribe("gsdgsdhghsjdkfsgdgsdgsdfg", &None)
-        .await
-        .ok();
-
     if let Ok(channel) = std::env::var("CHANNEL") {
-        for _ in 1..10 {
-            manager.channel_subscribe(&channel, &None).await.ok();
-        }
+        manager.channel_subscribe(&channel).await.ok();
     }
 
-    while let Some(event) = manager.listen().await {
-        if matches!(event.e.as_str(), "MESSAGE" | "DIRECT_MESSAGE") {
-            println!("[EXAMPLE] Event: {event:?}");
-        }
-    }
+    while (manager.listen().await).is_some() {}
+
+    sleep(Duration::from_secs(5)).await;
+
+    log::debug!("Done :D");
 
     Ok(())
 }

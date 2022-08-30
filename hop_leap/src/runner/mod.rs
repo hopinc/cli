@@ -4,9 +4,10 @@ use futures::SinkExt;
 use serde::Deserialize;
 
 use crate::errors::{Error, Result};
+use crate::leap::types::Event;
 use crate::manager::types::{ShardManagerMessage, ShardRunnerUpdate};
 use crate::shard::socket::{RecieverExt, SenderExt};
-use crate::shard::types::{Event, GatewayEvent, ReconnectType, ShardAction};
+use crate::shard::types::{GatewayEvent, ReconnectType, ShardAction};
 use crate::shard::{types::InterMessage, Shard};
 
 pub struct ShardRunner {
@@ -145,6 +146,11 @@ impl ShardRunner {
     async fn handle_rx_message(&mut self, message: InterMessage) -> bool {
         match message {
             InterMessage::Json(json) => self.shard.client.send_json(&json).await.is_ok(),
+            InterMessage::Close => {
+                self.shard.client.close(None).await.ok();
+
+                false
+            }
         }
     }
 

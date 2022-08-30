@@ -58,7 +58,7 @@ impl ShardMessenger {
                 }
             }
 
-            None => false,
+            Some(ShardMessengerMessage::Close) | None => false,
         }
     }
 

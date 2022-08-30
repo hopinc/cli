@@ -8,9 +8,11 @@ use tokio::{spawn, sync::Mutex};
 
 use self::types::{ShardManagerMessage, ShardRunnerInfo};
 use crate::errors::Result;
+use crate::leap::types::Event;
 use crate::messenger::{types::ShardMessengerMessage, ShardMessenger};
 use crate::runner::ShardRunner;
-use crate::shard::{types::Event, Shard};
+use crate::shard::types::InterMessage;
+use crate::shard::Shard;
 
 #[derive(Debug)]
 pub struct ManagerOptions<'a> {
@@ -57,7 +59,13 @@ impl ShardManager {
         let mut messenger = ShardMessenger::new(runner_info.clone()).await;
         let messenger_tx = messenger.get_tx();
 
-        spawn(async move { messenger.run().await });
+        spawn(async move {
+            if let Err(why) = messenger.run().await {
+                log::debug!("[Messenger] Stopped: {why:?}");
+            } else {
+                log::debug!("[Messenge] Stopped");
+            }
+        });
 
         Ok(Self {
             ws_url,
@@ -108,6 +116,23 @@ impl ShardManager {
                     };
 
                     self.runner_info = Arc::new(Mutex::new(runner));
+                }
+
+                Some(ShardManagerMessage::Close) => {
+                    self.messenger_tx
+                        .send(ShardMessengerMessage::Close)
+                        .await
+                        .ok();
+
+                    self.runner_info
+                        .lock()
+                        .await
+                        .runner_tx
+                        .send(InterMessage::Close)
+                        .await
+                        .ok();
+
+                    break Ok(());
                 }
 
                 _ => {}

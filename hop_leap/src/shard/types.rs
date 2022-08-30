@@ -5,9 +5,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_repr::Deserialize_repr;
 
+use crate::leap::types::Event;
+
 #[derive(Clone, Debug)]
 pub enum InterMessage {
     Json(Value),
+    Close,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -16,6 +19,7 @@ pub enum ConnectionStage {
     Connected,
     Handshake,
     Identifying,
+    Disconnected,
 }
 
 impl ConnectionStage {
@@ -34,6 +38,7 @@ impl fmt::Display for ConnectionStage {
             Self::Connected => "connected",
             Self::Handshake => "handshaking",
             Self::Identifying => "identifying",
+            Self::Disconnected => "disconnected",
         })
     }
 }
@@ -67,12 +72,6 @@ impl OpCode {
     pub fn number(self) -> u8 {
         self as u8
     }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct Event {
-    pub e: String,
-    pub d: Value,
 }
 
 #[derive(Debug, Clone, Serialize)]
