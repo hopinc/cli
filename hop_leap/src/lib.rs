@@ -1,9 +1,5 @@
 #![warn(clippy::pedantic)]
-#![allow(
-    clippy::module_name_repetitions,
-    clippy::must_use_candidate,
-    clippy::unused_self
-)]
+#![allow(clippy::module_name_repetitions, clippy::unused_self)]
 
 pub mod errors;
 pub mod leap;
