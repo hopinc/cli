@@ -164,3 +164,7 @@ impl<'de> Deserialize<'de> for GatewayEvent {
         Ok(event)
     }
 }
+
+pub mod close_codes {
+    pub const AUTHENTICATION_FAILED: u16 = 4001;
+}

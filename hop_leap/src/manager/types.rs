@@ -12,6 +12,7 @@ pub enum ShardManagerMessage {
     Update(ShardRunnerUpdate),
     Json(Value),
     Close,
+    InvalidAuthentication,
 }
 
 #[derive(Debug)]

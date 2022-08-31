@@ -6,6 +6,7 @@ use serde::Deserialize;
 use crate::errors::{Error, Result};
 use crate::leap::types::Event;
 use crate::manager::types::{ShardManagerMessage, ShardRunnerUpdate};
+use crate::shard::error::Error as GatewayError;
 use crate::shard::socket::{RecieverExt, SenderExt};
 use crate::shard::types::{GatewayEvent, ReconnectType, ShardAction};
 use crate::shard::{types::InterMessage, Shard};
@@ -53,12 +54,15 @@ impl ShardRunner {
                 }
 
                 Some(other) => {
-                    if let Err(_e) = self.action(&other).await {
+                    if let Err(e) = self.action(&other).await {
+                        log::debug!("[ShardRunner] Action error: {:?}", e);
+
                         match self.shard.reconnection_type() {
                             ReconnectType::Reidentify => return self.request_restart().await,
                         };
                     }
                 }
+
                 None => {}
             }
 
@@ -123,7 +127,18 @@ impl ShardRunner {
         let action = match self.shard.handle_event(&event).await {
             Ok(Some(action)) => Some(action),
             Ok(None) => None,
-            Err(_) => return Ok((None, None, true)),
+            Err(why) => match why {
+                Error::Gateway(GatewayError::InvalidAuthentication) => {
+                    self.manager_tx
+                        .send(ShardManagerMessage::InvalidAuthentication)
+                        .await
+                        .ok();
+
+                    return Err(why);
+                }
+
+                _ => return Ok((None, None, true)),
+            },
         };
 
         let event = match event {
@@ -147,7 +162,7 @@ impl ShardRunner {
         match message {
             InterMessage::Json(json) => self.shard.client.send_json(&json).await.is_ok(),
             InterMessage::Close => {
-                self.shard.client.close(None).await.ok();
+                self.shard.shutdown().await;
 
                 false
             }

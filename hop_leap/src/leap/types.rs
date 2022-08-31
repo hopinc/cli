@@ -5,23 +5,33 @@ use serde_json::Value;
 #[serde(tag = "e")]
 pub enum Event {
     #[serde(rename = "INIT")]
-    Init(Value),
+    Init(EventCapsule<InitEvent>),
     #[serde(rename = "MESSAGE")]
-    Message(Value),
+    Message(EventCapsule<Value>),
     #[serde(rename = "DIRECT_MESSAGE")]
-    DirectMessage(Value),
+    DirectMessage(EventCapsule<Value>),
     #[serde(rename = "SUBSCRIBE")]
-    Subscribe(Value),
+    Subscribe(EventCapsule<Value>),
     #[serde(rename = "AVAILABLE")]
-    Available(Value),
+    Available(EventCapsule<Channel>),
     #[serde(rename = "UNAVAILABLE")]
-    Unavailable(Value),
+    Unavailable(EventCapsule<Value>),
     #[serde(rename = "PIPE_ROOM_AVAILABLE")]
-    PipeRoomAvailable(Value),
+    PipeRoomAvailable(EventCapsule<Value>),
     #[serde(rename = "PIPE_ROOM_UPDATE")]
-    PipeRoomUpdate(Value),
+    PipeRoomUpdate(EventCapsule<Value>),
     #[serde(rename = "STATE_UPDATE")]
-    StateUpdate(Value),
+    StateUpdate(EventCapsule<Value>),
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct EventCapsule<T> {
+    #[serde(rename = "c")]
+    pub channel: Option<String>,
+    #[serde(rename = "d")]
+    pub data: T,
+    #[serde(rename = "u", skip_serializing)]
+    pub unicast: bool,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -38,5 +48,25 @@ pub struct InitEvent {
     pub connection_count: u64,
     pub metadata: Option<Value>,
     pub scope: ConnectionScopes,
-    pub channels: Vec<Value>,
+    pub channels: Vec<Channel>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct Channel {
+    pub capabilities: Option<Value>,
+    pub id: String,
+    pub project_id: String,
+    pub state: Value,
+    #[serde(rename = "type")]
+    pub type_: ChannelType,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub enum ChannelType {
+    #[serde(rename = "private")]
+    Private,
+    #[serde(rename = "public")]
+    Public,
+    #[serde(rename = "unprotected")]
+    Unprotected,
 }

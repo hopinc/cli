@@ -6,7 +6,7 @@ use serde::Serialize;
 use serde_json::{json, Value};
 use tokio::spawn;
 
-use self::types::Event;
+use self::types::{Event, EventCapsule};
 use crate::errors::Result;
 use crate::manager::{types::ShardManagerMessage, ManagerOptions, ShardManager};
 
@@ -88,8 +88,7 @@ impl LeapEdge {
     /// - If the message cannot be sent.
     #[inline]
     pub async fn channel_subscribe(&mut self, channel: &str) -> Result<()> {
-        self.channel_subscribe_with_data::<Option<Value>>(channel, None)
-            .await
+        self.channel_subscribe_with_data(channel, Value::Null).await
     }
 
     /// Subscribe to a channel with initial data.
@@ -101,10 +100,11 @@ impl LeapEdge {
     where
         D: Serialize,
     {
-        self.send_service_message(&Event::Subscribe(json!({
-            "c": channel,
-            "d": data,
-        })))
+        self.send_service_message(&Event::Subscribe(EventCapsule {
+            channel: Some(channel.to_string()),
+            data: serde_json::to_value(data)?,
+            unicast: false,
+        }))
         .await
     }
 

@@ -7,10 +7,11 @@ use futures::{SinkExt, StreamExt};
 use tokio::{spawn, sync::Mutex};
 
 use self::types::{ShardManagerMessage, ShardRunnerInfo};
-use crate::errors::Result;
+use crate::errors::{Error, Result};
 use crate::leap::types::Event;
 use crate::messenger::{types::ShardMessengerMessage, ShardMessenger};
 use crate::runner::ShardRunner;
+use crate::shard::error::Error as GatewayError;
 use crate::shard::types::InterMessage;
 use crate::shard::Shard;
 
@@ -119,23 +120,20 @@ impl ShardManager {
                 }
 
                 Some(ShardManagerMessage::Close) => {
-                    self.messenger_tx
-                        .send(ShardMessengerMessage::Close)
-                        .await
-                        .ok();
+                    self.shutdown().await;
 
-                    self.runner_info
-                        .lock()
-                        .await
-                        .runner_tx
-                        .send(InterMessage::Close)
-                        .await
-                        .ok();
-
-                    break Ok(());
+                    return Ok(());
                 }
 
-                _ => {}
+                Some(ShardManagerMessage::InvalidAuthentication) => {
+                    self.shutdown().await;
+
+                    return Err(Error::Gateway(GatewayError::InvalidAuthentication));
+                }
+
+                None => {
+                    return Ok(());
+                }
             }
         }
     }
@@ -161,6 +159,21 @@ impl ShardManager {
             runner_tx,
             stage,
         })))
+    }
+
+    async fn shutdown(&mut self) {
+        self.messenger_tx
+            .send(ShardMessengerMessage::Close)
+            .await
+            .ok();
+
+        self.runner_info
+            .lock()
+            .await
+            .runner_tx
+            .send(InterMessage::Close)
+            .await
+            .ok();
     }
 
     pub fn get_manager_tx(&self) -> UnboundedSender<ShardManagerMessage> {

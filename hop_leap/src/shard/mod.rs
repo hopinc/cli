@@ -8,14 +8,19 @@ use std::time::Duration;
 use async_tungstenite::tokio::connect_async_with_config;
 use async_tungstenite::tungstenite::error::Error as TungsteniteError;
 use async_tungstenite::tungstenite::protocol::{CloseFrame, WebSocketConfig};
+use futures::channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender};
+use futures::SinkExt;
+use tokio::spawn;
 use tokio::sync::Mutex;
 use tokio::time::Instant;
 
 use self::error::Error as GatewayError;
 use self::socket::WsStreamExt;
-use self::types::{GatewayEvent, ReconnectType, ShardAction};
+use self::types::{close_codes, GatewayEvent, ReconnectType, ShardAction};
 use self::{socket::WsStream, types::ConnectionStage};
 use crate::errors::{Error, Result};
+use crate::heartbeat::types::HeartbeatManagerEvent;
+use crate::heartbeat::HeartbeatManager;
 use crate::leap::types::Event;
 
 #[cfg(feature = "zlib")]
@@ -25,11 +30,11 @@ const ENCODING: &str = "zlib";
 
 pub struct Shard {
     pub client: WsStream,
-    heartbeat_interval: Option<u64>,
+    heartbeat_trigger: UnboundedReceiver<()>,
+    heartbeat_manager: UnboundedSender<HeartbeatManagerEvent>,
     heartbeat_instants: (Option<Instant>, Option<Instant>),
     last_heartbeat_acknowledged: bool,
     stage: ConnectionStage,
-    started: Instant,
     pub token: Option<String>,
     pub project: String,
 }
@@ -44,17 +49,22 @@ impl Shard {
         let client = connect(&ws_url).await?;
 
         let heartbeat_instants = (None, None);
-        let heartbeat_interval = None;
         let last_heartbeat_acknowledged = true;
         let stage = ConnectionStage::Handshake;
 
+        let (trigger_tx, heartbeat_trigger) = unbounded();
+        let mut heartbeat = HeartbeatManager::new(trigger_tx);
+        let heartbeat_manager = heartbeat.heartbeat_tx();
+
+        spawn(async move { heartbeat.run().await });
+
         Ok(Self {
             client,
-            heartbeat_interval,
+            heartbeat_trigger,
             heartbeat_instants,
+            heartbeat_manager,
             last_heartbeat_acknowledged,
             stage,
-            started: Instant::now(),
             project: project.to_string(),
             token: token.map(std::string::ToString::to_string),
         })
@@ -99,22 +109,17 @@ impl Shard {
     }
 
     pub async fn check_heartbeat(&mut self) -> bool {
-        let wait = {
-            let heartbeat_interval = match self.heartbeat_interval {
-                Some(interval) => interval,
-                None => {
-                    return self.started.elapsed() < Duration::from_secs(15);
-                }
-            };
-
-            Duration::from_secs(heartbeat_interval / 1000)
-        };
-
-        if let Some(last_sent) = self.heartbeat_instants.0 {
-            if last_sent.elapsed() <= wait {
-                return true;
+        match self.heartbeat_trigger.try_next() {
+            // continue to send a heartbeat if it was sent from the thread
+            Ok(Some(_)) => {}
+            // close since we failed to get a heartbeat from the thread
+            Ok(None) => {
+                log::warn!("[Shard] Err checking heartbeat: channel closed");
+                return false;
             }
-        }
+            // no heartbeat was waiting, so continue
+            Err(_) => return true,
+        };
 
         if !self.last_heartbeat_acknowledged {
             return false;
@@ -146,7 +151,9 @@ impl Shard {
             }
             Ok(GatewayEvent::Hello(interval)) => {
                 if interval > &0 {
-                    self.heartbeat_interval = Some(*interval);
+                    self.heartbeat_manager
+                        .send(HeartbeatManagerEvent::UpdateInterval(*interval))
+                        .await?;
                 }
 
                 Ok(Some(if self.stage == ConnectionStage::Handshake {
@@ -196,10 +203,18 @@ impl Shard {
         let num = data.as_ref().map(|d| d.code.into());
         let clean = num == Some(1000);
 
-        if !clean {
-            log::warn!("[Shard] Closed with code: {num:?}");
+        match num {
+            Some(close_codes::AUTHENTICATION_FAILED) => {
+                log::debug!("[Shard] Authentication failed; closing connection");
 
-            return Err(Error::Gateway(GatewayError::Closed(data.clone())));
+                return Err(Error::Gateway(GatewayError::InvalidAuthentication));
+            }
+
+            Some(other) if !clean => {
+                log::warn!("[Shard] Received unexpected close code: {other}");
+            }
+
+            _ => {}
         }
 
         Ok(Some(ShardAction::Reconnect(ReconnectType::Reidentify)))
@@ -219,6 +234,14 @@ impl Shard {
             (Some(start), Some(end)) => Some(end.duration_since(start)),
             _ => None,
         }
+    }
+
+    pub async fn shutdown(&mut self) {
+        self.heartbeat_manager
+            .send(HeartbeatManagerEvent::Shutdown)
+            .await
+            .ok();
+        self.client.close(None).await.ok();
     }
 }
 
