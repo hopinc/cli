@@ -9,12 +9,7 @@ TAG=$1
 
 echo "Bumping to $TAG"
 
-if ! command -v cargo bump -h 2> /dev/null; then
-    echo "error: you do not have 'cargo bump' installed which is required for this script."
-    exit 1
-fi
-
-cargo bump $TAG
+sed -i "s/^version = .*/version = \"$TAG\"/" Cargo.toml
 
 sleep 10
 
