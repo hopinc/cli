@@ -21,5 +21,10 @@ pub struct Message {
 
 #[derive(Debug, Deserialize)]
 pub struct Build {
-    // id: String,
+    pub id: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SingleBuild {
+    pub build: Build,
 }

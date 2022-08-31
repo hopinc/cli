@@ -4,15 +4,16 @@ pub mod util;
 use std::env::current_dir;
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 use clap::Parser;
-use tokio::fs;
+use tokio::sync::mpsc::unbounded_channel;
+use tokio::{fs, spawn};
 
 use self::types::{Event, Message};
 use self::util::{compress, env_file_to_map};
 use crate::commands::containers::types::ContainerOptions;
 use crate::commands::containers::utils::create_containers;
-use crate::commands::deploy::util::builder_post;
+use crate::commands::deploy::util::{builder_post, cancel_build};
 use crate::commands::gateways::create::GatewayOptions;
 use crate::commands::gateways::types::{GatewayConfig, GatewayType};
 use crate::commands::gateways::util::{create_gateway, update_gateway_config};
@@ -233,7 +234,40 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     log::info!("Uploading...");
 
-    builder_post(&state.http, &deployment.id, bytes).await?;
+    let build = builder_post(&state.http, &deployment.id, bytes).await?;
+
+    let (tx, mut rx) = unbounded_channel();
+
+    let http = state.http.clone();
+    let build_id = build.id.clone();
+
+    spawn(async move {
+        loop {
+            match rx.recv().await {
+                Some("CANCEL") => {
+                    log::info!("Cancelling build...");
+
+                    if cancel_build(&http, &build_id).await.is_ok() {
+                        log::info!("Build cancelled by user");
+                    } else {
+                        log::error!("Failed to cancel build");
+                    }
+
+                    std::process::exit(1);
+                }
+
+                Some("OK") => break,
+
+                _ => {}
+            }
+        }
+    });
+
+    let ctrlc = tx.clone();
+
+    ctrlc::set_handler(move || {
+        ctrlc.send("CANCEL").ok();
+    })?;
 
     log::info!("Deleting archive...");
     fs::remove_file(packed).await?;
@@ -261,6 +295,11 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 }
             }
 
+            "BUILD_CANCELLED" => {
+                println!();
+                bail!("The build was canceled");
+            }
+
             "PUSH_SUCCESS" => {
                 connection.close().await;
                 println!();
@@ -271,7 +310,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             "PUSH_FAILURE" => {
                 connection.close().await;
                 println!();
-                panic!(
+                bail!(
                     "Push failed, for help contact us on {} and mention the deployment id: {}",
                     urlify("https://discord.gg/hop"),
                     deployment.id
@@ -282,6 +321,8 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             _ => {}
         }
     }
+
+    tx.send("OK").ok();
 
     if existing {
         if deployment.container_count > 0 {

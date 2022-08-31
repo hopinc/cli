@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::env::temp_dir;
 use std::path::{Path, PathBuf};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_compression::tokio::write::GzipEncoder;
 use hyper::Method;
 use ignore::WalkBuilder;
@@ -16,6 +16,8 @@ use crate::commands::deploy::HOP_BUILD_BASE_URL;
 use crate::commands::ignite::util::parse_key_val;
 use crate::state::http::HttpClient;
 use crate::store::hopfile::VALID_HOP_FILENAMES;
+
+use super::types::{Build, SingleBuild};
 
 // default ignore list for tar files
 static DEFAULT_IGNORE_LIST: &[&str] = &[
@@ -123,7 +125,7 @@ pub async fn env_file_to_map(path: PathBuf) -> HashMap<String, String> {
     env
 }
 
-pub async fn builder_post(http: &HttpClient, deployment_id: &str, bytes: Vec<u8>) -> Result<()> {
+pub async fn builder_post(http: &HttpClient, deployment_id: &str, bytes: Vec<u8>) -> Result<Build> {
     let multipart = Form::new().part(
         "file",
         Part::bytes(bytes)
@@ -142,9 +144,17 @@ pub async fn builder_post(http: &HttpClient, deployment_id: &str, bytes: Vec<u8>
         .send()
         .await?;
 
-    http.handle_response::<Value>(response).await?;
+    let build = http
+        .handle_response::<SingleBuild>(response)
+        .await?
+        .ok_or_else(|| anyhow!("Could not create build"))?
+        .build;
 
-    //.ok_or_else(|| anyhow!("Could not create build"))
+    Ok(build)
+}
 
+pub async fn cancel_build(http: &HttpClient, build_id: &str) -> Result<()> {
+    http.request::<Value>("POST", &format!("/ignite/builds/{build_id}/cancel"), None)
+        .await?;
     Ok(())
 }

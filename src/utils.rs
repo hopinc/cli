@@ -33,17 +33,11 @@ pub fn set_hook() {
 
         std::process::exit(1);
     }));
+}
 
-    ctrlc::set_handler(|| {
-        // since dialoguer is annoying it
-        // doesnt show the cursor when we exit
-        // so lets do that manually
-        let term = console::Term::stdout();
-        term.show_cursor().ok();
-
-        std::process::exit(0);
-    })
-    .ok();
+pub fn clean_term() {
+    let term = console::Term::stdout();
+    term.show_cursor().ok();
 }
 
 pub fn logs(verbose: bool) {
