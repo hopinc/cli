@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 license = "MPL-2.0"
 authors = ["Hop Inc."]
-description = "Easily connect to Leap Edge"
+description = "Easily connect to Leap Edge in Rust"
 repository = "https://github.com/hopinc/hop_cli/tree/main/hop_leap"
 homepage = "https://hop.io"
 
