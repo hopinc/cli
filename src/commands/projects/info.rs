@@ -1,6 +1,7 @@
 use clap::Parser;
 
-use crate::{commands::projects::util::format_project, state::State};
+use crate::commands::projects::util::format_project;
+use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Get information about a project")]

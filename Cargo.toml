@@ -52,7 +52,8 @@ serde = { version = "1.0.141", features = ["derive"] }
 hyper = { version = "0.14.20", features = ["server"] }
 ctrlc = { version = "3.2.2", features = ["termination"] }
 chrono = { version = "0.4.21", features = ["serde"] }
-async-compression = { version = "0.3.14", features = ["tokio", "gzip", "zlib"] }
+hop_leap = { path = "./hop_leap" }
+async-compression = { version = "0.3.14", features = ["tokio", "gzip"] }
 
 # *nix only deps
 [target.'cfg(not(windows))'.dependencies]
@@ -60,12 +61,11 @@ reqwest = { version = "0.11.11", features = [
     "json",
     "multipart",
     "rustls-tls-webpki-roots",
-
 ], default-features = false }
-tokio-tungstenite = { version = "0.17.2", features = [
+hop_leap = { path = "./hop_leap", features = [
+    "zlib",
     "rustls-tls-webpki-roots",
-] }
-
+], default-features = false }
 # windows only deps
 [target.'cfg(windows)'.dependencies]
 async_zip = "0.0.8"
@@ -73,8 +73,11 @@ reqwest = { version = "0.11.11", features = [
     "json",
     "multipart",
     "native-tls",
-] }
-tokio-tungstenite = { version = "0.17.2", features = ["native-tls"] }
+], default-features = false }
+hop_leap = { path = "./hop_leap", features = [
+    "zlib",
+    "native-tls",
+], default-features = false }
 
 [target.'cfg(windows)'.build-dependencies]
 winapi = { version = "0.3.9", features = ["winuser"] }

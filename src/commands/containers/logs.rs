@@ -1,20 +1,18 @@
-use std::{env::temp_dir, time::Duration};
+use std::env::temp_dir;
+use std::time::Duration;
 
 use anyhow::{ensure, Result};
 use clap::Parser;
 use tokio::fs;
-use tokio::{process::Command, time::sleep};
+use tokio::process::Command;
+use tokio::time::sleep;
 
-use crate::state::State;
-use crate::{
-    commands::{
-        containers::utils::{
-            format_containers, format_logs, get_all_containers, get_container_logs,
-        },
-        ignite::util::{format_deployments, get_all_deployments},
-    },
-    utils::in_path,
+use crate::commands::containers::utils::{
+    format_containers, format_logs, get_all_containers, get_container_logs,
 };
+use crate::commands::ignite::util::{format_deployments, get_all_deployments};
+use crate::state::State;
+use crate::utils::in_path;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Get logs of a container")]

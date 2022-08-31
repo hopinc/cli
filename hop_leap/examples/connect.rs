@@ -1,5 +1,6 @@
-use hop_leap::{LeapEdge, LeapOptions};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+use hop_leap::{LeapEdge, LeapOptions};
 use tokio::time::sleep;
 
 #[tokio::main]

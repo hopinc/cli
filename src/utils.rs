@@ -1,8 +1,6 @@
-use std::{
-    fmt::Display,
-    str::FromStr,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::fmt::Display;
+use std::str::FromStr;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use chrono::{DateTime, Utc};
 use console::style;

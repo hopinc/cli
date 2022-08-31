@@ -15,9 +15,8 @@ use tokio::sync::Mutex;
 use tokio::time::Instant;
 
 use self::error::Error as GatewayError;
-use self::socket::WsStreamExt;
-use self::types::{close_codes, GatewayEvent, ReconnectType, ShardAction};
-use self::{socket::WsStream, types::ConnectionStage};
+use self::socket::{WsStream, WsStreamExt};
+use self::types::{close_codes, ConnectionStage, GatewayEvent, ReconnectType, ShardAction};
 use crate::errors::{Error, Result};
 use crate::heartbeat::types::HeartbeatManagerEvent;
 use crate::heartbeat::HeartbeatManager;

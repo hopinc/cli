@@ -1,5 +1,6 @@
+use std::collections::HashMap;
+use std::fmt::Display;
 use std::str::FromStr;
-use std::{collections::HashMap, fmt::Display};
 
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};

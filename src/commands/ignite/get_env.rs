@@ -1,6 +1,7 @@
+use std::io::Write;
+
 use anyhow::{ensure, Result};
 use clap::Parser;
-use std::io::Write;
 
 use crate::commands::ignite::util::{format_deployments, get_all_deployments, get_deployment};
 use crate::commands::secrets::util::get_secret_name;

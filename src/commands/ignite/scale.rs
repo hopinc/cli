@@ -2,7 +2,8 @@ use anyhow::{ensure, Result};
 use clap::Parser;
 
 use super::util::{format_deployments, get_all_deployments, scale};
-use crate::{commands::ignite::util::get_deployment, state::State};
+use crate::commands::ignite::util::get_deployment;
+use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Scale a deployment")]

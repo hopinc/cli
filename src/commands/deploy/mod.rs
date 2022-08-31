@@ -6,13 +6,15 @@ use std::path::PathBuf;
 
 use anyhow::{bail, Result};
 use clap::Parser;
+use hop_leap::leap::types::Event;
+use hop_leap::{LeapEdge, LeapOptions};
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::{fs, spawn};
 
-use self::types::{Event, Message};
 use self::util::{compress, env_file_to_map};
 use crate::commands::containers::types::ContainerOptions;
 use crate::commands::containers::utils::create_containers;
+use crate::commands::deploy::types::BuildEvents;
 use crate::commands::deploy::util::{builder_post, cancel_build};
 use crate::commands::gateways::create::GatewayOptions;
 use crate::commands::gateways::types::{GatewayConfig, GatewayType};
@@ -25,6 +27,7 @@ use crate::commands::ignite::types::{
 };
 use crate::commands::ignite::util::{create_deployment, rollout, update_deployment_config};
 use crate::commands::projects::util::format_project;
+use crate::config::HOP_LEAP_PROJECT;
 use crate::state::State;
 use crate::store::hopfile::HopFile;
 use crate::utils::urlify;
@@ -119,7 +122,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         None => {
             log::info!("No hopfile found, creating one");
 
-            let project = state.ctx.current_project_error();
+            let project = state.ctx.clone().current_project_error();
 
             log::info!("Deploying to project {}", format_project(&project));
 
@@ -219,16 +222,17 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     };
 
     // connect to leap here so no logs interfere with the deploy
-    let mut connection = state
-        .ws
-        .connect()
-        .await
-        .expect("Could not connect to Leap Edge");
+    let mut leap = LeapEdge::new(LeapOptions {
+        token: Some(&state.ctx.current.unwrap().leap_token),
+        project: HOP_LEAP_PROJECT,
+        ..Default::default()
+    })
+    .await?;
 
     // deployment id is used not to colide if the user is deploying multiple items
     let packed = compress(deployment.id.clone(), dir).await?;
 
-    log::info!("Packed to: {}", packed);
+    log::info!("Packed to: {packed}");
 
     let bytes = fs::read(packed.clone()).await?;
 
@@ -274,51 +278,63 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     log::info!("From Hop builder:");
 
-    while let Some(data) = connection.recieve_message::<Message>().await {
-        // build logs are sent only in DMs
-        if data.e != "DIRECT_MESSAGE" {
-            continue;
-        }
+    while let Some(event) = leap.listen().await {
+        if let Event::Message(capsuled) = event {
+            if Some(project.id.clone()) != capsuled.channel {
+                continue;
+            }
 
-        let build_event: Event = serde_json::from_value(data.d).unwrap();
+            let build_data =
+                match serde_json::from_value(serde_json::to_value(capsuled.data).unwrap()) {
+                    Ok(build_data) => build_data,
+                    Err(_) => {
+                        // silently ignore
 
-        let build_data = if let Some(data) = build_event.d {
-            data
-        } else {
-            continue;
-        };
+                        continue;
+                    }
+                };
 
-        match build_event.e.as_str() {
-            "BUILD_PROGRESS" => {
-                if let Some(progress) = build_data.progress {
-                    print!("{}", progress);
+            match build_data {
+                BuildEvents::BuildProgress(build_progress) => {
+                    if build_progress.build_id == build.id {
+                        print!("{}", build_progress.log);
+                    }
+                }
+
+                BuildEvents::BuildCancelled(build_cancelled) => {
+                    if build_cancelled.build_id == build.id {
+                        tx.send("OK").ok();
+                        leap.close().await;
+
+                        bail!("Build cancelled");
+                    }
+                }
+
+                BuildEvents::PushSuccess(build_complete) => {
+                    if build_complete.build_id == build.id {
+                        tx.send("OK").ok();
+                        leap.close().await;
+
+                        println!();
+
+                        log::info!("Build complete");
+                    }
+                }
+
+                BuildEvents::PushFailure(build_failure) => {
+                    if build_failure.build_id == build.id {
+                        leap.close().await;
+
+                        println!();
+
+                        bail!(
+                            "Push failed, for help contact us on {} and mention the deployment id: {}",
+                            urlify("https://discord.gg/hop"),
+                            deployment.id
+                        );
+                    }
                 }
             }
-
-            "BUILD_CANCELLED" => {
-                println!();
-                bail!("The build was canceled");
-            }
-
-            "PUSH_SUCCESS" => {
-                connection.close().await;
-                println!();
-                log::info!("Pushed successfully");
-                break;
-            }
-
-            "PUSH_FAILURE" => {
-                connection.close().await;
-                println!();
-                bail!(
-                    "Push failed, for help contact us on {} and mention the deployment id: {}",
-                    urlify("https://discord.gg/hop"),
-                    deployment.id
-                );
-            }
-
-            // ignore rest
-            _ => {}
         }
     }
 

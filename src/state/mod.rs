@@ -1,10 +1,7 @@
 pub mod http;
-pub mod ws;
-
 use anyhow::{ensure, Result};
 
 use self::http::HttpClient;
-use self::ws::WebsocketClient;
 use crate::commands::auth::login::util::{token_options, TokenType};
 use crate::config::EXEC_NAME;
 use crate::store::auth::Auth;
@@ -15,7 +12,6 @@ pub struct State {
     pub auth: Auth,
     pub ctx: Context,
     pub http: HttpClient,
-    pub ws: WebsocketClient,
     token: Option<String>,
     token_type: Option<TokenType>,
 }
@@ -50,7 +46,6 @@ impl State {
         let (token, token_type) = Self::handle_token(init_token);
 
         // preffer the override token over the auth token
-        let ws = WebsocketClient::new();
         let http = HttpClient::new(token.clone(), ctx.override_api_url.clone());
 
         State {
@@ -59,7 +54,6 @@ impl State {
             http,
             auth,
             ctx,
-            ws,
         }
     }
 
@@ -91,9 +85,7 @@ impl State {
         let response = token_options(self.http.clone(), self.token_type.clone()).await;
 
         // get current user to global
-        self.ctx.current = Some(response.clone());
-
-        self.ws.update_token(response.leap_token);
+        self.ctx.current = Some(response);
 
         // if the token is a ptk override the project
         if let Some(TokenType::Ptk) = self.token_type {

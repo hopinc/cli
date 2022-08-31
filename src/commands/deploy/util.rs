@@ -12,12 +12,11 @@ use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
 use tokio_tar::Builder as TarBuilder;
 
+use super::types::{Build, SingleBuild};
 use crate::commands::deploy::HOP_BUILD_BASE_URL;
 use crate::commands::ignite::util::parse_key_val;
 use crate::state::http::HttpClient;
 use crate::store::hopfile::VALID_HOP_FILENAMES;
-
-use super::types::{Build, SingleBuild};
 
 // default ignore list for tar files
 static DEFAULT_IGNORE_LIST: &[&str] = &[

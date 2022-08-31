@@ -8,8 +8,8 @@ use crate::leap::types::Event;
 use crate::manager::types::{ShardManagerMessage, ShardRunnerUpdate};
 use crate::shard::error::Error as GatewayError;
 use crate::shard::socket::{RecieverExt, SenderExt};
-use crate::shard::types::{GatewayEvent, ReconnectType, ShardAction};
-use crate::shard::{types::InterMessage, Shard};
+use crate::shard::types::{GatewayEvent, InterMessage, ReconnectType, ShardAction};
+use crate::shard::Shard;
 
 pub struct ShardRunner {
     manager_tx: UnboundedSender<ShardManagerMessage>,

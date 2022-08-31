@@ -1,4 +1,5 @@
-use std::{borrow::Borrow, io::Write};
+use std::borrow::Borrow;
+use std::io::Write;
 
 use anyhow::{anyhow, Result};
 use console::style;
@@ -9,7 +10,8 @@ use super::types::{
     ChangeableContainerState, Container, ContainerState, CreateContainers, Log, LogsResponse,
     MultipleContainersResponse, UpdateContainerState,
 };
-use crate::{state::http::HttpClient, utils::relative_time};
+use crate::state::http::HttpClient;
+use crate::utils::relative_time;
 
 pub async fn create_containers(
     http: &HttpClient,

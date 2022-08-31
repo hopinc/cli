@@ -1,10 +1,8 @@
 use anyhow::{anyhow, ensure, Result};
 use clap::Parser;
 
-use crate::commands::{
-    gateways::util::{delete_gateway, format_gateways, get_all_gateways},
-    ignite::util::{format_deployments, get_all_deployments},
-};
+use crate::commands::gateways::util::{delete_gateway, format_gateways, get_all_gateways};
+use crate::commands::ignite::util::{format_deployments, get_all_deployments};
 use crate::state::State;
 
 #[derive(Debug, Parser)]

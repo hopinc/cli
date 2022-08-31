@@ -8,7 +8,8 @@ use tokio::spawn;
 
 use self::types::{Event, EventCapsule};
 use crate::errors::Result;
-use crate::manager::{types::ShardManagerMessage, ManagerOptions, ShardManager};
+use crate::manager::types::ShardManagerMessage;
+use crate::manager::{ManagerOptions, ShardManager};
 
 pub struct LeapOptions<'a> {
     pub token: Option<&'a str>,

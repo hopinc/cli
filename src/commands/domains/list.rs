@@ -2,13 +2,9 @@ use anyhow::Result;
 use clap::Parser;
 
 use super::util::{format_domains, get_all_domains};
-use crate::{
-    commands::{
-        gateways::util::{format_gateways, get_all_gateways},
-        ignite::util::{format_deployments, get_all_deployments},
-    },
-    state::State,
-};
+use crate::commands::gateways::util::{format_gateways, get_all_gateways};
+use crate::commands::ignite::util::{format_deployments, get_all_deployments};
+use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "List all domains attached to a gateway")]

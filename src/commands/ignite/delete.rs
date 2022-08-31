@@ -1,10 +1,8 @@
 use anyhow::{anyhow, Result};
 use clap::Parser;
 
-use crate::{
-    commands::ignite::util::{delete_deployment, format_deployments, get_all_deployments},
-    state::State,
-};
+use crate::commands::ignite::util::{delete_deployment, format_deployments, get_all_deployments};
+use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Delete a deployment")]

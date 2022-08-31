@@ -4,12 +4,14 @@ use std::sync::Arc;
 
 use futures::channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender};
 use futures::{SinkExt, StreamExt};
-use tokio::{spawn, sync::Mutex};
+use tokio::spawn;
+use tokio::sync::Mutex;
 
 use self::types::{ShardManagerMessage, ShardRunnerInfo};
 use crate::errors::{Error, Result};
 use crate::leap::types::Event;
-use crate::messenger::{types::ShardMessengerMessage, ShardMessenger};
+use crate::messenger::types::ShardMessengerMessage;
+use crate::messenger::ShardMessenger;
 use crate::runner::ShardRunner;
 use crate::shard::error::Error as GatewayError;
 use crate::shard::types::InterMessage;

@@ -7,9 +7,9 @@ pub enum Event {
     #[serde(rename = "INIT")]
     Init(EventCapsule<InitEvent>),
     #[serde(rename = "MESSAGE")]
-    Message(EventCapsule<Value>),
+    Message(EventCapsule<CustomEvent>),
     #[serde(rename = "DIRECT_MESSAGE")]
-    DirectMessage(EventCapsule<Value>),
+    DirectMessage(EventCapsule<CustomEvent>),
     #[serde(rename = "SUBSCRIBE")]
     Subscribe(EventCapsule<Value>),
     #[serde(rename = "AVAILABLE")]
@@ -69,4 +69,12 @@ pub enum ChannelType {
     Public,
     #[serde(rename = "unprotected")]
     Unprotected,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct CustomEvent {
+    #[serde(rename = "e")]
+    pub event: String,
+    #[serde(rename = "d")]
+    pub data: Value,
 }

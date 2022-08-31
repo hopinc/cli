@@ -4,9 +4,9 @@ use anyhow::Result;
 use serde_json::Value;
 use tabwriter::TabWriter;
 
-use crate::{commands::gateways::types::SingleGateway, state::http::HttpClient};
-
 use super::types::{AttachDomain, Domain};
+use crate::commands::gateways::types::SingleGateway;
+use crate::state::http::HttpClient;
 
 pub async fn attach_domain(http: &HttpClient, gateway_id: &str, domain: &str) -> Result<()> {
     http.request::<Value>(

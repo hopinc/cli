@@ -3,13 +3,12 @@ use std::io::Write;
 use anyhow::{anyhow, Result};
 use regex::Regex;
 
-use super::{
-    create::GatewayOptions,
-    types::{
-        Gateway, GatewayConfig, GatewayProtocol, GatewayType, MultipleGateways, SingleGateway,
-    },
+use super::create::GatewayOptions;
+use super::types::{
+    Gateway, GatewayConfig, GatewayProtocol, GatewayType, MultipleGateways, SingleGateway,
 };
-use crate::{state::http::HttpClient, utils::ask_question_iter};
+use crate::state::http::HttpClient;
+use crate::utils::ask_question_iter;
 
 pub async fn create_gateway(
     http: &HttpClient,

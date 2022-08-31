@@ -3,7 +3,9 @@ use std::io;
 use clap::{CommandFactory, Parser};
 use clap_complete::{generate, Shell as CompletionShell};
 
-use crate::{config::EXEC_NAME, state::State, CLI};
+use crate::config::EXEC_NAME;
+use crate::state::State;
+use crate::CLI;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Generate completion scripts for the specified shell")]

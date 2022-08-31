@@ -1,13 +1,11 @@
 use anyhow::{ensure, Result};
 use clap::Parser;
 
-use crate::commands::{
-    containers::utils::{format_containers, get_all_containers},
-    ignite::util::{format_deployments, get_all_deployments},
-};
+use super::types::ChangeableContainerState;
+use super::utils::update_container_state;
+use crate::commands::containers::utils::{format_containers, get_all_containers};
+use crate::commands::ignite::util::{format_deployments, get_all_deployments};
 use crate::state::State;
-
-use super::{types::ChangeableContainerState, utils::update_container_state};
 
 #[derive(Debug, Parser)]
 #[clap(about = "Update a container")]

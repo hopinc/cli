@@ -741,6 +741,7 @@ dependencies = [
  "dirs",
  "fern",
  "futures-util",
+ "hop_leap",
  "hyper",
  "ignore",
  "log",
@@ -758,7 +759,6 @@ dependencies = [
  "tabwriter",
  "tokio",
  "tokio-tar",
- "tokio-tungstenite",
  "webbrowser",
  "winapi",
  "winres",
@@ -1974,24 +1974,6 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "xattr",
-]
-
-[[package]]
-name = "tokio-tungstenite"
-version = "0.17.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f714dd15bead90401d77e04243611caec13726c2408afd5b31901dfcdcb3b181"
-dependencies = [
- "futures-util",
- "log",
- "native-tls",
- "rustls",
- "tokio",
- "tokio-native-tls",
- "tokio-rustls",
- "tungstenite",
- "webpki",
- "webpki-roots",
 ]
 
 [[package]]

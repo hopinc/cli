@@ -4,7 +4,9 @@ use std::io::Cursor;
 #[cfg(feature = "zlib")]
 use async_compression::tokio::bufread::ZlibDecoder;
 use async_trait::async_trait;
-use async_tungstenite::{tokio::ConnectStream, tungstenite::Message, WebSocketStream};
+use async_tungstenite::tokio::ConnectStream;
+use async_tungstenite::tungstenite::Message;
+use async_tungstenite::WebSocketStream;
 use futures::{SinkExt, StreamExt};
 use serde_json::{json, to_string, Value};
 use tokio::io::AsyncReadExt;
