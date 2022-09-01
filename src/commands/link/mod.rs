@@ -55,6 +55,11 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .interact_opt()?
                 .expect("No deployment selected");
 
+            ensure!(
+                !deployments.is_empty(),
+                "No deployments found. Did you mean to `{EXEC_NAME} deploy`?"
+            );
+
             deployments[idx].clone()
         }
     };

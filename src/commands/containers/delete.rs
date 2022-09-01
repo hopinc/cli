@@ -23,7 +23,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         let project_id = state.ctx.current_project_error().id;
 
         let deployments = get_all_deployments(&state.http, &project_id).await?;
-        ensure!(!deployments.is_empty(), "This project has no deployments");
+        ensure!(!deployments.is_empty(), "No deployments found");
         let deployments_fmt = format_deployments(&deployments, false);
 
         let idx = dialoguer::Select::new()
