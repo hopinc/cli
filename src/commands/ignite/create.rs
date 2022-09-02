@@ -26,7 +26,7 @@ pub struct DeploymentConfig {
     #[clap(
         short = 's',
         long = "strategy",
-        help = "Scaling strategy, defaults to `autoscaled`"
+        help = "Scaling strategy, defaults to `autoscale`"
     )]
     pub scaling_strategy: Option<ScalingStrategy>,
 
