@@ -10,7 +10,6 @@ pub mod projects;
 mod secrets;
 pub mod update;
 mod whoami;
-mod channels;
 
 use anyhow::Result;
 use clap::Subcommand;
