@@ -10,24 +10,24 @@ use crate::utils::urlify;
 
 #[derive(Debug, Parser, Default, PartialEq)]
 pub struct GatewayOptions {
-    #[clap(short = 'n', long = "name", help = "Name of the gateway")]
+    #[clap(short = 'n', long = "name", help = "Name of the Gateway")]
     pub name: Option<String>,
 
-    #[clap(short = 't', long = "type", help = "Type of the gateway")]
+    #[clap(short = 't', long = "type", help = "Type of the Gateway")]
     pub type_: Option<GatewayType>,
 
-    #[clap(long = "protocol", help = "Protocol of the gateway")]
+    #[clap(long = "protocol", help = "Protocol of the Gateway")]
     pub protocol: Option<GatewayProtocol>,
 
-    #[clap(long = "target-port", help = "Port of the gateway")]
+    #[clap(long = "target-port", help = "Port of the Gateway")]
     pub target_port: Option<u16>,
 
-    #[clap(long = "internal-domain", help = "Internal domain of the gateway")]
+    #[clap(long = "internal-domain", help = "Internal domain of the Gateway")]
     pub internal_domain: Option<String>,
 }
 
 #[derive(Debug, Parser)]
-#[clap(about = "Create a gateway")]
+#[clap(about = "Create a Gateway")]
 pub struct Options {
     #[clap(name = "deployment", help = "ID of the deployment")]
     pub deployment: Option<String>,
@@ -67,7 +67,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     let gateway = create_gateway(&state.http, &deployment_id, &gateway_config).await?;
 
-    log::info!("Created gateway `{}`", gateway.id);
+    log::info!("Created Gateway `{}`", gateway.id);
 
     if gateway.type_ == GatewayType::External {
         log::info!(

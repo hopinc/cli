@@ -37,10 +37,10 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         let gateways_fmt = format_gateways(&gateways, false);
 
         let idxs = dialoguer::MultiSelect::new()
-            .with_prompt("Select gateways to delete")
+            .with_prompt("Select Gateways to delete")
             .items(&gateways_fmt)
             .interact_opt()?
-            .expect("No gateway selected");
+            .expect("No Gateway selected");
 
         gateways
             .iter()
@@ -53,7 +53,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     if !options.force {
         dialoguer::Confirm::new()
             .with_prompt(format!(
-                "Are you sure you want to delete {} gateways?",
+                "Are you sure you want to delete {} Gateways?",
                 gateways.len()
             ))
             .interact_opt()?
@@ -63,16 +63,16 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     let mut delete_count = 0;
 
     for gateway in &gateways {
-        log::info!("Deleting gateway `{gateway}`");
+        log::info!("Deleting Gateway `{gateway}`");
 
         if let Err(err) = delete_gateway(&state.http, gateway).await {
-            log::error!("Failed to delete gateway `{}`: {}", gateway, err);
+            log::error!("Failed to delete Gateway `{}`: {}", gateway, err);
         } else {
             delete_count += 1;
         }
     }
 
-    log::info!("Deleted {delete_count}/{} gateways", gateways.len());
+    log::info!("Deleted {delete_count}/{} Gateways", gateways.len());
 
     Ok(())
 }

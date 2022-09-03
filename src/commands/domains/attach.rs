@@ -7,9 +7,9 @@ use crate::commands::ignite::util::{format_deployments, get_all_deployments};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
-#[clap(about = "Attach a domain to a gateway")]
+#[clap(about = "Attach a domain to a Gateway")]
 pub struct Options {
-    #[clap(name = "gateway", help = "ID of the gateway")]
+    #[clap(name = "gateway", help = "ID of the Gateway")]
     pub gateway: Option<String>,
 
     #[clap(name = "domain", help = "Name of the domain")]
@@ -36,15 +36,15 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .expect("No deployment selected");
 
             let gateways = get_all_gateways(&state.http, &deployments[idx].id).await?;
-            ensure!(!gateways.is_empty(), "No gateways found");
+            ensure!(!gateways.is_empty(), "No Gateways found");
             let gateways_fmt = format_gateways(&gateways, false);
 
             let idx = dialoguer::Select::new()
-                .with_prompt("Select a gateway")
+                .with_prompt("Select a Gateway")
                 .default(0)
                 .items(&gateways_fmt)
                 .interact_opt()?
-                .expect("No gateways selected");
+                .expect("No Gateways selected");
 
             gateways[idx].id.clone()
         }
@@ -60,7 +60,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     attach_domain(&state.http, &gateway_id, &domain).await?;
 
-    log::info!("Attached domain `{}` to gateway `{}`", domain, gateway_id);
+    log::info!("Attached domain `{}` to Gateway `{}`", domain, gateway_id);
     log::info!("Please create a non-proxied DNS record pointing to bellow");
     println!("\tCNAME {domain} -> border.hop.io");
 

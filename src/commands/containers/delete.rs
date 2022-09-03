@@ -73,7 +73,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         }
     }
 
-    log::info!("Deleted {delete_count}/{} gateways", containers.len());
+    log::info!("Deleted {delete_count}/{} containers", containers.len());
 
     Ok(())
 }

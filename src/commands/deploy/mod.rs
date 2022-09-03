@@ -188,7 +188,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             if !options.yes
                 && !is_not_guided
                 && dialoguer::Confirm::new()
-                    .with_prompt("Do you want to create a gateway? (You can always add one later)")
+                    .with_prompt("Do you want to create a Gateway? (You can always add one later)")
                     .interact()?
             {
                 let gateway_config = update_gateway_config(
@@ -199,7 +199,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
                 let gateway = create_gateway(&state.http, &deployment.id, &gateway_config).await?;
 
-                log::info!("Created gateway `{}`", gateway.id);
+                log::info!("Created Gateway `{}`", gateway.id);
 
                 if gateway.type_ == GatewayType::External {
                     log::info!(

@@ -7,7 +7,7 @@ use crate::commands::ignite::util::{format_deployments, get_all_deployments};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
-#[clap(about = "Detach a domain from a gateway")]
+#[clap(about = "Detach a domain from a Gateway")]
 pub struct Options {
     #[clap(name = "domain", help = "ID of the domain")]
     pub domain: Option<String>,
@@ -33,15 +33,15 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .expect("No deployment selected");
 
             let gateways = get_all_gateways(&state.http, &deployments[idx].id).await?;
-            ensure!(!gateways.is_empty(), "No gateways found");
+            ensure!(!gateways.is_empty(), "No Gateways found");
             let gateways_fmt = format_gateways(&gateways, false);
 
             let idx = dialoguer::Select::new()
-                .with_prompt("Select a gateway")
+                .with_prompt("Select a Gateway")
                 .default(0)
                 .items(&gateways_fmt)
                 .interact_opt()?
-                .expect("No gateways selected");
+                .expect("No Gateway selected");
 
             let domains = get_all_domains(&state.http, &gateways[idx].id).await?;
             let domains_fmt = format_domains(&domains, false);

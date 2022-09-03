@@ -6,7 +6,7 @@ use crate::commands::ignite::util::{format_deployments, get_all_deployments};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
-#[clap(about = "List all gateways")]
+#[clap(about = "List all Gateways")]
 pub struct Options {
     #[clap(name = "deployment", help = "ID of the deployment")]
     pub deployment: Option<String>,

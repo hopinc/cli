@@ -10,9 +10,9 @@ use crate::commands::ignite::util::{format_deployments, get_all_deployments};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
-#[clap(about = "Update a gateway")]
+#[clap(about = "Update a Gateway")]
 pub struct Options {
-    #[clap(name = "gateway", help = "ID of the gateway")]
+    #[clap(name = "gateway", help = "ID of the Gateway")]
     pub gateway: Option<String>,
 
     #[clap(flatten)]
@@ -42,11 +42,11 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             let gateways_fmt = format_gateways(&gateways, false);
 
             let idx = dialoguer::Select::new()
-                .with_prompt("Select a gateway to update")
+                .with_prompt("Select a Gateway to update")
                 .default(0)
                 .items(&gateways_fmt)
                 .interact_opt()?
-                .expect("No gateways selected");
+                .expect("No Gateways selected");
 
             gateways[idx].clone()
         }
@@ -60,7 +60,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     update_gateway(&state.http, &gateway.id, &gateway_config).await?;
 
-    log::info!("Updated gateway `{}`", gateway.id);
+    log::info!("Updated Gateway `{}`", gateway.id);
 
     Ok(())
 }
