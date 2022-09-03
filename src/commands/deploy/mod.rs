@@ -229,6 +229,8 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     })
     .await?;
 
+    leap.channel_subscribe(&project.id).await?;
+
     // deployment id is used not to colide if the user is deploying multiple items
     let packed = compress(deployment.id.clone(), dir).await?;
 
