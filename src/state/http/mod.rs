@@ -101,12 +101,18 @@ impl HttpClient {
 
         let request = request.build().unwrap();
 
+        #[cfg(debug_assertions)]
+        let now = tokio::time::Instant::now();
+
         let response = self
             .client
             .execute(request)
             .await
             .map_err(|e| e.to_string())
             .expect("Failed to send the request");
+
+        #[cfg(debug_assertions)]
+        log::debug!("response in: {:#?}", now.elapsed());
 
         self.handle_response(response).await
     }

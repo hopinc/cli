@@ -11,6 +11,9 @@ use hop_cli::{utils, CLI};
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    #[cfg(debug_assertions)]
+    let now = tokio::time::Instant::now();
+
     // setup panic hook
     utils::set_hook();
 
@@ -38,6 +41,9 @@ async fn main() -> Result<()> {
     }
 
     utils::clean_term();
+
+    #[cfg(debug_assertions)]
+    log::debug!("Finished in {:#?}", now.elapsed());
 
     Ok(())
 }
