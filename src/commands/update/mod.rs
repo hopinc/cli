@@ -2,6 +2,8 @@ mod parse;
 pub mod types;
 pub mod util;
 
+use std::path::PathBuf;
+
 use anyhow::Result;
 use clap::Parser;
 use tokio::fs;
@@ -37,6 +39,8 @@ pub async fn handle(options: Options, mut state: State) -> Result<()> {
 
     log::info!("Found new version {version} (current: {VERSION})");
 
+    let version = String::from("0.1.33");
+
     // download the new release
     let packed_temp = download(http, version.to_string())
         .await
@@ -51,7 +55,20 @@ pub async fn handle(options: Options, mut state: State) -> Result<()> {
     let mut non_elevated_args: Vec<String> = vec![];
     let mut elevated_args: Vec<String> = vec![];
 
-    let current = std::env::current_exe()?;
+    let mut current = std::env::current_exe()?
+        .canonicalize()?
+        .to_string_lossy()
+        .to_string();
+
+    if current.starts_with(r"\\\\?\\") {
+        current = current[7..].to_string();
+    } else if current.starts_with(r"\\?\") {
+        current = current[4..].to_string();
+    }
+
+    let current = PathBuf::from(current);
+
+    log::debug!("Current executable: {current:?}");
 
     // swap the executables
     swap_exe_command(

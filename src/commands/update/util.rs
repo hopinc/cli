@@ -323,8 +323,8 @@ pub async fn swap_exe_command(
 #[cfg(any(target_os = "windows", target_os = "macos"))]
 #[inline]
 pub async fn create_completions_commands(
-    _non_elevated_args: &mut Vec<String>,
-    _elevated_args: &mut Vec<String>,
+    _non_elevated_args: &mut [String],
+    _elevated_args: &mut [String],
     _exe_path: PathBuf,
 ) {
 }
