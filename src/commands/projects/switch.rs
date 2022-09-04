@@ -11,7 +11,7 @@ pub struct Options {
     pub project: Option<String>,
 }
 
-pub async fn handle(options: &Options, mut state: State) -> Result<()> {
+pub async fn handle(options: Options, mut state: State) -> Result<()> {
     let projects = state.ctx.current.clone().unwrap().projects;
 
     let project = match options.project.clone() {

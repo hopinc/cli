@@ -14,7 +14,7 @@ pub struct Options {
     pub quiet: bool,
 }
 
-pub fn handle(options: &Options, state: State) {
+pub fn handle(options: Options, state: State) {
     let projects = state.ctx.current.unwrap().projects;
 
     if options.quiet {
@@ -24,7 +24,7 @@ pub fn handle(options: &Options, state: State) {
             .collect::<Vec<_>>()
             .join(" ");
 
-        println!("{}", ids);
+        print!("{}", ids);
     } else {
         let projects_fmt = format_projects(&projects, true);
 

@@ -1,4 +1,4 @@
-use anyhow::{anyhow, ensure, Result};
+use anyhow::{bail, ensure, Result};
 use clap::Parser;
 
 use super::utils::delete_container;
@@ -51,14 +51,16 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             .collect()
     };
 
-    if !options.force {
-        dialoguer::Confirm::new()
+    if !options.force
+        && !dialoguer::Confirm::new()
             .with_prompt(format!(
                 "Are you sure you want to delete {} containers?",
                 containers.len()
             ))
             .interact_opt()?
-            .ok_or_else(|| anyhow!("Aborted"))?;
+            .unwrap_or(false)
+    {
+        bail!("Aborted");
     }
 
     let mut delete_count = 0;

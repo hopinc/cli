@@ -67,7 +67,7 @@ pub async fn create_deployment(
 }
 
 pub async fn delete_deployment(http: &HttpClient, deployment_id: &str) -> Result<()> {
-    http.request::<()>(
+    http.request::<Value>(
         "DELETE",
         &format!("/ignite/deployments/{deployment_id}",),
         None,
@@ -110,7 +110,7 @@ pub async fn rollout(http: &HttpClient, deployment_id: &str) -> Result<()> {
 }
 
 pub async fn scale(http: &HttpClient, deployment_id: &str, scale: u64) -> Result<()> {
-    http.request::<()>(
+    http.request::<Value>(
         "PATCH",
         &format!("/ignite/deployments/{deployment_id}/scale"),
         Some((

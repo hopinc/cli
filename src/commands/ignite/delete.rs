@@ -1,4 +1,4 @@
-use anyhow::{anyhow, ensure, Result};
+use anyhow::{bail, ensure, Result};
 use clap::Parser;
 
 use crate::commands::ignite::util::{delete_deployment, format_deployments, get_all_deployments};
@@ -37,14 +37,13 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         }
     };
 
-    if !options.force {
-        dialoguer::Confirm::new()
-            .with_prompt(format!(
-                "Are you sure you want to delete `{}`?",
-                deployment_id
-            ))
+    if !options.force
+        && !dialoguer::Confirm::new()
+            .with_prompt("Are you sure you want to delete the deployment?")
             .interact_opt()?
-            .ok_or_else(|| anyhow!("Aborted"))?;
+            .unwrap_or(false)
+    {
+        bail!("Aborted");
     }
 
     delete_deployment(&state.http, &deployment_id).await?;

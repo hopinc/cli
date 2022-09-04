@@ -1,5 +1,6 @@
-use anyhow::{ensure, Result};
+use anyhow::{bail, Result};
 use clap::Parser;
+use serde_json::Value;
 
 use crate::commands::secrets::types::Secrets;
 use crate::commands::secrets::util::validate_name;
@@ -50,24 +51,20 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         }
     };
 
-    if !options.force {
-        let confirm = dialoguer::Confirm::new()
-            .with_prompt(&format!(
-                "Are you sure you want to delete secret `{}`?",
-                secret_name
+    if !options.force
+        && !dialoguer::Confirm::new()
+            .with_prompt(format!(
+                "Are you sure you want to delete secret `{secret_name}`?"
             ))
-            .interact_opt()?;
-
-        ensure!(
-            (confirm.is_some() || confirm.unwrap()),
-            "Aborted deletion of `{}`",
-            secret_name
-        );
+            .interact_opt()?
+            .unwrap_or(false)
+    {
+        bail!("Aborted");
     }
 
     state
         .http
-        .request::<()>(
+        .request::<Value>(
             "DELETE",
             &format!("/projects/{}/secrets/{}", project_id, secret_name),
             None,

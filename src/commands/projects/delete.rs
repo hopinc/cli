@@ -1,5 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
+use serde_json::Value;
 
 use super::util::format_projects;
 use crate::commands::projects::util::format_project;
@@ -16,7 +17,7 @@ pub struct Options {
     force: bool,
 }
 
-pub async fn handle(options: &Options, mut state: State) -> Result<()> {
+pub async fn handle(options: Options, mut state: State) -> Result<()> {
     let projects = state.ctx.current.clone().unwrap().projects;
 
     let project = match options.project.clone() {
@@ -67,7 +68,7 @@ pub async fn handle(options: &Options, mut state: State) -> Result<()> {
 
     state
         .http
-        .request::<()>("DELETE", &format!("/projects/{}", project.id), None)
+        .request::<Value>("DELETE", &format!("/projects/{}", project.id), None)
         .await?;
 
     if state.ctx.default_project == Some(project.id.to_string()) {

@@ -144,3 +144,17 @@ pub async fn in_path(program: &str) -> bool {
 pub fn urlify(s: &str) -> String {
     style(s).bold().underlined().to_string()
 }
+
+pub fn validate_json(json: &str) -> Result<(), String> {
+    serde_json::from_str::<serde_json::Value>(json).map_err(|e| format!("Invalid JSON: {e}"))?;
+
+    Ok(())
+}
+
+pub fn validate_json_non_null(json: &str) -> Result<(), String> {
+    if json == "null" {
+        return Err("JSON cannot be null".to_string());
+    }
+
+    validate_json(json)
+}

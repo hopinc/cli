@@ -2,6 +2,7 @@ use std::io::Write;
 
 use anyhow::{anyhow, Result};
 use regex::Regex;
+use serde_json::Value;
 
 use super::create::GatewayOptions;
 use super::types::{
@@ -76,7 +77,7 @@ pub async fn update_gateway(
 }
 
 pub async fn delete_gateway(http: &HttpClient, gateway_id: &str) -> Result<()> {
-    http.request::<()>("DELETE", &format!("/ignite/gateways/{gateway_id}"), None)
+    http.request::<Value>("DELETE", &format!("/ignite/gateways/{gateway_id}"), None)
         .await?;
 
     Ok(())

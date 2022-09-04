@@ -41,7 +41,7 @@ async fn create_project(params: CreateParams, http: HttpClient) -> Result<Projec
     Ok(json.project)
 }
 
-pub async fn handle(options: &Options, mut state: State) -> anyhow::Result<()> {
+pub async fn handle(options: Options, mut state: State) -> anyhow::Result<()> {
     let params = CreateParams {
         name: options.name.clone(),
         namespace: options.namespace.clone(),

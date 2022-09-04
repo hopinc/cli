@@ -36,7 +36,7 @@ pub async fn create_containers(
 }
 
 pub async fn delete_container(http: &HttpClient, container_id: &str) -> Result<()> {
-    http.request::<()>(
+    http.request::<Value>(
         "DELETE",
         &format!("/ignite/containers/{}", container_id),
         None,

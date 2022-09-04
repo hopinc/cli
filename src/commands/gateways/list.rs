@@ -51,7 +51,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             .collect::<Vec<_>>()
             .join(" ");
 
-        println!("{}", ids);
+        print!("{}", ids);
     } else {
         let containers_fmt = format_gateways(&gateways, true);
 
