@@ -39,8 +39,6 @@ pub async fn handle(options: Options, mut state: State) -> Result<()> {
 
     log::info!("Found new version {version} (current: {VERSION})");
 
-    let version = String::from("0.1.33");
-
     // download the new release
     let packed_temp = download(http, version.to_string())
         .await
