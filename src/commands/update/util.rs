@@ -13,15 +13,15 @@ use crate::state::http::HttpClient;
 use crate::store::context::Context;
 use crate::util::is_writable;
 
-pub const RELEASE_URL: &str = "https://api.github.com/repos/hopinc/hop_cli/releases";
-pub const BASE_DOWNLOAD_URL: &str = "https://github.com/hopinc/hop_cli/releases/download";
+pub const RELEASE_HOP_CLI_URL: &str = "https://api.github.com/repos/hopinc/hop_cli/releases";
+pub const HOP_CLI_DOWNLOAD_URL: &str = "https://github.com/hopinc/hop_cli/releases/download";
 
 pub async fn check_version(current: &Version, beta: bool) -> Result<(bool, Version)> {
     let http = HttpClient::new(None, None);
 
     let response = http
         .client
-        .get(RELEASE_URL)
+        .get(RELEASE_HOP_CLI_URL)
         .send()
         .await
         .map_err(|_| anyhow!("Failed to get latest release"))?;

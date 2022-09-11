@@ -13,7 +13,7 @@ use self::util::{
     check_version, create_completions_commands, download, execute_commands, now_secs,
     swap_exe_command, unpack,
 };
-use crate::commands::update::util::BASE_DOWNLOAD_URL;
+use crate::commands::update::util::HOP_CLI_DOWNLOAD_URL;
 use crate::config::{ARCH, VERSION};
 use crate::state::http::HttpClient;
 use crate::state::State;
@@ -46,7 +46,7 @@ pub async fn handle(options: Options, mut state: State) -> Result<()> {
     // download the new release
     let packed_temp = download(
         &http,
-        BASE_DOWNLOAD_URL,
+        HOP_CLI_DOWNLOAD_URL,
         &format!("v{version}"),
         &format!("hop-{ARCH}-{platform}"),
     )

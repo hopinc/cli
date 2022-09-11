@@ -2,16 +2,18 @@ use std::path::PathBuf;
 use std::process::Stdio;
 use std::vec;
 
-use anyhow::{bail, Result};
+use anyhow::{anyhow, bail, ensure, Result};
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
 
 use crate::commands::deploy::HOP_REGISTRY_URL;
+use crate::commands::update::types::GithubRelease;
 use crate::commands::update::util::{download, execute_commands, swap_exe_command, unpack};
 use crate::config::ARCH;
 use crate::state::http::HttpClient;
 
+const RELEASE_NIXPACKS_URL: &str = "https://api.github.com/repos/hopinc/nixpacks/releases";
 const BASE_NIXPACKS_URL: &str = "https://github.com/hopinc/nixpacks/releases/download";
 
 pub async fn install_nixpacks(path: &PathBuf) -> Result<()> {
@@ -19,7 +21,25 @@ pub async fn install_nixpacks(path: &PathBuf) -> Result<()> {
 
     let http = HttpClient::new(None, None);
 
-    let version = "v0.4.2";
+    let response = http
+        .client
+        .get(RELEASE_NIXPACKS_URL)
+        .send()
+        .await
+        .map_err(|_| anyhow!("Failed to get latest release"))?;
+
+    ensure!(
+        response.status().is_success(),
+        "Failed to get latest release from Github: {}",
+        response.status()
+    );
+
+    let data = response
+        .json::<Vec<GithubRelease>>()
+        .await
+        .map_err(|_| anyhow!("Failed to parse Github release"))?;
+
+    let version = &data.first().unwrap().tag_name;
 
     let platform = get_nixpacks_platform()?;
 
