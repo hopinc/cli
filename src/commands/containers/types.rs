@@ -6,7 +6,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::commands::ignite::types::Deployment;
-use crate::utils::deserialize_from_str;
+use crate::util::deserialize_from_str;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub enum ContainerType {

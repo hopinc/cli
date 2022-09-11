@@ -2,7 +2,7 @@ pub mod commands;
 pub mod config;
 pub mod state;
 pub mod store;
-pub mod utils;
+pub mod util;
 
 use clap::Parser;
 use commands::Commands;

@@ -12,7 +12,7 @@ use crate::commands::containers::utils::{
 };
 use crate::commands::ignite::util::{format_deployments, get_all_deployments};
 use crate::state::State;
-use crate::utils::in_path;
+use crate::util::in_path;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Get logs of a container")]

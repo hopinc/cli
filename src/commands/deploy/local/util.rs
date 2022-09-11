@@ -1,0 +1,101 @@
+use std::path::PathBuf;
+use std::process::Stdio;
+
+use anyhow::{bail, Result};
+use tokio::io::AsyncWriteExt;
+use tokio::process::Command;
+
+use crate::commands::deploy::HOP_REGISTRY_URL;
+use crate::commands::update::util::{download, execute_commands, swap_exe_command, unpack};
+use crate::config::ARCH;
+use crate::state::http::HttpClient;
+
+const BASE_NIXPACKS_URL: &str = "https://github.com/hopinc/nixpacks/releases/download";
+
+pub async fn install_nixpacks(path: &PathBuf) -> Result<()> {
+    log::debug!("Install nixpacks to {path:?}");
+
+    let http = HttpClient::new(None, None);
+
+    let version = "v0.4.2";
+
+    let platform = get_nixpacks_platform()?;
+
+    let packed = download(
+        &http,
+        BASE_NIXPACKS_URL,
+        version,
+        &format!("nixpacks-{version}-{ARCH}-{platform}"),
+    )
+    .await?;
+
+    let unpacked = unpack(&packed, "nixpacks").await?;
+
+    let mut elevated = vec![];
+    let mut non_elevated = vec![];
+
+    swap_exe_command(&mut non_elevated, &mut elevated, path.clone(), unpacked).await;
+    execute_commands(&non_elevated, &elevated).await?;
+
+    Ok(())
+}
+
+fn get_nixpacks_platform() -> Result<&'static str> {
+    match sys_info::os_type()?.to_lowercase().as_str() {
+        "linux" => Ok("unknown-linux-musl"),
+        "macos" => Ok("apple-darwin"),
+        "windows" => Ok("pc-windows-msvc"),
+        _ => bail!("Unsupported platform"),
+    }
+}
+
+pub async fn docker_login(username: &str, password: &str) -> Result<()> {
+    let status = Command::new("docker")
+        .arg("login")
+        .arg(HOP_REGISTRY_URL)
+        // making the stdin piped disables tty
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status().await?;
+
+    log::debug!("Docker login exited with {status}");
+
+    if status.success() {
+        log::debug!("Docker login successful");
+
+        return Ok(());
+    }
+
+    let mut child = Command::new("docker")
+        .arg("login")
+        .arg("--username")
+        .arg(username)
+        .arg("--password-stdin")
+        .arg(HOP_REGISTRY_URL)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()?;
+
+    log::debug!("Writing password to stdin");
+
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(password.as_bytes())
+        .await?;
+
+    let status = child.wait().await?;
+
+    log::debug!("Docker login exited with {status}");
+
+    if status.success() {
+        log::debug!("Docker login successful");
+
+        return Ok(());
+    }
+
+    bail!("Docker login failed");
+}

@@ -11,7 +11,7 @@ use super::types::{
     MultipleContainersResponse, UpdateContainerState,
 };
 use crate::state::http::HttpClient;
-use crate::utils::relative_time;
+use crate::util::relative_time;
 
 pub async fn create_containers(
     http: &HttpClient,

@@ -19,7 +19,7 @@ pub fn handle(_options: &Options, state: State) -> Result<()> {
     log::info!(
         "You are logged in as `{}` ({})",
         authorized.name,
-        authorized.email.unwrap_or(authorized.id)
+        authorized.email
     );
 
     let project = state.ctx.current_project();

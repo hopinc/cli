@@ -58,7 +58,7 @@ async fn login_pat(http: HttpClient) -> AuthorizedClient {
         name: response.user.name,
         projects: response.projects,
         leap_token: response.leap_token,
-        email: Some(response.user.email),
+        email: response.user.email,
     }
 }
 
@@ -77,6 +77,6 @@ async fn login_ptk(http: HttpClient) -> AuthorizedClient {
         name: project.name,
         id: project.id,
         leap_token,
-        email: None,
+        email: "user@hop.io".to_string(),
     }
 }

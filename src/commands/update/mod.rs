@@ -13,9 +13,11 @@ use self::util::{
     check_version, create_completions_commands, download, execute_commands, now_secs,
     swap_exe_command, unpack,
 };
-use crate::config::VERSION;
+use crate::commands::update::util::BASE_DOWNLOAD_URL;
+use crate::config::{ARCH, VERSION};
 use crate::state::http::HttpClient;
 use crate::state::State;
+use crate::util::capitalize;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Update Hop to the latest version")]
@@ -39,13 +41,19 @@ pub async fn handle(options: Options, mut state: State) -> Result<()> {
 
     log::info!("Found new version {version} (current: {VERSION})");
 
+    let platform = capitalize(&sys_info::os_type().unwrap_or_else(|_| "Unknown".to_string()));
+
     // download the new release
-    let packed_temp = download(http, version.to_string())
-        .await
-        .expect("Failed to download");
+    let packed_temp = download(
+        &http,
+        BASE_DOWNLOAD_URL,
+        &format!("v{version}"),
+        &format!("hop-{ARCH}-{platform}"),
+    )
+    .await?;
 
     // unpack the new release
-    let unpacked = unpack(packed_temp.clone()).await?;
+    let unpacked = unpack(&packed_temp, "hop").await?;
 
     // remove the tarball since it's no longer needed
     fs::remove_file(packed_temp).await?;
