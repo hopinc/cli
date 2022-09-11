@@ -1,7 +1,9 @@
 use std::path::PathBuf;
 use std::process::Stdio;
+use std::vec;
 
 use anyhow::{bail, Result};
+use tokio::fs;
 use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
 
@@ -33,6 +35,12 @@ pub async fn install_nixpacks(path: &PathBuf) -> Result<()> {
 
     let mut elevated = vec![];
     let mut non_elevated = vec![];
+
+    let parent = path.parent().unwrap().to_path_buf();
+
+    if fs::create_dir_all(&parent).await.is_err() {
+        elevated.push(format!("mkdir -p {}", parent.display()));
+    }
 
     swap_exe_command(&mut non_elevated, &mut elevated, path.clone(), unpacked).await;
     execute_commands(&non_elevated, &elevated).await?;

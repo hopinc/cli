@@ -11,6 +11,7 @@ use super::types::{GithubRelease, Version};
 use crate::config::VERSION;
 use crate::state::http::HttpClient;
 use crate::store::context::Context;
+use crate::util::is_writable;
 
 pub const RELEASE_URL: &str = "https://api.github.com/repos/hopinc/hop_cli/releases";
 pub const BASE_DOWNLOAD_URL: &str = "https://github.com/hopinc/hop_cli/releases/download";
@@ -172,7 +173,7 @@ pub async fn unpack(packed_temp: &PathBuf, filename: &str) -> Result<PathBuf> {
     let gunzip = GzipDecoder::new(reader);
     let mut tar = Archive::new(gunzip);
 
-    let unpack_dir = temp_dir().join("extract-tmp");
+    let unpack_dir = temp_dir().join(format!("extract-tmp-{filename}"));
 
     // clean up any existing unpacked files
     fs::remove_dir_all(unpack_dir.clone()).await.ok();
@@ -248,6 +249,9 @@ pub async fn execute_commands(
     non_elevated_args: &Vec<String>,
     elevated_args: &Vec<String>,
 ) -> Result<()> {
+    log::debug!("non-elevated commands: {non_elevated_args:?}");
+    log::debug!("elevated commands: {elevated_args:?}");
+
     if !non_elevated_args.is_empty() {
         Cmd::new("sh")
             .args(&["-c", &non_elevated_args.join(" && ")])
@@ -342,13 +346,4 @@ pub async fn execute_commands(
     }
 
     Ok(())
-}
-
-async fn is_writable(path: &PathBuf) -> bool {
-    fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(path)
-        .await
-        .is_ok()
 }

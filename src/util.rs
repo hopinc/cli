@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -165,4 +166,20 @@ pub fn capitalize(s: &str) -> String {
         None => String::new(),
         Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
     }
+}
+
+pub async fn is_writable(path: &PathBuf) -> bool {
+    if fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(path)
+        .await
+        .is_ok()
+    {
+        fs::remove_file(path).await.ok();
+
+        return true;
+    }
+
+    false
 }
