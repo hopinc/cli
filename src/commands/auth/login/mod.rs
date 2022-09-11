@@ -54,7 +54,7 @@ pub async fn token(token: &str, mut state: State) -> Result<()> {
         log::info!(
             "Nothing was changed. You are already logged in as: `{}` ({})",
             authorized.name,
-            authorized.email.unwrap_or(authorized.id)
+            authorized.email
         );
         return Ok(());
     }
@@ -71,11 +71,7 @@ pub async fn token(token: &str, mut state: State) -> Result<()> {
     state.ctx.save().await?;
 
     // output the login info
-    log::info!(
-        "Logged in as: `{}` ({})",
-        authorized.name,
-        authorized.email.unwrap_or(authorized.id)
-    );
+    log::info!("Logged in as: `{}` ({})", authorized.name, authorized.email);
 
     Ok(())
 }

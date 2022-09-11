@@ -8,12 +8,12 @@ use runas::Command as SudoCmd;
 use tokio::fs;
 
 use super::types::{GithubRelease, Version};
-use crate::config::{ARCH, VERSION};
+use crate::config::VERSION;
 use crate::state::http::HttpClient;
 use crate::store::context::Context;
 
-const RELEASE_URL: &str = "https://api.github.com/repos/hopinc/hop_cli/releases";
-const BASE_DOWNLOAD_URL: &str = "https://github.com/hopinc/hop_cli/releases/download";
+pub const RELEASE_URL: &str = "https://api.github.com/repos/hopinc/hop_cli/releases";
+pub const BASE_DOWNLOAD_URL: &str = "https://github.com/hopinc/hop_cli/releases/download";
 
 pub async fn check_version(current: &Version, beta: bool) -> Result<(bool, Version)> {
     let http = HttpClient::new(None, None);
@@ -118,30 +118,25 @@ pub fn now_secs() -> u64 {
         .as_secs()
 }
 
-fn capitalize(s: &str) -> String {
-    let mut c = s.chars();
-    match c.next() {
-        None => String::new(),
-        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
-    }
-}
-
 #[cfg(not(windows))]
 const COMPRESSED_FILE_EXTENSION: &str = "tar.gz";
 
 #[cfg(windows)]
 const COMPRESSED_FILE_EXTENSION: &str = "zip";
 
-pub async fn download(http: HttpClient, version: String) -> Result<PathBuf> {
-    let platform = capitalize(&sys_info::os_type().unwrap_or_else(|_| "Unknown".to_string()));
-
-    let filename = format!("hop-{ARCH}-{platform}.{COMPRESSED_FILE_EXTENSION}",);
-
+pub async fn download(
+    http: &HttpClient,
+    base_url: &str,
+    version: &str,
+    filename: &str,
+) -> Result<PathBuf> {
     log::info!("Downloading {filename}@{version}");
 
     let response = http
         .client
-        .get(&format!("{BASE_DOWNLOAD_URL}/v{version}/{filename}"))
+        .get(&format!(
+            "{base_url}/{version}/{filename}.{COMPRESSED_FILE_EXTENSION}"
+        ))
         .send()
         .await
         .expect("Failed to get latest release");
@@ -167,7 +162,7 @@ pub async fn download(http: HttpClient, version: String) -> Result<PathBuf> {
 }
 
 #[cfg(not(windows))]
-pub async fn unpack(packed_temp: PathBuf) -> Result<PathBuf> {
+pub async fn unpack(packed_temp: &PathBuf, filename: &str) -> Result<PathBuf> {
     use async_compression::tokio::bufread::GzipDecoder;
     use tokio::io::BufReader;
     use tokio_tar::Archive;
@@ -177,7 +172,7 @@ pub async fn unpack(packed_temp: PathBuf) -> Result<PathBuf> {
     let gunzip = GzipDecoder::new(reader);
     let mut tar = Archive::new(gunzip);
 
-    let unpack_dir = temp_dir().join("hop-extract");
+    let unpack_dir = temp_dir().join("extract-tmp");
 
     // clean up any existing unpacked files
     fs::remove_dir_all(unpack_dir.clone()).await.ok();
@@ -185,7 +180,7 @@ pub async fn unpack(packed_temp: PathBuf) -> Result<PathBuf> {
 
     tar.unpack(&unpack_dir).await?;
 
-    let exe = unpack_dir.join("hop");
+    let exe = unpack_dir.join(filename);
 
     log::debug!("Unpacked to: {exe:?}");
 
@@ -269,7 +264,7 @@ pub async fn execute_commands(
 }
 
 #[cfg(windows)]
-pub async fn unpack(packed_temp: PathBuf) -> Result<PathBuf> {
+pub async fn unpack(packed_temp: &PathBuf, filename: &str) -> Result<PathBuf> {
     use async_zip::read::stream::ZipFileReader;
 
     log::debug!("Unpacking: {packed_temp:?}");
@@ -278,7 +273,7 @@ pub async fn unpack(packed_temp: PathBuf) -> Result<PathBuf> {
     // seeking breaks the zips since its a single file
     let mut zip = ZipFileReader::new(stream);
 
-    let exe = temp_dir().join("hop.exe");
+    let exe = temp_dir().join(&format!("{filename}.exe"));
 
     // unpack the only file
     let data = zip

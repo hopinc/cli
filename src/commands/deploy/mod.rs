@@ -1,21 +1,16 @@
-pub mod types;
+mod builder;
+mod local;
 pub mod util;
 
 use std::env::current_dir;
 use std::path::PathBuf;
 
-use anyhow::{bail, Result};
+use anyhow::Result;
 use clap::Parser;
-use hop_leap::leap::types::Event;
-use hop_leap::{LeapEdge, LeapOptions};
-use tokio::sync::mpsc::unbounded_channel;
-use tokio::{fs, spawn};
 
-use self::util::{compress, env_file_to_map};
+use self::util::env_file_to_map;
 use crate::commands::containers::types::ContainerOptions;
 use crate::commands::containers::utils::create_containers;
-use crate::commands::deploy::types::BuildEvents;
-use crate::commands::deploy::util::{builder_post, cancel_build};
 use crate::commands::gateways::create::GatewayOptions;
 use crate::commands::gateways::types::{GatewayConfig, GatewayType};
 use crate::commands::gateways::util::{create_gateway, update_gateway_config};
@@ -27,10 +22,9 @@ use crate::commands::ignite::types::{
 };
 use crate::commands::ignite::util::{create_deployment, rollout, update_deployment_config};
 use crate::commands::projects::util::format_project;
-use crate::config::HOP_LEAP_PROJECT;
 use crate::state::State;
 use crate::store::hopfile::HopFile;
-use crate::utils::urlify;
+use crate::util::urlify;
 
 const HOP_BUILD_BASE_URL: &str = "https://builder.hop.io/v1";
 const HOP_REGISTRY_URL: &str = "registry.hop.io";
@@ -60,9 +54,15 @@ pub struct Options {
         help = "Use the default yes answer to all prompts"
     )]
     yes: bool,
+
+    #[clap(
+        short = 'l',
+        long = "local",
+        help = "Build the container locally using nixpacks or docker instead of using the builder"
+    )]
+    local: bool,
 }
 
-#[allow(clippy::too_many_lines)]
 pub async fn handle(options: Options, state: State) -> Result<()> {
     let mut dir = current_dir().expect("Could not get current directory");
 
@@ -221,126 +221,11 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         }
     };
 
-    // connect to leap here so no logs interfere with the deploy
-    let mut leap = LeapEdge::new(LeapOptions {
-        token: Some(&state.ctx.current.unwrap().leap_token),
-        project: HOP_LEAP_PROJECT,
-        ..Default::default()
-    })
-    .await?;
-
-    leap.channel_subscribe(&project.id).await?;
-
-    // deployment id is used not to colide if the user is deploying multiple items
-    let packed = compress(deployment.id.clone(), dir).await?;
-
-    log::info!("Packed to: {packed}");
-
-    let bytes = fs::read(packed.clone()).await?;
-
-    log::info!("Uploading...");
-
-    let build = builder_post(&state.http, &deployment.id, bytes).await?;
-
-    let (tx, mut rx) = unbounded_channel();
-
-    let http = state.http.clone();
-    let build_id = build.id.clone();
-
-    spawn(async move {
-        loop {
-            match rx.recv().await {
-                Some("CANCEL") => {
-                    log::info!("Cancelling build...");
-
-                    if cancel_build(&http, &build_id).await.is_ok() {
-                        log::info!("Build cancelled by user");
-                    } else {
-                        log::error!("Failed to cancel build");
-                    }
-
-                    std::process::exit(1);
-                }
-
-                Some("OK") => break,
-
-                _ => {}
-            }
-        }
-    });
-
-    let ctrlc = tx.clone();
-
-    ctrlc::set_handler(move || {
-        ctrlc.send("CANCEL").ok();
-    })?;
-
-    log::info!("Deleting archive...");
-    fs::remove_file(packed).await?;
-
-    log::info!("From Hop builder:");
-
-    while let Some(event) = leap.listen().await {
-        if let Event::Message(capsuled) = event {
-            if Some(project.id.clone()) != capsuled.channel {
-                continue;
-            }
-
-            let build_data =
-                match serde_json::from_value(serde_json::to_value(capsuled.data).unwrap()) {
-                    Ok(build_data) => build_data,
-                    Err(_) => {
-                        // silently ignore
-
-                        continue;
-                    }
-                };
-
-            match build_data {
-                BuildEvents::BuildProgress(build_progress) => {
-                    if build_progress.build_id == build.id {
-                        print!("{}", build_progress.log);
-                    }
-                }
-
-                BuildEvents::BuildCancelled(build_cancelled) => {
-                    if build_cancelled.build_id == build.id {
-                        tx.send("OK").ok();
-                        leap.close().await;
-
-                        bail!("Build cancelled");
-                    }
-                }
-
-                BuildEvents::PushSuccess(build_complete) => {
-                    if build_complete.build_id == build.id {
-                        tx.send("OK").ok();
-                        leap.close().await;
-
-                        println!();
-
-                        log::info!("Build complete");
-                    }
-                }
-
-                BuildEvents::PushFailure(build_failure) => {
-                    if build_failure.build_id == build.id {
-                        leap.close().await;
-
-                        println!();
-
-                        bail!(
-                            "Push failed, for help contact us on {} and mention the deployment id: {}",
-                            urlify("https://discord.gg/hop"),
-                            deployment.id
-                        );
-                    }
-                }
-            }
-        }
+    if !options.local {
+        builder::build(&state, &project.id, &deployment.id, dir.clone()).await?;
+    } else {
+        local::build(&state, &deployment.config.image.name, dir.clone()).await?;
     }
-
-    tx.send("OK").ok();
 
     if existing {
         if deployment.container_count > 0 {

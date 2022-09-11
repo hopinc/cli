@@ -16,7 +16,7 @@ pub struct AuthorizedClient {
     pub name: String,
     pub leap_token: String,
     pub projects: Vec<Project>,
-    pub email: Option<String>,
+    pub email: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]

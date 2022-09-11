@@ -9,7 +9,7 @@ use super::types::{
     Gateway, GatewayConfig, GatewayProtocol, GatewayType, MultipleGateways, SingleGateway,
 };
 use crate::state::http::HttpClient;
-use crate::utils::ask_question_iter;
+use crate::util::ask_question_iter;
 
 pub async fn create_gateway(
     http: &HttpClient,

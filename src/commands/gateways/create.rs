@@ -6,7 +6,7 @@ use crate::commands::gateways::types::GatewayConfig;
 use crate::commands::gateways::util::{create_gateway, update_gateway_config};
 use crate::commands::ignite::util::{format_deployments, get_all_deployments};
 use crate::state::State;
-use crate::utils::urlify;
+use crate::util::urlify;
 
 #[derive(Debug, Parser, Default, PartialEq)]
 pub struct GatewayOptions {
