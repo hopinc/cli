@@ -53,6 +53,8 @@ pub async fn install_nixpacks(path: &PathBuf) -> Result<()> {
 
     let unpacked = unpack(&packed, "nixpacks").await?;
 
+    fs::remove_file(&packed).await.ok();
+
     let mut elevated = vec![];
     let mut non_elevated = vec![];
 
