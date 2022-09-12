@@ -1,4 +1,5 @@
 pub mod auth;
+mod channels;
 mod completions;
 pub mod containers;
 pub mod deploy;
@@ -33,6 +34,7 @@ pub enum Commands {
     Domains(domains::Options),
     #[clap(name = "completions", alias = "complete", hide = cfg!(not(feature = "update")))]
     Completions(completions::Options),
+    Channels(channels::Options),
 }
 
 pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
@@ -56,6 +58,8 @@ pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
 
                 #[cfg(feature = "update")]
                 Commands::Update(_) => unreachable!(),
+
+                Commands::Channels(options) => channels::handle(options, state).await,
                 Commands::Projects(options) => projects::handle(options, state).await,
                 Commands::Secrets(options) => secrets::handle(options, state).await,
                 Commands::Deploy(options) => deploy::handle(options, state).await,
