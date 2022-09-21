@@ -165,7 +165,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                     is_not_guided,
                     &Deployment::default(),
                     &Some(default_name),
-                )
+                )?
             };
 
             deployment_config.image.name = format!(

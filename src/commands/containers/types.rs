@@ -46,7 +46,7 @@ impl ContainerType {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub enum ContainerState {
     #[serde(rename = "exited")]
     Exited,
@@ -81,7 +81,7 @@ impl ContainerState {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub enum ChangeableContainerState {
     #[serde(rename = "stop")]
     Stop,

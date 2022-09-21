@@ -95,7 +95,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     let is_not_guided = options != Options::default();
 
     let (deployment_config, container_options) =
-        update_deployment_config(options, is_not_guided, &Deployment::default(), &None);
+        update_deployment_config(options, is_not_guided, &Deployment::default(), &None)?;
 
     let deployment = create_deployment(&state.http, &project.id, &deployment_config).await?;
 
