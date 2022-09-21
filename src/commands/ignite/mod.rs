@@ -1,5 +1,6 @@
 pub mod create;
 mod delete;
+mod from_compose;
 mod get_env;
 mod list;
 pub mod rollout;
@@ -29,6 +30,8 @@ pub enum Commands {
     Scale(scale::Options),
     #[clap(name = "get-env")]
     GetEnv(get_env::Options),
+    #[clap(name = "from-compose")]
+    FromCompose(from_compose::Options),
     // alias for hop containers
     #[clap(name = "containers")]
     Containers(super::containers::Options),
@@ -52,6 +55,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Commands::Rollout(options) => rollout::handle(options, state).await,
         Commands::Scale(options) => scale::handle(options, state).await,
         Commands::GetEnv(options) => get_env::handle(options, state).await,
+        Commands::FromCompose(options) => from_compose::handle(options, state).await,
         Commands::Containers(options) => super::containers::handle(options, state).await,
         Commands::Gateways(options) => super::gateways::handle(options, state).await,
     }

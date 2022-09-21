@@ -4,8 +4,6 @@ use anyhow::Result;
 use clap::Parser;
 use hop_cli::commands::handle_command;
 use hop_cli::commands::update::util::version_notice;
-#[cfg(feature = "update")]
-use hop_cli::commands::Commands;
 use hop_cli::state::{State, StateOptions};
 use hop_cli::{util, CLI};
 
