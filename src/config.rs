@@ -6,5 +6,3 @@ pub const EXEC_NAME: &str = "hop";
 #[cfg(windows)]
 pub const EXEC_NAME: &str = "hop.exe";
 pub const HOP_LEAP_PROJECT: &str = "project_MzA0MDgwOTQ2MDEwODQ5NzQ";
-
-pub static DOCKER_COMPOSE_SCHEMA: &str = include_str!("../compose-spec.json");
