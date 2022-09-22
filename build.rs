@@ -1,23 +1,21 @@
 include!("src/commands/update/parse.rs");
 
-#[cfg(windows)]
+#[cfg(all(windows, not(debug_assertions)))]
 fn main() {
-    extern crate winapi;
-    extern crate winres;
+    use winapi::um::winnt::{LANG_ENGLISH, MAKELANGID, SUBLANG_ENGLISH_US};
+    use winres::VersionInfo::PRODUCTVERSION;
+    use winres::WindowsResource;
 
     // add the resource to the executable
-    let mut resource = winres::WindowsResource::new();
+    let mut resource = WindowsResource::new();
     resource.set_icon("build/windows/resources/hop.ico");
-    resource.set_language(winapi::um::winnt::MAKELANGID(
-        winapi::um::winnt::LANG_ENGLISH,
-        winapi::um::winnt::SUBLANG_ENGLISH_US,
-    ));
+    resource.set_language(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US));
 
     // write the version to the resource
     let (major, minor, patch, release) = version(env!("CARGO_PKG_VERSION")).unwrap();
 
     resource.set_version_info(
-        winres::VersionInfo::PRODUCTVERSION,
+        PRODUCTVERSION,
         (major as u64) << 48
             | (minor as u64) << 32
             | (patch as u64) << 16
@@ -31,5 +29,6 @@ fn main() {
     static_vcruntime::metabuild();
 }
 
-#[cfg(not(windows))]
+// no need to add for non windows or debug builds
+#[cfg(any(not(windows), debug_assertions))]
 fn main() {}

@@ -47,7 +47,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         options.config != CreateOptions::default(),
         &old_deployment,
         &None,
-    );
+    )?;
 
     let deployment = update_deployment(&state.http, &old_deployment.id, &deployment_config)
         .await

@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use anyhow::{anyhow, Ok, Result};
 use chrono::{DateTime, Utc};
 use console::style;
 use fern::colors::{Color, ColoredLevelConfig};
@@ -105,7 +106,7 @@ pub fn relative_time(date: DateTime<Utc>) -> String {
     ms!(milis, true)
 }
 
-pub fn ask_question_iter<T>(prompt: &str, choices: &[T], override_default: Option<T>) -> T
+pub fn ask_question_iter<T>(prompt: &str, choices: &[T], override_default: Option<T>) -> Result<T>
 where
     T: PartialEq + Clone + Serialize + Default,
 {
@@ -123,18 +124,30 @@ where
         .with_prompt(prompt)
         .default(choices.iter().position(|x| x == &to_compare).unwrap())
         .items(&choices_txt)
-        .interact()
-        .expect("Failed to select");
+        .interact()?;
 
-    choices[choice].clone()
+    Ok(choices[choice].clone())
 }
 
+#[cfg(windows)]
+const SEPARATOR: &str = ";";
+
+#[cfg(not(windows))]
+const SEPARATOR: &str = ":";
+
 pub async fn in_path(program: &str) -> bool {
+    #[cfg(windows)]
+    let program = &format!("{}.exe", program);
+
     let path = std::env::var("PATH").unwrap();
-    let paths: Vec<&str> = path.split(':').collect();
+    let paths: Vec<&str> = path.split(SEPARATOR).collect();
 
     for path in paths {
-        if fs::metadata(format!("{path}/{program}")).await.is_ok() {
+        let to_try = format!("{path}/{program}");
+
+        log::debug!("Checking if {to_try} exists");
+
+        if fs::metadata(to_try).await.is_ok() {
             return true;
         }
     }
@@ -146,15 +159,15 @@ pub fn urlify(s: &str) -> String {
     style(s).bold().underlined().to_string()
 }
 
-pub fn validate_json(json: &str) -> Result<(), String> {
-    serde_json::from_str::<serde_json::Value>(json).map_err(|e| format!("Invalid JSON: {e}"))?;
+pub fn validate_json(json: &str) -> Result<()> {
+    serde_json::from_str::<serde_json::Value>(json).map_err(|e| anyhow!("Invalid JSON: {e}"))?;
 
     Ok(())
 }
 
-pub fn validate_json_non_null(json: &str) -> Result<(), String> {
+pub fn validate_json_non_null(json: &str) -> Result<()> {
     if json == "null" {
-        return Err("JSON cannot be null".to_string());
+        return Err(anyhow!("JSON cannot be null"));
     }
 
     validate_json(json)

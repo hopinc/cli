@@ -194,7 +194,7 @@ fn update_config_from_guided(gateway_config: &mut GatewayConfig) -> Result<()> {
     }
 
     let gateway_type = if !is_update {
-        let value = ask_question_iter("Gateway type", &GatewayType::values(), None);
+        let value = ask_question_iter("Gateway type", &GatewayType::values(), None)?;
 
         gateway_config.type_ = Some(value.clone());
 
@@ -255,7 +255,7 @@ fn update_config_from_guided(gateway_config: &mut GatewayConfig) -> Result<()> {
                 "Protocol",
                 &GatewayProtocol::values(),
                 gateway_config.protocol.clone(),
-            ));
+            )?);
 
             gateway_config.target_port = Some(
                 dialoguer::Input::<u16>::new()

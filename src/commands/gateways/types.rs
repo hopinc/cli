@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::commands::domains::types::Domain;
 
-#[derive(Debug, Serialize, Clone, Default, PartialEq)]
+#[derive(Debug, Serialize, Clone, Default, PartialEq, Eq)]
 pub struct GatewayConfig {
     #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     pub type_: Option<GatewayType>,
@@ -70,7 +70,7 @@ pub struct MultipleGateways {
     pub gateways: Vec<Gateway>,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, Default, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default, PartialEq, Eq)]
 pub enum GatewayType {
     #[default]
     #[serde(rename = "external")]
@@ -103,7 +103,7 @@ impl GatewayType {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, Default)]
 pub enum GatewayProtocol {
     #[default]
     #[serde(rename = "http")]

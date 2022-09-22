@@ -157,7 +157,7 @@ pub fn update_deployment_config(
     is_not_guided: bool,
     deployment: &Deployment,
     fallback_name: &Option<String>,
-) -> (CreateDeployment, ContainerOptions) {
+) -> Result<(CreateDeployment, ContainerOptions)> {
     let mut config = CreateDeployment::from_deployment(deployment);
     let mut container_options = ContainerOptions::from_deployment(deployment);
 
@@ -172,7 +172,7 @@ fn update_config_from_args(
     options: Options,
     deployment_config: &mut CreateDeployment,
     container_options: &mut ContainerOptions,
-) -> (CreateDeployment, ContainerOptions) {
+) -> Result<(CreateDeployment, ContainerOptions)> {
     let is_update = deployment_config.clone() != CreateDeployment::default()
         || container_options.clone() != ContainerOptions::default();
 
@@ -319,7 +319,7 @@ fn update_config_from_args(
         );
     }
 
-    (deployment_config.clone(), container_options.clone())
+    Ok((deployment_config.clone(), container_options.clone()))
 }
 
 fn update_config_from_guided(
@@ -327,7 +327,7 @@ fn update_config_from_guided(
     deployment_config: &mut CreateDeployment,
     container_options: &mut ContainerOptions,
     fallback_name: &Option<String>,
-) -> (CreateDeployment, ContainerOptions) {
+) -> Result<(CreateDeployment, ContainerOptions)> {
     let is_update = deployment_config.clone() != CreateDeployment::default()
         || container_options.clone() != ContainerOptions::default();
 
@@ -375,13 +375,13 @@ fn update_config_from_guided(
         "Container type",
         &ContainerType::values(),
         Some(deployment_config.type_.clone()),
-    );
+    )?;
 
     deployment_config.container_strategy = ask_question_iter(
         "Scaling strategy",
         &ScalingStrategy::values(),
         Some(deployment_config.container_strategy.clone()),
-    );
+    )?;
 
     if deployment_config.container_strategy == ScalingStrategy::Autoscaled {
         container_options.containers = None;
@@ -451,12 +451,12 @@ fn update_config_from_guided(
         "RAM",
         &RamSizes::values(),
         RamSizes::from_str(&deployment_config.resources.ram).ok(),
-    )
+    )?
     .to_string();
 
     deployment_config.env = get_multiple_envs();
 
-    (deployment_config.clone(), container_options.clone())
+    Ok((deployment_config.clone(), container_options.clone()))
 }
 
 pub fn parse_key_val<T, U>(s: &str) -> Result<(T, U), Box<dyn Error>>

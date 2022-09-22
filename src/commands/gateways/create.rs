@@ -8,7 +8,7 @@ use crate::commands::ignite::util::{format_deployments, get_all_deployments};
 use crate::state::State;
 use crate::util::urlify;
 
-#[derive(Debug, Parser, Default, PartialEq)]
+#[derive(Debug, Parser, Default, PartialEq, Eq)]
 pub struct GatewayOptions {
     #[clap(short = 'n', long = "name", help = "Name of the Gateway")]
     pub name: Option<String>,
