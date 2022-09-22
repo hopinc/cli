@@ -38,7 +38,6 @@ async fn main() -> Result<()> {
     if let Err(error) = handle_command(cli.commands, state).await {
         log::error!("{}", error);
         std::process::exit(1);
-        println!("k")
     }
 
     util::clean_term();
