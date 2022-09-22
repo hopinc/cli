@@ -3,7 +3,7 @@ use serde_derive::Serialize;
 use serde_json::Value;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Root {
+pub struct DockerCompose {
     pub name: Option<String>,
     pub version: Option<String>,
     pub secrets: Option<std::collections::HashMap<String, Secret>>,
