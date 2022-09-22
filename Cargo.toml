@@ -51,6 +51,7 @@ hyper = { version = "0.14.20", features = ["server"] }
 ctrlc = { version = "3.2.2", features = ["termination"] }
 chrono = { version = "0.4.21", features = ["serde"] }
 async-compression = { version = "0.3.14", features = ["tokio", "gzip"] }
+serde_derive = "1.0.144"
 
 # *nix only deps
 [target.'cfg(not(windows))'.dependencies]

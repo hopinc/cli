@@ -4,6 +4,8 @@ use anyhow::Result;
 use clap::Parser;
 use hop_cli::commands::handle_command;
 use hop_cli::commands::update::util::version_notice;
+#[cfg(feature = "update")]
+use hop_cli::commands::Commands;
 use hop_cli::state::{State, StateOptions};
 use hop_cli::{util, CLI};
 
@@ -36,6 +38,7 @@ async fn main() -> Result<()> {
     if let Err(error) = handle_command(cli.commands, state).await {
         log::error!("{}", error);
         std::process::exit(1);
+        println!("k")
     }
 
     util::clean_term();

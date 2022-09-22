@@ -13,7 +13,7 @@ pub struct Options {
     pub file: Option<String>,
 }
 
-pub async fn handle(options: Options, state: State) -> Result<()> {
+pub async fn handle(options: Options, _state: State) -> Result<()> {
     let default_file = "docker-compose.yml".to_owned();
     let file = options.file.unwrap_or(default_file);
 
