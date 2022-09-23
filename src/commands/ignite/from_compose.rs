@@ -29,9 +29,27 @@ pub async fn handle(options: Options, _state: State) -> Result<()> {
     }
 
     let compose = std::fs::read_to_string(path)?;
-    let compose: DockerCompose = serde_yaml::from_str(&compose)?;
 
-    println!("{:#?}", compose);
+    let compose: DockerCompose = match serde_yaml::from_str(&compose) {
+        Ok(compose) => compose,
+        Err(error) => {
+            println!("{:?}", error.location());
+
+            return Err(Error::new(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!("Failed to parse {}: {}", file, error),
+            )));
+        }
+    };
+
+    compose
+        .services
+        .as_ref()
+        .unwrap()
+        .iter()
+        .for_each(|(name, service)| {
+            println!("{}: {:?}", name, service);
+        });
 
     Ok(())
 }
