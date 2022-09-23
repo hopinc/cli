@@ -85,7 +85,7 @@ pub async fn docker_login(username: &str, password: &str) -> Result<()> {
         .arg(HOP_REGISTRY_URL)
         // making the stdin piped disables tty
         .stdin(Stdio::piped())
-        .stdout(Stdio::null())
+        // .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status().await?;
 
@@ -104,8 +104,8 @@ pub async fn docker_login(username: &str, password: &str) -> Result<()> {
         .arg("--password-stdin")
         .arg(HOP_REGISTRY_URL)
         .stdin(Stdio::piped())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
+        // .stdout(Stdio::null())
+        // .stderr(Stdio::null())
         .spawn()?;
 
     log::debug!("Writing password to stdin");
@@ -127,5 +127,5 @@ pub async fn docker_login(username: &str, password: &str) -> Result<()> {
         return Ok(());
     }
 
-    bail!("Docker login failed");
+    bail!("Docker login failed, is the docker daemon running?");
 }
