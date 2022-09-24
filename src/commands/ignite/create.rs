@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
 
-use super::types::{Env, RamSizes, ScalingStrategy};
+use super::types::{Env, RamSizes, RestartPolicy, ScalingStrategy};
 use crate::commands::containers::types::ContainerType;
 use crate::commands::containers::utils::create_containers;
 use crate::commands::ignite::types::Deployment;
@@ -38,7 +38,7 @@ pub struct DeploymentConfig {
     pub cpu: Option<f64>,
 
     #[clap(
-        short = 'r',
+        short = 'm',
         long = "ram",
         help = "Amount of RAM to use between 128MB to 64GB, defaults to 512MB"
     )]
@@ -70,6 +70,13 @@ pub struct DeploymentConfig {
         min_values = 0
     )]
     pub env: Option<Vec<Env>>,
+
+    #[clap(
+        short = 'r',
+        long = "restart-policy",
+        help = "Restart policy, defaults to `on-failure`"
+    )]
+    pub restart_policy: Option<RestartPolicy>,
 }
 
 #[derive(Debug, Parser, Default, PartialEq, Clone)]

@@ -34,9 +34,9 @@ impl TokenType {
 
 pub async fn token_options(http: HttpClient, token_type: Option<TokenType>) -> AuthorizedClient {
     match token_type {
-        Some(TokenType::Pat) => login_pat(http.clone()).await,
         // bearer token works the same as pat
-        Some(TokenType::Bearer) => login_pat(http.clone()).await,
+        Some(TokenType::Pat | TokenType::Bearer) => login_pat(http.clone()).await,
+
         // ptks only allow one project at a time so diff route
         Some(TokenType::Ptk) => login_ptk(http.clone()).await,
         // should be impossible to get here
@@ -59,6 +59,7 @@ async fn login_pat(http: HttpClient) -> AuthorizedClient {
         projects: response.projects,
         leap_token: response.leap_token,
         email: response.user.email,
+        email_verified: response.user.email_verified,
     }
 }
 
@@ -78,5 +79,6 @@ async fn login_ptk(http: HttpClient) -> AuthorizedClient {
         id: project.id,
         leap_token,
         email: "user@hop.io".to_string(),
+        email_verified: true,
     }
 }

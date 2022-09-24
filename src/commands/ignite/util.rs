@@ -13,7 +13,7 @@ use super::types::{
 };
 use crate::commands::containers::types::{ContainerOptions, ContainerType};
 use crate::commands::ignite::create::Options;
-use crate::commands::ignite::types::{RamSizes, ScalingStrategy};
+use crate::commands::ignite::types::{RamSizes, RestartPolicy, ScalingStrategy};
 use crate::state::http::HttpClient;
 use crate::util::ask_question_iter;
 
@@ -128,19 +128,24 @@ pub fn format_deployments(deployments: &Vec<Deployment>, title: bool) -> Vec<Str
     let mut tw = TabWriter::new(vec![]);
 
     if title {
-        writeln!(&mut tw, "NAME\tID\tCONTAINERS\tCREATED\tTYPE\tSTRATEGY").unwrap();
+        writeln!(
+            &mut tw,
+            "NAME\tID\tCONTAINERS\tCREATED\tTYPE\tSTRATEGY\tRESTART"
+        )
+        .unwrap();
     }
 
     for deployment in deployments {
         writeln!(
             &mut tw,
-            "{}\t{}\t{}\t{}\t{}\t{}",
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}",
             deployment.name,
             deployment.id,
             deployment.container_count,
             deployment.created_at,
             deployment.config.type_,
-            deployment.config.container_strategy
+            deployment.config.container_strategy,
+            deployment.config.restart_policy,
         )
         .unwrap();
     }
@@ -220,6 +225,18 @@ fn update_config_from_args(
             }
         })
         .expect("The argument '--type <CONTAINER_TYPE>' requires a value but none was supplied");
+
+    deployment_config.restart_policy = options
+        .config
+        .restart_policy
+        .or_else(|| {
+            if is_update {
+                Some(deployment_config.restart_policy.clone())
+            } else {
+                None
+            }
+        })
+        .expect("The argument '--restart-policy <RESTART_POLICY>' requires a value but none was supplied");
 
     deployment_config.container_strategy = options
         .config
@@ -381,6 +398,12 @@ fn update_config_from_guided(
         "Scaling strategy",
         &ScalingStrategy::values(),
         Some(deployment_config.container_strategy.clone()),
+    )?;
+
+    deployment_config.restart_policy = ask_question_iter(
+        "Restart policy",
+        &RestartPolicy::values(),
+        Some(deployment_config.restart_policy.clone()),
     )?;
 
     if deployment_config.container_strategy == ScalingStrategy::Autoscaled {
