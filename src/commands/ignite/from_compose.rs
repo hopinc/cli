@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use anyhow::{Error, Result};
+use anyhow::{bail, Result};
 use clap::Parser;
 
 use crate::{docker::types::DockerCompose, state::State};
@@ -22,10 +22,7 @@ pub async fn handle(options: Options, _state: State) -> Result<()> {
     let path = Path::new(&file);
 
     if !path.exists() {
-        return Err(Error::new(std::io::Error::new(
-            std::io::ErrorKind::NotFound,
-            format!("File {} does not exist", file),
-        )));
+        bail!("File {} does not exist", file);
     }
 
     let compose = std::fs::read_to_string(path)?;
@@ -33,12 +30,8 @@ pub async fn handle(options: Options, _state: State) -> Result<()> {
     let compose: DockerCompose = match serde_yaml::from_str(&compose) {
         Ok(compose) => compose,
         Err(error) => {
-            println!("{:?}", error.location());
-
-            return Err(Error::new(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                format!("Failed to parse {}: {}", file, error),
-            )));
+            println!("{:?}", error);
+            bail!("Failed to parse {}: {}", file, error);
         }
     };
 
