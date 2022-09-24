@@ -750,7 +750,6 @@ dependencies = [
  "reqwest",
  "runas",
  "serde",
- "serde_derive",
  "serde_json",
  "serde_repr",
  "serde_yaml",
