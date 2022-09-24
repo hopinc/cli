@@ -61,12 +61,10 @@ impl HttpClient {
             _ => return self.handle_error(response).await,
         };
 
-        let response = response
-            .json::<Base<T>>()
-            .await
-            .expect("Failed to parse response");
-
-        Ok(Some(response.data))
+        match response.json::<Base<T>>().await {
+            Ok(base) => Ok(Some(base.data)),
+            Err(e) => Err(anyhow!(e)),
+        }
     }
 
     async fn handle_error<T>(&self, response: reqwest::Response) -> Result<Option<T>> {
