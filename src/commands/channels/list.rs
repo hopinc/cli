@@ -26,8 +26,6 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             .collect::<Vec<_>>()
             .join(" ");
 
-        log::debug!("ids: `{:?}`", ids);
-
         print!("{}", ids);
     } else {
         let channels_fmt = format_channels(&channels, true);
