@@ -1,9 +1,10 @@
-use std::path::Path;
+mod types;
 
+use crate::state::State;
 use anyhow::{bail, Result};
 use clap::Parser;
-
-use crate::{docker::types::DockerCompose, state::State};
+use std::path::Path;
+use types::DockerCompose;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Creates new Ignite deployments from a Docker compose file")]
