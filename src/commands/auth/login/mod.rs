@@ -56,7 +56,13 @@ pub async fn token(token: &str, mut state: State) -> Result<()> {
             authorized.name,
             authorized.email
         );
-        return Ok(());
+    } else {
+        // output the login info
+        log::info!("Logged in as: `{}` ({})", authorized.name, authorized.email);
+
+        state.ctx.default_project = None;
+        state.ctx.default_user = Some(authorized.id.clone());
+        state.ctx.save().await?;
     }
 
     // save the state
@@ -65,13 +71,6 @@ pub async fn token(token: &str, mut state: State) -> Result<()> {
         .authorized
         .insert(authorized.id.clone(), token.to_string());
     state.auth.save().await?;
-
-    state.ctx.default_project = None;
-    state.ctx.default_user = Some(authorized.id.clone());
-    state.ctx.save().await?;
-
-    // output the login info
-    log::info!("Logged in as: `{}` ({})", authorized.name, authorized.email);
 
     Ok(())
 }

@@ -249,18 +249,19 @@ pub async fn execute_commands(
     non_elevated_args: &Vec<String>,
     elevated_args: &Vec<String>,
 ) -> Result<()> {
-    log::debug!("non-elevated commands: {non_elevated_args:?}");
-    log::debug!("elevated commands: {elevated_args:?}");
+    if !elevated_args.is_empty() {
+        log::debug!("elevated commands: {elevated_args:?}");
 
-    if !non_elevated_args.is_empty() {
-        Cmd::new("sh")
-            .args(&["-c", &non_elevated_args.join(" && ")])
+        SudoCmd::new("sh")
+            .args(&["-c", &elevated_args.join(" && ")])
             .status()?;
     }
 
-    if !elevated_args.is_empty() {
-        SudoCmd::new("sh")
-            .args(&["-c", &elevated_args.join(" && ")])
+    if !non_elevated_args.is_empty() {
+        log::debug!("non-elevated commands: {non_elevated_args:?}");
+
+        Cmd::new("sh")
+            .args(&["-c", &non_elevated_args.join(" && ")])
             .status()?;
     }
 
@@ -314,7 +315,7 @@ pub async fn swap_exe_command(
             format!("move {} {}", new_exe.display(), old_exe.display()),
             format!("del {}", temp_delete.display()),
         ]
-        .join(" & "),
+        .join(" && "),
     );
 }
 
@@ -333,15 +334,19 @@ pub async fn execute_commands(
     non_elevated_args: &Vec<String>,
     elevated_args: &Vec<String>,
 ) -> Result<()> {
-    if !non_elevated_args.is_empty() {
-        Cmd::new("cmd")
-            .args(&["/c", &non_elevated_args.join(" & ")])
+    if !elevated_args.is_empty() {
+        log::debug!("elevated commands: {elevated_args:?}");
+
+        SudoCmd::new("cmd")
+            .args(&["/c", &elevated_args.join(" & ")])
             .status()?;
     }
 
-    if !elevated_args.is_empty() {
-        SudoCmd::new("cmd")
-            .args(&["/c", &elevated_args.join(" & ")])
+    if !non_elevated_args.is_empty() {
+        log::debug!("non-elevated commands: {non_elevated_args:?}");
+
+        Cmd::new("cmd")
+            .args(&["/c", &non_elevated_args.join(" & ")])
             .status()?;
     }
 
