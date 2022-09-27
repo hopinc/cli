@@ -9,6 +9,7 @@ use anyhow::Result;
 use clap::Parser;
 
 use self::util::env_file_to_map;
+use crate::commands::auth::docker::HOP_REGISTRY_URL;
 use crate::commands::containers::types::ContainerOptions;
 use crate::commands::containers::utils::create_containers;
 use crate::commands::gateways::create::GatewayOptions;
@@ -27,7 +28,6 @@ use crate::store::hopfile::HopFile;
 use crate::util::urlify;
 
 const HOP_BUILD_BASE_URL: &str = "https://builder.hop.io/v1";
-const HOP_REGISTRY_URL: &str = "registry.hop.io";
 
 #[derive(Debug, Parser)]
 #[clap(about = "Deploy a new container")]

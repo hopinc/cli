@@ -1,3 +1,4 @@
+pub mod docker;
 mod list;
 pub mod login;
 mod logout;
@@ -17,6 +18,8 @@ pub enum Commands {
     Login(login::Options),
     Logout(logout::Options),
     Switch(switch::Options),
+    #[clap(name = "docker", alias = "registry")]
+    Docker(docker::Options),
 }
 
 #[derive(Debug, Parser)]
@@ -26,7 +29,7 @@ pub struct Options {
     pub commands: Commands,
 }
 
-pub async fn handle(options: Options, state: State) -> Result<()> {
+pub async fn handle(options: Options, mut state: State) -> Result<()> {
     match options.commands {
         Commands::Login(options) => login::handle(options, state).await,
         Commands::Logout(options) => logout::handle(options, state).await,
@@ -35,5 +38,6 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             list::handle(&options, &state);
             Ok(())
         }
+        Commands::Docker(options) => docker::handle(&options, &mut state).await,
     }
 }
