@@ -7,7 +7,8 @@ use anyhow::{bail, Result};
 use tokio::fs;
 use tokio::process::Command;
 
-use crate::commands::deploy::local::util::{docker_login, install_nixpacks};
+use crate::commands::auth::docker;
+use crate::commands::deploy::local::util::install_nixpacks;
 use crate::state::State;
 use crate::store::utils::home_path;
 use crate::util::in_path;
@@ -25,7 +26,7 @@ pub async fn build(state: &State, image: &str, dir: PathBuf) -> Result<()> {
 
     let current_user = state.ctx.current.clone().unwrap();
 
-    docker_login(
+    docker::login(
         &current_user.email,
         state.auth.authorized.get(&current_user.id).unwrap(),
     )
