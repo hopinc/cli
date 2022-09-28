@@ -1,4 +1,5 @@
 use std::env::temp_dir;
+use std::ffi::OsString;
 use std::path::PathBuf;
 use std::process::Command as Cmd;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -190,8 +191,8 @@ pub async fn unpack(packed_temp: &PathBuf, filename: &str) -> Result<PathBuf> {
 
 #[cfg(not(windows))]
 pub async fn swap_exe_command(
-    non_elevated_args: &mut Vec<String>,
-    elevated_args: &mut Vec<String>,
+    non_elevated_args: &mut Vec<OsString>,
+    elevated_args: &mut Vec<OsString>,
     old_exe: PathBuf,
     new_exe: PathBuf,
 ) {
@@ -200,14 +201,14 @@ pub async fn swap_exe_command(
     } else {
         elevated_args
     }
-    .push(format!("mv {} {}", new_exe.display(), old_exe.display()));
+    .push(format!("mv {} {}", new_exe.display(), old_exe.display()).into());
 }
 
 // disable on macos because its doesnt allow to edit completions like this
 #[cfg(not(any(target_os = "windows", target_os = "macos")))]
 pub async fn create_completions_commands(
-    non_elevated_args: &mut Vec<String>,
-    elevated_args: &mut Vec<String>,
+    non_elevated_args: &mut Vec<OsString>,
+    elevated_args: &mut Vec<OsString>,
     exe_path: PathBuf,
 ) {
     let command = format!(
@@ -216,9 +217,9 @@ pub async fn create_completions_commands(
     );
 
     if is_writable(&PathBuf::from("/usr/share/zsh/site-functions/_hop")).await {
-        non_elevated_args.push(command);
+        non_elevated_args.extend(["&&", command]);
     } else {
-        elevated_args.push(command);
+        elevated_args.extend(["&&", command]);
     };
 
     let command = format!(
@@ -227,9 +228,9 @@ pub async fn create_completions_commands(
     );
 
     if is_writable(&PathBuf::from("/usr/share/fish/completions/hop.fish")).await {
-        non_elevated_args.push(command);
+        non_elevated_args.extend(["&&", command]);
     } else {
-        elevated_args.push(command);
+        elevated_args.extend(["&&", command]);
     };
 
     let command = format!(
@@ -238,34 +239,10 @@ pub async fn create_completions_commands(
     );
 
     if is_writable(&PathBuf::from("/usr/share/bash-completion/completions/hop")).await {
-        non_elevated_args.push(command);
+        non_elevated_args.extend(["&&", command]);
     } else {
-        elevated_args.push(command);
+        elevated_args.extend(["&&", command]);
     };
-}
-
-#[cfg(not(windows))]
-pub async fn execute_commands(
-    non_elevated_args: &Vec<String>,
-    elevated_args: &Vec<String>,
-) -> Result<()> {
-    if !elevated_args.is_empty() {
-        log::debug!("elevated commands: {elevated_args:?}");
-
-        SudoCmd::new("sh")
-            .args(&["-c", &elevated_args.join(" && ")])
-            .status()?;
-    }
-
-    if !non_elevated_args.is_empty() {
-        log::debug!("non-elevated commands: {non_elevated_args:?}");
-
-        Cmd::new("sh")
-            .args(&["-c", &non_elevated_args.join(" && ")])
-            .status()?;
-    }
-
-    Ok(())
 }
 
 #[cfg(windows)]
@@ -297,8 +274,8 @@ pub async fn unpack(packed_temp: &PathBuf, filename: &str) -> Result<PathBuf> {
 
 #[cfg(windows)]
 pub async fn swap_exe_command(
-    non_elevated_args: &mut Vec<String>,
-    elevated_args: &mut Vec<String>,
+    non_elevated_args: &mut Vec<OsString>,
+    elevated_args: &mut Vec<OsString>,
     old_exe: PathBuf,
     new_exe: PathBuf,
 ) {
@@ -309,45 +286,73 @@ pub async fn swap_exe_command(
     } else {
         elevated_args
     }
-    .push(
-        vec![
-            format!("move {} {}", old_exe.display(), temp_delete.display()),
-            format!("move {} {}", new_exe.display(), old_exe.display()),
-            format!("del {}", temp_delete.display()),
-        ]
-        .join(" && "),
-    );
+    .extend(vec![
+        "del".into(),
+        temp_delete.clone().into(),
+        "2> nul".into(),
+        "| true".into(),
+        "&".into(),
+        "move".into(),
+        old_exe.clone().into(),
+        temp_delete.clone().into(),
+        "&".into(),
+        "move".into(),
+        new_exe.clone().into(),
+        old_exe.clone().into(),
+        "&".into(),
+        "del".into(),
+        temp_delete.clone().into(),
+        "2> nul".into(),
+        "| true".into(),
+    ]);
 }
 
 // is windows autocomplete even supported?
 #[cfg(any(target_os = "windows", target_os = "macos"))]
 #[inline]
 pub async fn create_completions_commands(
-    _non_elevated_args: &mut [String],
-    _elevated_args: &mut [String],
+    _non_elevated_args: &mut [OsString],
+    _elevated_args: &mut [OsString],
     _exe_path: PathBuf,
 ) {
 }
 
 #[cfg(windows)]
+const CMD: &str = "cmd.exe";
+#[cfg(not(windows))]
+const CMD: &str = "sh";
+
+#[cfg(windows)]
+const CMD_ARGS: &[&str] = &["/C"];
+#[cfg(not(windows))]
+const CMD_ARGS: &[&str] = &["-c"];
+
 pub async fn execute_commands(
-    non_elevated_args: &Vec<String>,
-    elevated_args: &Vec<String>,
+    non_elevated_args: &Vec<OsString>,
+    elevated_args: &Vec<OsString>,
 ) -> Result<()> {
     if !elevated_args.is_empty() {
         log::debug!("elevated commands: {elevated_args:?}");
 
-        SudoCmd::new("cmd")
-            .args(&["/c", &elevated_args.join(" & ")])
-            .status()?;
+        SudoCmd::new(CMD)
+            .args(CMD_ARGS)
+            .args(elevated_args)
+            .status()?
+            .success()
+            .then_some(())
+            .ok_or_else(|| anyhow!("Failed to execute the command"))?;
     }
 
     if !non_elevated_args.is_empty() {
         log::debug!("non-elevated commands: {non_elevated_args:?}");
 
-        Cmd::new("cmd")
-            .args(&["/c", &non_elevated_args.join(" & ")])
-            .status()?;
+        Cmd::new(CMD)
+            .args(CMD_ARGS)
+            .args(non_elevated_args)
+            .status()?
+            .success()
+            .then_some(())
+            .ok_or_else(|| anyhow!("Failed to execute the command"))?;
     }
 
     Ok(())
