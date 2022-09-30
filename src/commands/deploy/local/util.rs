@@ -58,7 +58,7 @@ pub async fn install_nixpacks(path: &PathBuf) -> Result<()> {
     let parent = path.parent().unwrap().to_path_buf();
 
     if fs::create_dir_all(&parent).await.is_err() {
-        elevated.push(format!("mkdir -p {}", parent.display()));
+        elevated.push(format!("mkdir -p {}", parent.display()).into());
     }
 
     swap_exe_command(&mut non_elevated, &mut elevated, path.clone(), unpacked).await;

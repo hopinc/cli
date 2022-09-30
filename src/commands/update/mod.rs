@@ -2,6 +2,7 @@ mod parse;
 pub mod types;
 pub mod util;
 
+use std::ffi::OsString;
 use std::path::PathBuf;
 
 use anyhow::Result;
@@ -58,8 +59,8 @@ pub async fn handle(options: Options, mut state: State) -> Result<()> {
     // remove the tarball since it's no longer needed
     fs::remove_file(packed_temp).await?;
 
-    let mut non_elevated_args: Vec<String> = vec![];
-    let mut elevated_args: Vec<String> = vec![];
+    let mut non_elevated_args: Vec<OsString> = vec![];
+    let mut elevated_args: Vec<OsString> = vec![];
 
     let mut current = std::env::current_exe()?
         .canonicalize()?

@@ -108,7 +108,7 @@ impl HopFile {
 
         file.write_all(content.as_bytes()).await?;
 
-        log::info!("Saved hop file to {}", path.to_str().unwrap());
+        log::info!("Saved hop file to {}", path.display());
 
         Ok(self)
     }
