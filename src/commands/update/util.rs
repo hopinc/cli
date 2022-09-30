@@ -212,36 +212,36 @@ pub async fn create_completions_commands(
     exe_path: PathBuf,
 ) {
     let command = format!(
-        "mkdir -p /usr/share/zsh/site-functions && {} completions zsh > /usr/share/zsh/site-functions/_hop 2> /dev/null && chmod 644 /usr/share/zsh/site-functions/_hop",
+        "&& mkdir -p /usr/share/zsh/site-functions && {} completions zsh > /usr/share/zsh/site-functions/_hop 2> /dev/null && chmod 644 /usr/share/zsh/site-functions/_hop",
         exe_path.display()
     );
 
     if is_writable(&PathBuf::from("/usr/share/zsh/site-functions/_hop")).await {
-        non_elevated_args.extend(["&&", command]);
+        non_elevated_args.push(command.into());
     } else {
-        elevated_args.extend(["&&", command]);
+        elevated_args.push(command.into());
     };
 
     let command = format!(
-        "mkdir -p /usr/share/fish/completions && {} completions fish > /usr/share/fish/completions/hop.fish 2> /dev/null && chmod 644 /usr/share/fish/completions/hop.fish",
+        "&& mkdir -p /usr/share/fish/completions && {} completions fish > /usr/share/fish/completions/hop.fish 2> /dev/null && chmod 644 /usr/share/fish/completions/hop.fish",
         exe_path.display()
     );
 
     if is_writable(&PathBuf::from("/usr/share/fish/completions/hop.fish")).await {
-        non_elevated_args.extend(["&&", command]);
+        non_elevated_args.push(command.into());
     } else {
-        elevated_args.extend(["&&", command]);
+        elevated_args.push(command.into());
     };
 
     let command = format!(
-        "mkdir -p /usr/share/bash-completion/completions && {} completions bash > /usr/share/bash-completion/completions/hop 2> /dev/null && chmod 644 /usr/share/bash-completion/completions/hop",
+        "&& mkdir -p /usr/share/bash-completion/completions && {} completions bash > /usr/share/bash-completion/completions/hop 2> /dev/null && chmod 644 /usr/share/bash-completion/completions/hop",
         exe_path.display()
     );
 
     if is_writable(&PathBuf::from("/usr/share/bash-completion/completions/hop")).await {
-        non_elevated_args.extend(["&&", command]);
+        non_elevated_args.push(command.into());
     } else {
-        elevated_args.extend(["&&", command]);
+        elevated_args.push(command.into());
     };
 }
 
