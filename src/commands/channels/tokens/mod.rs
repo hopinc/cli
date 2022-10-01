@@ -1,7 +1,6 @@
 mod create;
 mod delete;
 mod list;
-mod tokens;
 mod types;
 mod utils;
 
@@ -18,7 +17,6 @@ pub enum Commands {
     List(list::Options),
     #[clap(name = "rm", alias = "delete")]
     Delete(delete::Options),
-    Tokens(tokens::Options),
 }
 
 #[derive(Debug, Parser)]
@@ -33,6 +31,5 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Commands::Create(options) => create::handle(options, state).await,
         Commands::List(options) => list::handle(options, state).await,
         Commands::Delete(options) => delete::handle(options, state).await,
-        Commands::Tokens(options) => tokens::handle(options, state).await,
     }
 }

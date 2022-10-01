@@ -22,18 +22,18 @@ pub struct Options {
 pub async fn handle(options: Options, state: State) -> Result<()> {
     let project_id = state.ctx.clone().current_project_error().id;
 
-    let (type_, id, cstate) = if Options::default() == options {
+    let (type_, id, init_state) = if Options::default() == options {
         let type_ = dialoguer::Select::new()
             .with_prompt("Select a channel type")
             .items(&ChannelType::variants())
             .default(0)
             .interact_opt()?
-            .ok_or_else(|| anyhow::anyhow!("No channel type selected"))?;
+            .ok_or_else(|| anyhow::anyhow!("No Channel type selected"))?;
 
         let type_ = ChannelType::variants()[type_].clone();
 
         let id = if dialoguer::Confirm::new()
-            .with_prompt("Do you want to specify a custom ID?")
+            .with_prompt("Do you want to specify a custom Channel ID?")
             .default(false)
             .interact()?
         {
@@ -71,9 +71,10 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         )
     };
 
-    let channel = create_channel(&state.http, &project_id, &type_, &cstate, id.as_deref()).await?;
+    let channel =
+        create_channel(&state.http, &project_id, &type_, &init_state, id.as_deref()).await?;
 
-    log::info!("Created channel `{}`", channel.id);
+    log::info!("Created Channel `{}`", channel.id);
 
     Ok(())
 }

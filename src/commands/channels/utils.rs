@@ -4,7 +4,7 @@ use anyhow::{anyhow, Result};
 use serde_json::Value;
 use tabwriter::TabWriter;
 
-use super::types::{Channel, ChannelType, CreateChannel, MultipleChannels, SingleChannel};
+use super::types::{Channel, ChannelType, CreateChannel, PaginatedChannels, SingleChannel};
 use crate::state::http::HttpClient;
 
 pub async fn create_channel(
@@ -38,13 +38,50 @@ pub async fn create_channel(
     Ok(response.channel)
 }
 
+const PAGE_SIZE: u64 = 75;
+
 pub async fn get_all_channels(http: &HttpClient, project_id: &str) -> Result<Vec<Channel>> {
+    let mut channels = vec![];
+
+    let mut page = 1;
+
+    loop {
+        let mut paginated = get_channels_in_page(http, project_id, page).await?;
+
+        // this might look annyoing but,
+        // to get the correct ordering of the channels
+        // we need to reverse the order of the pages
+        paginated.channels.extend(channels);
+        channels = paginated.channels;
+
+        if paginated.total_count <= channels.len().try_into()? {
+            break;
+        }
+
+        page += 1;
+    }
+
+    Ok(channels)
+}
+
+async fn get_channels_in_page(
+    http: &HttpClient,
+    project_id: &str,
+    page: usize,
+) -> Result<PaginatedChannels> {
     let response = http
-        .request::<MultipleChannels>("GET", &format!("/channels?project={}", project_id), None)
+        .request::<PaginatedChannels>(
+            "GET",
+            &format!(
+                "/channels?project={}&page={}&pageSize={PAGE_SIZE}",
+                project_id, page
+            ),
+            None,
+        )
         .await?
         .ok_or_else(|| anyhow!("Error while parsing response"))?;
 
-    Ok(response.channels)
+    Ok(response)
 }
 
 pub async fn delete_channel(http: &HttpClient, project_id: &str, channel_id: &str) -> Result<()> {
@@ -58,14 +95,14 @@ pub async fn delete_channel(http: &HttpClient, project_id: &str, channel_id: &st
     Ok(())
 }
 
-pub fn format_channels(log: &[Channel], title: bool) -> Vec<String> {
+pub fn format_channels(channels: &[Channel], title: bool) -> Vec<String> {
     let mut tw = TabWriter::new(vec![]);
 
     if title {
-        writeln!(tw, "ID\tTYPE\tSTATE\tCREATED AT").unwrap();
+        writeln!(tw, "ID\tTYPE\tSTATE\tCREATION").unwrap();
     }
 
-    for channel in log {
+    for channel in channels {
         writeln!(
             tw,
             "{}\t{}\t{}\t{}",

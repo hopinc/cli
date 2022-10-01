@@ -61,6 +61,8 @@ pub struct SingleChannel {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct MultipleChannels {
+pub struct PaginatedChannels {
     pub channels: Vec<Channel>,
+    pub page_size: u64,
+    pub total_count: u64,
 }
