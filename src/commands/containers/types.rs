@@ -8,12 +8,15 @@ use serde::{Deserialize, Serialize};
 use crate::commands::ignite::types::Deployment;
 use crate::util::deserialize_from_str;
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, Default)]
 pub enum ContainerType {
     #[serde(rename = "ephemeral")]
     Ephemeral,
+    #[default]
     #[serde(rename = "persistent")]
     Persistent,
+    #[serde(rename = "stateful")]
+    Stateful,
 }
 
 impl FromStr for ContainerType {
@@ -34,15 +37,14 @@ impl Display for ContainerType {
     }
 }
 
-impl Default for ContainerType {
-    fn default() -> Self {
-        ContainerType::Persistent
-    }
-}
-
 impl ContainerType {
-    pub fn values() -> Vec<ContainerType> {
-        vec![ContainerType::Ephemeral, ContainerType::Persistent]
+    pub fn values() -> Vec<Self> {
+        vec![
+            Self::Ephemeral,
+            Self::Persistent,
+            // not supported yet but we should still parse it
+            // Self::Stateful,
+        ]
     }
 }
 
@@ -75,8 +77,8 @@ impl Display for ContainerState {
 impl ContainerState {
     pub fn from_changeable_state(state: &ChangeableContainerState) -> Self {
         match state {
-            ChangeableContainerState::Start => ContainerState::Running,
-            ChangeableContainerState::Stop => ContainerState::Stopped,
+            ChangeableContainerState::Start => Self::Running,
+            ChangeableContainerState::Stop => Self::Stopped,
         }
     }
 }
@@ -109,11 +111,8 @@ impl FromStr for ChangeableContainerState {
 }
 
 impl ChangeableContainerState {
-    pub fn values() -> Vec<ChangeableContainerState> {
-        vec![
-            ChangeableContainerState::Stop,
-            ChangeableContainerState::Start,
-        ]
+    pub fn values() -> Vec<Self> {
+        vec![Self::Stop, Self::Start]
     }
 }
 

@@ -1,6 +1,7 @@
 mod types;
 
 use anyhow::{anyhow, Result};
+use hyper::StatusCode;
 use reqwest::header::HeaderMap;
 use reqwest::Client as AsyncClient;
 
@@ -55,26 +56,37 @@ impl HttpClient {
         T: serde::de::DeserializeOwned,
     {
         let response = match response.status() {
-            reqwest::StatusCode::OK => response,
-            reqwest::StatusCode::CREATED => return Ok(None),
-            reqwest::StatusCode::NO_CONTENT => return Ok(None),
-            _ => return self.handle_error(response).await,
+            StatusCode::CREATED => return Ok(None),
+            StatusCode::NO_CONTENT => return Ok(None),
+            status => {
+                if !status.clone().is_success() {
+                    return self.handle_error(response, status).await;
+                }
+
+                response
+            }
         };
 
-        let response = response
-            .json::<Base<T>>()
-            .await
-            .expect("Failed to parse response");
-
-        Ok(Some(response.data))
+        match response.json::<Base<T>>().await {
+            Ok(base) => Ok(Some(base.data)),
+            Err(e) => Err(anyhow!(e)),
+        }
     }
 
-    async fn handle_error<T>(&self, response: reqwest::Response) -> Result<Option<T>> {
+    async fn handle_error<T>(
+        &self,
+        response: reqwest::Response,
+        status: StatusCode,
+    ) -> Result<Option<T>> {
         let body = response.json::<ErrorResponse>().await;
 
         match body {
             Ok(body) => Err(anyhow!("{}", body.error.message)),
-            Err(err) => Err(anyhow!("Failed to parse error response: {}", err)),
+            Err(err) => {
+                log::debug!("Error deserialize message: {:#?}", err);
+
+                Err(anyhow!("Error: HTTP {:#?}", status))
+            }
         }
     }
 

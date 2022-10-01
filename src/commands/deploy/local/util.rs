@@ -1,13 +1,10 @@
 use std::path::PathBuf;
-use std::process::Stdio;
+
 use std::vec;
 
 use anyhow::{anyhow, bail, ensure, Result};
 use tokio::fs;
-use tokio::io::AsyncWriteExt;
-use tokio::process::Command;
 
-use crate::commands::deploy::HOP_REGISTRY_URL;
 use crate::commands::update::types::GithubRelease;
 use crate::commands::update::util::{download, execute_commands, swap_exe_command, unpack};
 use crate::config::ARCH;
@@ -61,7 +58,7 @@ pub async fn install_nixpacks(path: &PathBuf) -> Result<()> {
     let parent = path.parent().unwrap().to_path_buf();
 
     if fs::create_dir_all(&parent).await.is_err() {
-        elevated.push(format!("mkdir -p {}", parent.display()));
+        elevated.push(format!("mkdir -p {}", parent.display()).into());
     }
 
     swap_exe_command(&mut non_elevated, &mut elevated, path.clone(), unpacked).await;
@@ -77,55 +74,4 @@ fn get_nixpacks_platform() -> Result<&'static str> {
         "windows" => Ok("pc-windows-msvc"),
         _ => bail!("Unsupported platform"),
     }
-}
-
-pub async fn docker_login(username: &str, password: &str) -> Result<()> {
-    let status = Command::new("docker")
-        .arg("login")
-        .arg(HOP_REGISTRY_URL)
-        // making the stdin piped disables tty
-        .stdin(Stdio::piped())
-        // .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status().await?;
-
-    log::debug!("Docker login exited with {status}");
-
-    if status.success() {
-        log::debug!("Docker login successful");
-
-        return Ok(());
-    }
-
-    let mut child = Command::new("docker")
-        .arg("login")
-        .arg("--username")
-        .arg(username)
-        .arg("--password-stdin")
-        .arg(HOP_REGISTRY_URL)
-        .stdin(Stdio::piped())
-        // .stdout(Stdio::null())
-        // .stderr(Stdio::null())
-        .spawn()?;
-
-    log::debug!("Writing password to stdin");
-
-    child
-        .stdin
-        .take()
-        .unwrap()
-        .write_all(password.as_bytes())
-        .await?;
-
-    let status = child.wait().await?;
-
-    log::debug!("Docker login exited with {status}");
-
-    if status.success() {
-        log::debug!("Docker login successful");
-
-        return Ok(());
-    }
-
-    bail!("Docker login failed, is the docker daemon running?");
 }

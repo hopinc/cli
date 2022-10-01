@@ -118,8 +118,8 @@ impl Display for ScalingStrategy {
 }
 
 impl ScalingStrategy {
-    pub fn values() -> Vec<ScalingStrategy> {
-        vec![ScalingStrategy::Manual, ScalingStrategy::Autoscaled]
+    pub fn values() -> Vec<Self> {
+        vec![Self::Manual, Self::Autoscaled]
     }
 }
 
@@ -137,6 +137,9 @@ pub struct Config {
     pub env: HashMap<String, String>,
     pub container_strategy: ScalingStrategy,
     pub resources: Resources,
+
+    #[serde(default)]
+    pub restart_policy: RestartPolicy,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
@@ -160,6 +163,7 @@ pub struct MultipleDeployments {
 
 #[derive(Debug, Serialize, Clone, Default, PartialEq)]
 pub struct CreateDeployment {
+    pub restart_policy: RestartPolicy,
     pub container_strategy: ScalingStrategy,
     pub env: HashMap<String, String>,
     pub image: Image,
@@ -173,6 +177,7 @@ pub struct CreateDeployment {
 impl CreateDeployment {
     pub fn from_deployment(deployment: &Deployment) -> Self {
         Self {
+            restart_policy: deployment.config.restart_policy.clone(),
             container_strategy: deployment.config.container_strategy.clone(),
             env: deployment.config.env.clone(),
             image: deployment.config.image.clone(),
@@ -200,4 +205,39 @@ impl FromStr for Env {
 #[derive(Debug, Serialize)]
 pub struct ScaleRequest {
     pub scale: u64,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, Default)]
+pub enum RestartPolicy {
+    #[serde(rename = "never")]
+    Never,
+    #[serde(rename = "always")]
+    Always,
+    #[default]
+    #[serde(rename = "on-failure")]
+    OnFailure,
+}
+
+impl FromStr for RestartPolicy {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        serde_json::from_str(&format!("\"{}\"", s.to_lowercase())).map_err(|e| anyhow!(e))
+    }
+}
+
+impl Display for RestartPolicy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self).unwrap().replace('"', "")
+        )
+    }
+}
+
+impl RestartPolicy {
+    pub fn values() -> Vec<Self> {
+        vec![Self::Never, Self::Always, Self::OnFailure]
+    }
 }

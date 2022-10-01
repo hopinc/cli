@@ -84,6 +84,10 @@ impl State {
 
         let response = token_options(self.http.clone(), self.token_type.clone()).await;
 
+        if !response.email_verified {
+            log::warn!("You need to verify your email address before you can use Hop.")
+        }
+
         // get current user to global
         self.ctx.current = Some(response);
 

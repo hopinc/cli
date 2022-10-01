@@ -27,9 +27,8 @@ pub fn set_hook() {
         // add some color
         log::error!("{}", message);
 
-        if cfg!(debug_assertions) {
-            log::debug!("{}", panic_info);
-        }
+        #[cfg(debug_assertions)]
+        log::debug!("{}", panic_info);
 
         std::process::exit(1);
     }));

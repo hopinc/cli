@@ -9,6 +9,7 @@ use clap::Parser;
 use self::browser_auth::browser_login;
 use self::flags_auth::flags_login;
 use crate::state::State;
+use crate::util::in_path;
 
 const WEB_AUTH_URL: &str = "https://console.hop.io/cli-auth";
 const PAT_FALLBACK_URL: &str = "https://console.hop.io/settings/pats";
@@ -71,6 +72,15 @@ pub async fn token(token: &str, mut state: State) -> Result<()> {
         .authorized
         .insert(authorized.id.clone(), token.to_string());
     state.auth.save().await?;
+
+    if in_path("docker").await
+        && dialoguer::Confirm::new()
+            .with_prompt("Docker was detected, would you like to login to the Hop registry?")
+            .default(false)
+            .interact()?
+    {
+        super::docker::login_new(&authorized.email, token).await?;
+    }
 
     Ok(())
 }

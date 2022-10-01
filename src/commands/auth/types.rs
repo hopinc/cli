@@ -7,6 +7,7 @@ pub struct User {
     pub id: String,
     pub name: String,
     pub email: String,
+    pub email_verified: bool,
     pub username: String,
 }
 
@@ -17,6 +18,7 @@ pub struct AuthorizedClient {
     pub leap_token: String,
     pub projects: Vec<Project>,
     pub email: String,
+    pub email_verified: bool,
 }
 
 #[derive(Debug, Deserialize, Clone)]

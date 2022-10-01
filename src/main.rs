@@ -14,11 +14,11 @@ async fn main() -> Result<()> {
     #[cfg(debug_assertions)]
     let now = tokio::time::Instant::now();
 
-    // setup panic hook
-    util::set_hook();
-
     // create a new CLI instance
     let cli = CLI::parse();
+
+    // setup panic hook
+    util::set_hook();
 
     util::logs(cli.verbose);
 

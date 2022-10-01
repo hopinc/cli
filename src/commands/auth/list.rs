@@ -4,7 +4,7 @@ use super::utils::format_users;
 use crate::state::State;
 
 #[derive(Debug, Parser)]
-#[clap(about = "List all deployments")]
+#[clap(about = "List all authenticated users")]
 pub struct Options {
     #[clap(
         short = 'q',
