@@ -43,7 +43,7 @@ pub fn format_domains(domains: &[Domain], title: bool) -> Vec<String> {
     let mut tw = TabWriter::new(vec![]);
 
     if title {
-        writeln!(tw, "ID\tDOMAIN\tSTATE\tCREATED AT").unwrap();
+        writeln!(tw, "ID\tDOMAIN\tSTATE\tCREATION").unwrap();
     }
 
     for domain in domains {

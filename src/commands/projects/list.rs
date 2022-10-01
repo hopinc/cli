@@ -24,7 +24,7 @@ pub fn handle(options: Options, state: State) {
             .collect::<Vec<_>>()
             .join(" ");
 
-        print!("{}", ids);
+        println!("{}", ids);
     } else {
         let projects_fmt = format_projects(&projects, true);
 

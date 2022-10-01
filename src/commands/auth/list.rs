@@ -26,7 +26,7 @@ pub fn handle(options: &Options, state: &State) {
             .collect::<Vec<_>>()
             .join(" ");
 
-        print!("{}", ids);
+        println!("{}", ids);
     } else {
         let users_fmt = format_users(&users, true);
 

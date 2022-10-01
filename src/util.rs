@@ -36,7 +36,11 @@ pub fn set_hook() {
 
 pub fn clean_term() {
     let term = console::Term::stdout();
-    term.show_cursor().ok();
+
+    // if the terminal is a tty, clear the screen and reset the cursor
+    if term.is_term() {
+        term.show_cursor().ok();
+    }
 }
 
 pub fn logs(verbose: bool) {
@@ -82,7 +86,7 @@ pub fn logs(verbose: bool) {
                 .chain(std::io::stderr()),
         )
         .apply()
-        .unwrap();
+        .ok();
 }
 
 pub fn deserialize_from_str<'de, S, D>(deserializer: D) -> Result<S, D::Error>
