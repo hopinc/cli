@@ -1,7 +1,9 @@
 use anyhow::Result;
 use clap::Parser;
 
-use crate::{state::State, util::validate_json};
+use crate::{
+    commands::channels::tokens::utils::parse_expiration, state::State, util::validate_json,
+};
 
 use super::utils::create_token;
 
@@ -11,15 +13,16 @@ pub struct Options {
     #[clap(
         short = 'e',
         long = "expiration",
-        help = "Expiration date of the token, can be a date (DD/MM/YYYY, DD-MM-YYYY) or a duration (1D, 1M, 1Y)",
-        validator = validate_json
+        help = "Expiration date of the token, can be a date (DD/MM/YYYY, DD-MM-YYYY) or a duration (60s, 1d, 30d, 1y)",
+        validator = parse_expiration
     )]
     pub expires_at: Option<String>,
 
     #[clap(
         short = 's',
         long = "state",
-        help = "Initial state of the token, can be any JSON value"
+        help = "Initial state of the token, can be any JSON value",
+        validator = validate_json
     )]
     pub state: Option<String>,
 }
@@ -28,7 +31,10 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     let project_id = state.ctx.current_project_error().id;
 
     let (token_state, expires_at) = if options != Options::default() {
-        (options.state, options.expires_at)
+        (
+            options.state,
+            options.expires_at.map(|ex| parse_expiration(&ex).unwrap()),
+        )
     } else {
         let token_state = dialoguer::Input::<String>::new()
             .with_prompt("State")
@@ -39,6 +45,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         let expires_at = dialoguer::Input::<String>::new()
             .with_prompt("Expiration date")
             .default("0".to_string())
+            .validate_with(|s: &String| parse_expiration(s).map(|_| ()))
             .interact_text()?;
 
         (
@@ -50,7 +57,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             if expires_at.to_lowercase() == "0" {
                 None
             } else {
-                Some(expires_at)
+                Some(parse_expiration(&expires_at).unwrap())
             },
         )
     };
@@ -63,7 +70,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     )
     .await?;
 
-    log::info!("Created token: `{}`", token.id);
+    log::info!("Created Token: `{}`", token.id);
 
     Ok(())
 }

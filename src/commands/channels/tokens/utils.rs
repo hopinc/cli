@@ -1,6 +1,8 @@
-use std::io::Write;
+use std::{io::Write, str::FromStr};
 
 use anyhow::{anyhow, Result};
+use chrono::Utc;
+use ms::{__to_ms__, ms};
 use serde_json::Value;
 use tabwriter::TabWriter;
 
@@ -70,9 +72,9 @@ pub fn format_tokens(tokens: &[LeapToken], title: bool) -> Vec<String> {
                 .state
                 .as_ref()
                 .map(|state| state.to_string())
-                .unwrap_or_else(|| "none".to_owned()),
+                .unwrap_or_else(|| "null".to_owned()),
             channel.created_at,
-            channel.expires_at.as_ref().unwrap_or(&"none".to_owned()),
+            channel.expires_at.as_ref().unwrap_or(&"-".to_owned()),
         )
         .unwrap();
     }
@@ -82,4 +84,22 @@ pub fn format_tokens(tokens: &[LeapToken], title: bool) -> Vec<String> {
         .lines()
         .map(std::string::ToString::to_string)
         .collect()
+}
+
+pub fn parse_expiration(expires_at: &str) -> Result<String> {
+    let now = chrono::Utc::now();
+
+    let date = if expires_at.split('-').count() == 3 || expires_at.split('/').count() == 3 {
+        chrono::DateTime::<Utc>::from_str(expires_at).map_err(|_| anyhow!("Invalid date format"))?
+    } else {
+        let relative = ms!(expires_at).ok_or_else(|| anyhow!("Invalid date format"))?;
+
+        now + chrono::Duration::milliseconds(relative as i64)
+    };
+
+    if date < now {
+        return Err(anyhow!("Expiration date must be in the future"));
+    }
+
+    Ok(date.to_rfc3339())
 }
