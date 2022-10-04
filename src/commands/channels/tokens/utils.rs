@@ -68,11 +68,7 @@ pub fn format_tokens(tokens: &[LeapToken], title: bool) -> Vec<String> {
             tw,
             "{}\t{}\t{}\t{}",
             channel.id,
-            channel
-                .state
-                .as_ref()
-                .map(|state| state.to_string())
-                .unwrap_or_else(|| "null".to_owned()),
+            serde_json::to_string(&channel.state).unwrap(),
             channel.created_at,
             channel.expires_at.as_ref().unwrap_or(&"-".to_owned()),
         )

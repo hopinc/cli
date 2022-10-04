@@ -34,3 +34,14 @@ pub struct CLI {
     )]
     pub verbose: bool,
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_cli() {
+        use super::*;
+        use clap::CommandFactory;
+
+        CLI::command().debug_assert();
+    }
+}
