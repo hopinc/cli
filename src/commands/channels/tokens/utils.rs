@@ -3,10 +3,11 @@ use std::{io::Write, str::FromStr};
 use anyhow::{anyhow, Result};
 use chrono::Utc;
 use ms::{__to_ms__, ms};
-use serde_json::Value;
+use serde_json::{json, Value};
 use tabwriter::TabWriter;
 
 use super::types::{CreateLeapToken, LeapToken, MultipleLeapToken, SingleLeapToken};
+use crate::commands::channels::types::MessageEvent;
 use crate::state::http::HttpClient;
 
 pub async fn create_token(
@@ -54,6 +55,30 @@ pub async fn get_all_tokens(http: &HttpClient, project_id: &str) -> Result<Vec<L
         .ok_or_else(|| anyhow!("Error while parsing response"))?;
 
     Ok(response.tokens)
+}
+
+pub async fn message_token(
+    http: &HttpClient,
+    project_id: &str,
+    token: &str,
+    event: &str,
+    data: Option<Value>,
+) -> Result<()> {
+    http.request::<Value>(
+        "POST",
+        &format!("/channels/tokens/{token}/messages?project={project_id}"),
+        Some((
+            serde_json::to_vec(&MessageEvent {
+                event: event.to_string(),
+                data: data.unwrap_or_else(|| json!({})),
+            })?
+            .into(),
+            "application/json",
+        )),
+    )
+    .await?;
+
+    Ok(())
 }
 
 pub fn format_tokens(tokens: &[LeapToken], title: bool) -> Vec<String> {

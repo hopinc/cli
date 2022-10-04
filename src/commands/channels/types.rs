@@ -1,8 +1,11 @@
 use std::{fmt::Display, str::FromStr};
 
 use anyhow::{anyhow, Result};
+use clap::Parser;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+
+use crate::util::validate_json;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub enum ChannelType {
@@ -65,4 +68,20 @@ pub struct PaginatedChannels {
     pub channels: Vec<Channel>,
     pub page_size: u64,
     pub total_count: u64,
+}
+
+#[derive(Debug, Parser, Default, PartialEq)]
+pub struct EventOptions {
+    #[clap(short = 'e', long = "event", help = "Event name to send")]
+    pub name: Option<String>,
+    #[clap(short = 'd', long = "data", help = "Event data to send", validator = validate_json)]
+    pub data: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct MessageEvent {
+    #[serde(rename = "e")]
+    pub event: String,
+    #[serde(rename = "d")]
+    pub data: Value,
 }

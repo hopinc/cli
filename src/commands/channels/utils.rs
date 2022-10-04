@@ -1,10 +1,12 @@
 use std::io::Write;
 
 use anyhow::{anyhow, Result};
-use serde_json::Value;
+use serde_json::{json, Value};
 use tabwriter::TabWriter;
 
-use super::types::{Channel, ChannelType, CreateChannel, PaginatedChannels, SingleChannel};
+use super::types::{
+    Channel, ChannelType, CreateChannel, MessageEvent, PaginatedChannels, SingleChannel,
+};
 use crate::state::http::HttpClient;
 
 pub async fn create_channel(
@@ -91,6 +93,35 @@ pub async fn delete_channel(http: &HttpClient, project_id: &str, channel_id: &st
         None,
     )
     .await?;
+
+    Ok(())
+}
+
+pub async fn message_channel(
+    http: &HttpClient,
+    project_id: &str,
+    channel_id: &str,
+    event: &str,
+    data: Option<Value>,
+) -> Result<()> {
+    let res = http
+        .request::<Value>(
+            "POST",
+            &format!("/channels/{channel_id}/messages?project={project_id}"),
+            Some((
+                serde_json::to_vec(&MessageEvent {
+                    event: event.to_string(),
+                    data: data.unwrap_or_else(|| json!({})),
+                })?
+                .into(),
+                "application/json",
+            )),
+        )
+        .await?;
+
+    if let Some(res) = res {
+        println!("{}", serde_json::to_string_pretty(&res)?);
+    }
 
     Ok(())
 }
