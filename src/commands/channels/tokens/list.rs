@@ -4,7 +4,7 @@ use clap::Parser;
 use super::utils::{format_tokens, get_all_tokens};
 use crate::state::State;
 
-#[derive(Debug, Parser, Default, PartialEq)]
+#[derive(Debug, Parser, Default, PartialEq, Eq)]
 #[clap(about = "List all Leap Tokens")]
 pub struct Options {
     #[clap(short = 'q', long = "quiet", help = "Only print the IDs of the Tokens")]

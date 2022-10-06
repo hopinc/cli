@@ -7,7 +7,7 @@ use super::{
 };
 use crate::state::State;
 
-#[derive(Debug, Parser, Default, PartialEq)]
+#[derive(Debug, Parser, Default, PartialEq, Eq)]
 #[clap(about = "Send a message to a Channel")]
 pub struct Options {
     #[clap(

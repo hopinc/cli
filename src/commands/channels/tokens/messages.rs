@@ -5,7 +5,7 @@ use super::utils::{format_tokens, get_all_tokens, message_token};
 use crate::commands::channels::types::EventOptions;
 use crate::state::State;
 
-#[derive(Debug, Parser, Default, PartialEq)]
+#[derive(Debug, Parser, Default, PartialEq, Eq)]
 #[clap(about = "Send a message to a Leap Token")]
 pub struct Options {
     #[clap(

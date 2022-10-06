@@ -6,7 +6,7 @@ use crate::commands::channels::utils::create_channel;
 use crate::state::State;
 use crate::util::validate_json_non_null;
 
-#[derive(Debug, Parser, Default, PartialEq)]
+#[derive(Debug, Parser, Default, PartialEq, Eq)]
 #[clap(about = "Create a new Channel")]
 pub struct Options {
     #[clap(short = 'i', long = "id", help = "Custom ID for the channel")]

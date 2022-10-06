@@ -34,6 +34,7 @@ pub enum Commands {
     Domains(domains::Options),
     #[clap(name = "completions", alias = "complete", hide = cfg!(not(feature = "update")))]
     Completions(completions::Options),
+    #[clap(name = "channels", alias = "channel", alias = "ch")]
     Channels(channels::Options),
 }
 

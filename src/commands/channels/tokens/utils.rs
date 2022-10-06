@@ -1,4 +1,5 @@
-use std::{io::Write, str::FromStr};
+use std::io::Write;
+use std::str::FromStr;
 
 use anyhow::{anyhow, Result};
 use chrono::Utc;
@@ -85,15 +86,14 @@ pub fn format_tokens(tokens: &[LeapToken], title: bool) -> Vec<String> {
     let mut tw = TabWriter::new(vec![]);
 
     if title {
-        writeln!(tw, "ID\tSTATE\tCREATION\tEXPIRATION").unwrap();
+        writeln!(tw, "ID\tCREATION\tEXPIRATION").unwrap();
     }
 
     for channel in tokens {
         writeln!(
             tw,
-            "{}\t{}\t{}\t{}",
+            "{}\t{}\t{}",
             channel.id,
-            serde_json::to_string(&channel.state).unwrap(),
             channel.created_at,
             channel.expires_at.as_ref().unwrap_or(&"-".to_owned()),
         )

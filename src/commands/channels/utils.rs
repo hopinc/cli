@@ -104,24 +104,35 @@ pub async fn message_channel(
     event: &str,
     data: Option<Value>,
 ) -> Result<()> {
-    let res = http
-        .request::<Value>(
-            "POST",
-            &format!("/channels/{channel_id}/messages?project={project_id}"),
-            Some((
-                serde_json::to_vec(&MessageEvent {
-                    event: event.to_string(),
-                    data: data.unwrap_or_else(|| json!({})),
-                })?
-                .into(),
-                "application/json",
-            )),
-        )
-        .await?;
+    http.request::<Value>(
+        "POST",
+        &format!("/channels/{channel_id}/messages?project={project_id}"),
+        Some((
+            serde_json::to_vec(&MessageEvent {
+                event: event.to_string(),
+                data: data.unwrap_or_else(|| json!({})),
+            })?
+            .into(),
+            "application/json",
+        )),
+    )
+    .await?;
 
-    if let Some(res) = res {
-        println!("{}", serde_json::to_string_pretty(&res)?);
-    }
+    Ok(())
+}
+
+pub async fn subscribe_to_channel(
+    http: &HttpClient,
+    project: &str,
+    channel: &str,
+    token: &str,
+) -> Result<()> {
+    http.request::<Value>(
+        "PUT",
+        &format!("/channels/{channel}/subscribers/{token}?project={project}"),
+        None,
+    )
+    .await?;
 
     Ok(())
 }
@@ -130,14 +141,14 @@ pub fn format_channels(channels: &[Channel], title: bool) -> Vec<String> {
     let mut tw = TabWriter::new(vec![]);
 
     if title {
-        writeln!(tw, "ID\tTYPE\tSTATE\tCREATION").unwrap();
+        writeln!(tw, "ID\tTYPE\tCREATION").unwrap();
     }
 
     for channel in channels {
         writeln!(
             tw,
-            "{}\t{}\t{}\t{}",
-            channel.id, channel.type_, channel.state, channel.created_at
+            "{}\t{}\t{}",
+            channel.id, channel.type_, channel.created_at
         )
         .unwrap();
     }

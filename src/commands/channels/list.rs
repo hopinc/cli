@@ -4,7 +4,7 @@ use clap::Parser;
 use super::utils::{format_channels, get_all_channels};
 use crate::state::State;
 
-#[derive(Debug, Parser, Default, PartialEq)]
+#[derive(Debug, Parser, Default, PartialEq, Eq)]
 #[clap(about = "List all Channel")]
 pub struct Options {
     #[clap(

@@ -3,7 +3,7 @@ mod delete;
 mod list;
 mod messages;
 mod types;
-mod utils;
+pub(super) mod utils;
 
 use anyhow::Result;
 use clap::Parser;

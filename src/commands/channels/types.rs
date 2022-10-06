@@ -7,7 +7,7 @@ use serde_json::Value;
 
 use crate::util::validate_json;
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub enum ChannelType {
     #[serde(rename = "public")]
     Public,
@@ -70,7 +70,7 @@ pub struct PaginatedChannels {
     pub total_count: u64,
 }
 
-#[derive(Debug, Parser, Default, PartialEq)]
+#[derive(Debug, Parser, Default, PartialEq, Eq)]
 pub struct EventOptions {
     #[clap(short = 'e', long = "event", help = "Event name to send")]
     pub name: Option<String>,
