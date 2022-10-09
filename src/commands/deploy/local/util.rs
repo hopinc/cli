@@ -1,5 +1,4 @@
 use std::path::PathBuf;
-
 use std::vec;
 
 use anyhow::{anyhow, bail, ensure, Result};
@@ -70,7 +69,7 @@ pub async fn install_nixpacks(path: &PathBuf) -> Result<()> {
 fn get_nixpacks_platform() -> Result<&'static str> {
     match sys_info::os_type()?.to_lowercase().as_str() {
         "linux" => Ok("unknown-linux-musl"),
-        "macos" => Ok("apple-darwin"),
+        "darwin" => Ok("apple-darwin"),
         "windows" => Ok("pc-windows-msvc"),
         _ => bail!("Unsupported platform"),
     }
