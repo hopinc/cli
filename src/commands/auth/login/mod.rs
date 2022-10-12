@@ -73,7 +73,8 @@ pub async fn token(token: &str, mut state: State) -> Result<()> {
         .insert(authorized.id.clone(), token.to_string());
     state.auth.save().await?;
 
-    if in_path("docker").await
+    if !state.is_ci
+        && in_path("docker").await
         && dialoguer::Confirm::new()
             .with_prompt("Docker was detected, would you like to login to the Hop registry?")
             .default(false)
