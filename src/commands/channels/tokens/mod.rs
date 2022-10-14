@@ -23,7 +23,7 @@ pub enum Commands {
 }
 
 #[derive(Debug, Parser)]
-#[clap(about = "Interact with Channels")]
+#[clap(about = "Interact with Channel Tokens")]
 pub struct Options {
     #[clap(subcommand)]
     pub commands: Commands,
