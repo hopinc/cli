@@ -61,7 +61,7 @@ pub async fn token(token: &str, mut state: State) -> Result<()> {
         // output the login info
         log::info!("Logged in as: `{}` ({})", authorized.name, authorized.email);
 
-        state.ctx.default_project = None;
+        state.ctx.default_project = authorized.projects.first().map(|x| x.id.clone());
         state.ctx.default_user = Some(authorized.id.clone());
         state.ctx.save().await?;
     }
