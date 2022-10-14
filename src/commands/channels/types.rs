@@ -5,7 +5,7 @@ use clap::Parser;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::util::validate_json;
+use crate::utils::validate_json;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub enum ChannelType {

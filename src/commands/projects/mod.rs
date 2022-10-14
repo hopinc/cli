@@ -4,7 +4,7 @@ pub mod info;
 mod list;
 mod switch;
 pub mod types;
-pub mod util;
+pub mod utils;
 
 use clap::{Parser, Subcommand};
 
@@ -23,7 +23,7 @@ pub enum Commands {
 }
 
 #[derive(Debug, Parser)]
-#[clap(name = "projects", about = "Interact with projects")]
+#[clap(about = "Interact with projects")]
 pub struct Options {
     #[clap(subcommand)]
     pub commands: Commands,

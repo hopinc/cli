@@ -2,8 +2,8 @@ use anyhow::Result;
 use clap::Parser;
 use serde_json::Value;
 
-use super::util::format_projects;
-use crate::commands::projects::util::format_project;
+use super::utils::format_projects;
+use crate::commands::projects::utils::format_project;
 use crate::state::State;
 
 static CONFIRM_DELETE_PROJECT_MESSAGE: &str = "I am sure I want to delete the project named ";

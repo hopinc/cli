@@ -1,22 +1,18 @@
-use anyhow::{bail, ensure, Result};
+use anyhow::{ensure, Result};
 use clap::Parser;
 
-use crate::commands::containers::utils::create_containers;
 use crate::commands::ignite::utils::{format_deployments, get_all_deployments};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
-#[clap(about = "Create containers for a deployment")]
+#[clap(about = "Create Health Checks for a deployment")]
 pub struct Options {
-    #[clap(short = 'd', long = "deployment", help = "ID of the deployment")]
-    pub deployment: Option<String>,
-
-    #[clap(name = "count", help = "Number of containers to create")]
-    pub count: Option<u64>,
+    #[clap(short = 'c', long = "health-check", help = "ID of the Health Check")]
+    pub health_check: Option<String>,
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
-    let deployment_id = match options.deployment {
+    let health_check = match options.health_check {
         Some(id) => id,
 
         None => {
@@ -37,22 +33,6 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             deployments[idx].id.clone()
         }
     };
-
-    let count = match options.count {
-        Some(count) => count,
-        None => dialoguer::Input::<u64>::new()
-            .with_prompt("Number of containers to create")
-            .interact()
-            .expect("Failed to select deployment"),
-    };
-
-    if count < 1 {
-        bail!("Count must be greater than 0");
-    }
-
-    create_containers(&state.http, &deployment_id, count).await?;
-
-    log::info!("Created {} containers", count);
 
     Ok(())
 }

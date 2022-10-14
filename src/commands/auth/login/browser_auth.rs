@@ -8,7 +8,7 @@ use tokio::task;
 
 use super::WEB_AUTH_URL;
 use crate::commands::auth::login::PAT_FALLBACK_URL;
-use crate::commands::ignite::util::parse_key_val;
+use crate::commands::ignite::utils::parse_key_val;
 
 pub async fn browser_login() -> String {
     let port = portpicker::pick_unused_port().unwrap();

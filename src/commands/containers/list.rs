@@ -2,7 +2,7 @@ use anyhow::{ensure, Result};
 use clap::Parser;
 
 use crate::commands::containers::utils::{format_containers, get_all_containers};
-use crate::commands::ignite::util::{format_deployments, get_all_deployments, get_deployment};
+use crate::commands::ignite::utils::{format_deployments, get_all_deployments, get_deployment};
 use crate::state::State;
 
 #[derive(Debug, Parser)]

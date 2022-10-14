@@ -4,7 +4,7 @@ use clap::Parser;
 use super::types::ChannelType;
 use crate::commands::channels::utils::create_channel;
 use crate::state::State;
-use crate::util::validate_json_non_null;
+use crate::utils::validate_json_non_null;
 
 #[derive(Debug, Parser, Default, PartialEq, Eq)]
 #[clap(about = "Create a new Channel")]

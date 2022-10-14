@@ -15,7 +15,7 @@ use crate::commands::containers::types::{ContainerOptions, ContainerType};
 use crate::commands::ignite::create::Options;
 use crate::commands::ignite::types::{RamSizes, RestartPolicy, ScalingStrategy};
 use crate::state::http::HttpClient;
-use crate::util::ask_question_iter;
+use crate::utils::ask_question_iter;
 
 pub async fn get_all_deployments(http: &HttpClient, project_id: &str) -> Result<Vec<Deployment>> {
     let response = http

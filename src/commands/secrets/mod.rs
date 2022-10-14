@@ -2,7 +2,7 @@ mod delete;
 mod list;
 mod set;
 mod types;
-pub mod util;
+pub mod utils;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -20,7 +20,7 @@ pub enum Commands {
 }
 
 #[derive(Debug, Parser)]
-#[clap(name = "secrets", about = "Interact with secrets")]
+#[clap(about = "Interact with secrets")]
 pub struct Options {
     #[clap(subcommand)]
     pub commands: Commands,

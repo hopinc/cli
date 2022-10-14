@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use tokio::fs;
 
-use crate::commands::ignite::util::parse_key_val;
+use crate::commands::ignite::utils::parse_key_val;
 
 pub async fn env_file_to_map(path: PathBuf) -> HashMap<String, String> {
     let mut env = HashMap::new();

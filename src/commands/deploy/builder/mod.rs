@@ -13,7 +13,7 @@ use self::types::BuildEvents;
 use self::util::{builder_post, cancel_build, compress};
 use crate::config::HOP_LEAP_PROJECT;
 use crate::state::State;
-use crate::util::urlify;
+use crate::utils::urlify;
 
 pub async fn build(
     state: &State,

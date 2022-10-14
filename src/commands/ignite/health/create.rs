@@ -1,18 +1,39 @@
-use anyhow::{bail, ensure, Result};
+use anyhow::{ensure, Result};
 use clap::Parser;
 
-use crate::commands::containers::utils::create_containers;
+use super::utils::{create_health_check, create_health_check_config};
 use crate::commands::ignite::utils::{format_deployments, get_all_deployments};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
-#[clap(about = "Create containers for a deployment")]
+#[clap(about = "Create Health Checks for a deployment")]
 pub struct Options {
     #[clap(short = 'd', long = "deployment", help = "ID of the deployment")]
     pub deployment: Option<String>,
 
-    #[clap(name = "count", help = "Number of containers to create")]
-    pub count: Option<u64>,
+    #[clap(flatten)]
+    pub health_check: self::HealthCheckCreate,
+}
+
+#[derive(Debug, Parser, PartialEq, Eq, Default)]
+pub struct HealthCheckCreate {
+    #[clap(long = "port", help = "Port to check")]
+    pub port: Option<u64>,
+
+    #[clap(long = "path", help = "Path to check")]
+    pub path: Option<String>,
+
+    #[clap(long = "interval", help = "Interval to check")]
+    pub interval: Option<u64>,
+
+    #[clap(long = "timeout", help = "Timeout to check")]
+    pub timeout: Option<u64>,
+
+    #[clap(long = "max-retries", help = "Max retries of the check")]
+    pub max_retries: Option<u64>,
+
+    #[clap(long = "initial-delay", help = "Initial delay of the check")]
+    pub initial_delay: Option<u64>,
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
@@ -38,21 +59,11 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         }
     };
 
-    let count = match options.count {
-        Some(count) => count,
-        None => dialoguer::Input::<u64>::new()
-            .with_prompt("Number of containers to create")
-            .interact()
-            .expect("Failed to select deployment"),
-    };
+    let health_config = create_health_check_config(options.health_check)?;
 
-    if count < 1 {
-        bail!("Count must be greater than 0");
-    }
+    let health_check = create_health_check(&state.http, &deployment_id, health_config).await?;
 
-    create_containers(&state.http, &deployment_id, count).await?;
-
-    log::info!("Created {} containers", count);
+    log::info!("Created Health Check `{}`", health_check.id);
 
     Ok(())
 }

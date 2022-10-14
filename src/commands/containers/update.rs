@@ -4,7 +4,7 @@ use clap::Parser;
 use super::types::ChangeableContainerState;
 use super::utils::update_container_state;
 use crate::commands::containers::utils::{format_containers, get_all_containers};
-use crate::commands::ignite::util::{format_deployments, get_all_deployments};
+use crate::commands::ignite::utils::{format_deployments, get_all_deployments};
 use crate::state::State;
 
 #[derive(Debug, Parser)]

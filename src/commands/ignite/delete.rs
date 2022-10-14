@@ -1,7 +1,7 @@
 use anyhow::{bail, ensure, Result};
 use clap::Parser;
 
-use crate::commands::ignite::util::{delete_deployment, format_deployments, get_all_deployments};
+use crate::commands::ignite::utils::{delete_deployment, format_deployments, get_all_deployments};
 use crate::state::State;
 
 #[derive(Debug, Parser)]

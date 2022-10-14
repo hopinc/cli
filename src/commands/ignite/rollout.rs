@@ -1,7 +1,7 @@
 use anyhow::{ensure, Result};
 use clap::Parser;
 
-use super::util::{format_deployments, get_all_deployments, rollout};
+use super::utils::{format_deployments, get_all_deployments, rollout};
 use crate::state::State;
 
 #[derive(Debug, Parser)]

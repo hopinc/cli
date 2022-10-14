@@ -10,9 +10,9 @@ use tokio::time::sleep;
 use crate::commands::containers::utils::{
     format_containers, format_logs, get_all_containers, get_container_logs,
 };
-use crate::commands::ignite::util::{format_deployments, get_all_deployments};
+use crate::commands::ignite::utils::{format_deployments, get_all_deployments};
 use crate::state::State;
-use crate::util::in_path;
+use crate::utils::in_path;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Get logs of a container")]

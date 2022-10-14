@@ -20,7 +20,7 @@ pub enum Commands {
 }
 
 #[derive(Debug, Parser)]
-#[clap(name = "domains", about = "Interact with domains")]
+#[clap(about = "Interact with domains")]
 pub struct Options {
     #[clap(subcommand)]
     pub commands: Commands,

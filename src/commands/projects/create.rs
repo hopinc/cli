@@ -3,7 +3,7 @@ use clap::Parser;
 use serde::Serialize;
 
 use super::types::{Project, SingleProjectResponse};
-use crate::commands::projects::util::format_project;
+use crate::commands::projects::utils::format_project;
 use crate::state::http::HttpClient;
 use crate::state::State;
 

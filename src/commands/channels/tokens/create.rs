@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::Parser;
 
 use crate::{
-    commands::channels::tokens::utils::parse_expiration, state::State, util::validate_json,
+    commands::channels::tokens::utils::parse_expiration, state::State, utils::validate_json,
 };
 
 use super::utils::create_token;

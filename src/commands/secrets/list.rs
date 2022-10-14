@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::Parser;
 
 use crate::commands::secrets::types::Secrets;
-use crate::commands::secrets::util::format_secrets;
+use crate::commands::secrets::utils::format_secrets;
 use crate::state::State;
 
 #[derive(Debug, Parser)]

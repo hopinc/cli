@@ -3,8 +3,8 @@ use std::io::Write;
 use anyhow::{ensure, Result};
 use clap::Parser;
 
-use crate::commands::ignite::util::{format_deployments, get_all_deployments, get_deployment};
-use crate::commands::secrets::util::get_secret_name;
+use crate::commands::ignite::utils::{format_deployments, get_all_deployments, get_deployment};
+use crate::commands::secrets::utils::get_secret_name;
 use crate::state::State;
 
 #[derive(Debug, Parser)]

@@ -5,9 +5,9 @@ use super::types::{Env, RamSizes, RestartPolicy, ScalingStrategy};
 use crate::commands::containers::types::ContainerType;
 use crate::commands::containers::utils::create_containers;
 use crate::commands::ignite::types::Deployment;
-use crate::commands::ignite::util::{create_deployment, update_deployment_config};
+use crate::commands::ignite::utils::{create_deployment, update_deployment_config};
 use crate::state::State;
-use crate::util::urlify;
+use crate::utils::urlify;
 
 pub const WEB_DEPLOYMENTS_URL: &str = "https://console.hop.io/ignite/deployment/";
 

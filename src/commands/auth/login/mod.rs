@@ -9,7 +9,7 @@ use clap::Parser;
 use self::browser_auth::browser_login;
 use self::flags_auth::flags_login;
 use crate::state::State;
-use crate::util::in_path;
+use crate::utils::in_path;
 
 const WEB_AUTH_URL: &str = "https://console.hop.io/cli-auth";
 const PAT_FALLBACK_URL: &str = "https://console.hop.io/settings/pats";

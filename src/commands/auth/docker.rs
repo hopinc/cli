@@ -6,7 +6,7 @@ use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
 
 use crate::state::State;
-use crate::util::in_path;
+use crate::utils::in_path;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Authenticate the current user with Docker")]

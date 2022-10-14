@@ -1,6 +1,6 @@
 use clap::Parser;
 
-use super::util::format_projects;
+use super::utils::format_projects;
 use crate::state::State;
 
 #[derive(Debug, Parser)]

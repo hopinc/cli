@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use clap::Parser;
 
 use crate::commands::secrets::types::SecretResponse;
-use crate::commands::secrets::util::validate_name;
+use crate::commands::secrets::utils::validate_name;
 use crate::state::State;
 
 #[derive(Debug, Parser)]

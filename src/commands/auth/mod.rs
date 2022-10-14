@@ -23,7 +23,7 @@ pub enum Commands {
 }
 
 #[derive(Debug, Parser)]
-#[clap(name = "auth", about = "Authenticate with Hop")]
+#[clap(about = "Authenticate with Hop")]
 pub struct Options {
     #[clap(subcommand)]
     pub commands: Commands,
