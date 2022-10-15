@@ -39,8 +39,9 @@ pub struct CLI {
 mod tests {
     #[test]
     fn test_cli() {
-        use super::*;
         use clap::CommandFactory;
+
+        use super::*;
 
         CLI::command().debug_assert();
     }

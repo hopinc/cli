@@ -1,11 +1,11 @@
 use anyhow::Result;
 use clap::Parser;
-
-use crate::{
-    commands::channels::tokens::utils::parse_expiration, state::State, utils::validate_json,
-};
+use serde_json::Value;
 
 use super::utils::create_token;
+use crate::commands::channels::tokens::utils::parse_expiration;
+use crate::state::State;
+use crate::utils::validate_json;
 
 #[derive(Debug, Parser, Default, PartialEq, Eq)]
 #[clap(about = "Create a new Leap Token")]
@@ -14,7 +14,7 @@ pub struct Options {
         short = 'e',
         long = "expiration",
         help = "Expiration date of the token, can be a date (DD/MM/YYYY, DD-MM-YYYY) or a duration (60s, 1d, 30d, 1y)",
-        validator = parse_expiration
+        value_parser = parse_expiration
     )]
     pub expires_at: Option<String>,
 
@@ -22,9 +22,9 @@ pub struct Options {
         short = 's',
         long = "state",
         help = "Initial state of the token, can be any JSON value",
-        validator = validate_json
+        value_parser = validate_json
     )]
-    pub state: Option<String>,
+    pub state: Option<Value>,
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
@@ -39,7 +39,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         let token_state = dialoguer::Input::<String>::new()
             .with_prompt("State")
             .default("null".to_string())
-            .validate_with(|s: &String| validate_json(s))
+            .validate_with(|s: &String| validate_json(s).map(|_| ()))
             .interact_text()?;
 
         let expires_at = dialoguer::Input::<String>::new()
@@ -53,7 +53,8 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 None
             } else {
                 Some(token_state)
-            },
+            }
+            .map(|s| s.parse().unwrap()),
             if expires_at.to_lowercase() == "0" {
                 None
             } else {
@@ -62,13 +63,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         )
     };
 
-    let token = create_token(
-        &state.http,
-        &project_id,
-        expires_at.as_deref(),
-        token_state.map(|s| s.parse().unwrap()),
-    )
-    .await?;
+    let token = create_token(&state.http, &project_id, expires_at.as_deref(), token_state).await?;
 
     log::info!("Created Token: `{}`", token.id);
 

@@ -1,10 +1,8 @@
 use anyhow::{anyhow, ensure, Result};
 use clap::Parser;
 
-use super::{
-    types::EventOptions,
-    utils::{format_channels, get_all_channels, message_channel},
-};
+use super::types::EventOptions;
+use super::utils::{format_channels, get_all_channels, message_channel};
 use crate::state::State;
 
 #[derive(Debug, Parser, Default, PartialEq, Eq)]

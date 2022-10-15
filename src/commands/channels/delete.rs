@@ -8,7 +8,7 @@ use crate::state::State;
 #[derive(Debug, Parser)]
 #[clap(about = "Delete Channels")]
 pub struct Options {
-    #[clap(name = "channels", help = "IDs of the Channels", min_values = 0)]
+    #[clap(name = "channels", help = "IDs of the Channels")]
     channels: Vec<String>,
 
     #[clap(short = 'f', long = "force", help = "Skip confirmation")]

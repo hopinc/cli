@@ -7,7 +7,8 @@ use hyper::Method;
 use ignore::WalkBuilder;
 use reqwest::multipart::{Form, Part};
 use serde_json::Value;
-use tokio::{fs::File, io::AsyncWriteExt};
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
 use tokio_tar::Builder as TarBuilder;
 
 use super::types::{Build, SingleBuild};

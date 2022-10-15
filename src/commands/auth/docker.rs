@@ -59,7 +59,8 @@ pub async fn login(username: &str, password: &str) -> Result<()> {
 }
 
 pub async fn login_new(username: &str, password: &str) -> Result<()> {
-    // if we are not logged in we need to login using the email and token (pat or bearer, ptk)
+    // if we are not logged in we need to login using the email and token (pat or
+    // bearer, ptk)
     let mut child = Command::new("docker")
         .arg("login")
         .arg("--username")

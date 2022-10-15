@@ -66,8 +66,7 @@ pub struct DeploymentConfig {
     #[clap(
         short = 'e',
         long = "env",
-        help = "Environment variables to set, in the form of `key=value`",
-        min_values = 0
+        help = "Environment variables to set, in the form of `key=value`"
     )]
     pub env: Option<Vec<Env>>,
 

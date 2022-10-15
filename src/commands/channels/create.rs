@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
 use clap::Parser;
+use serde_json::Value;
 
 use super::types::ChannelType;
 use crate::commands::channels::utils::create_channel;
@@ -15,8 +16,8 @@ pub struct Options {
     #[clap(short = 't', long = "type", help = "Type of the channel")]
     pub channel_type: Option<ChannelType>,
 
-    #[clap(short = 's', long = "state", help = "Initial state of the channel", validator = validate_json_non_null )]
-    pub state: Option<String>,
+    #[clap(short = 's', long = "state", help = "Initial state of the channel", value_parser = validate_json_non_null )]
+    pub state: Option<Value>,
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
@@ -50,7 +51,9 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             .with_prompt("Enter the initial state of the channel")
             .default("{}".to_string())
             .validate_with(|s: &String| -> Result<(), String> {
-                validate_json_non_null(s).map_err(|e| e.to_string())
+                validate_json_non_null(s)
+                    .map(|_| ())
+                    .map_err(|e| e.to_string())
             })
             .interact()?;
 
@@ -68,8 +71,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             options
                 .state
                 .clone()
-                .unwrap_or_else(|| "{}".to_string())
-                .parse()?,
+                .unwrap_or_else(|| Value::Object(serde_json::Map::new())),
         )
     };
 

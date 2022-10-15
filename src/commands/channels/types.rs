@@ -1,4 +1,5 @@
-use std::{fmt::Display, str::FromStr};
+use std::fmt::Display;
+use std::str::FromStr;
 
 use anyhow::{anyhow, Result};
 use clap::Parser;
@@ -74,7 +75,7 @@ pub struct PaginatedChannels {
 pub struct EventOptions {
     #[clap(short = 'e', long = "event", help = "Event name to send")]
     pub name: Option<String>,
-    #[clap(short = 'd', long = "data", help = "Event data to send", validator = validate_json)]
+    #[clap(short = 'd', long = "data", help = "Event data to send", value_parser = validate_json)]
     pub data: Option<String>,
 }
 
