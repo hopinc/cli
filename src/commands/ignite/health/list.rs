@@ -1,7 +1,7 @@
 use anyhow::{ensure, Result};
 use clap::Parser;
 
-use super::utils::{create_health_check, create_health_check_config};
+use super::utils::{format_health_checks, get_all_health_checks};
 use crate::commands::ignite::utils::{format_deployments, get_all_deployments};
 use crate::state::State;
 
@@ -11,29 +11,12 @@ pub struct Options {
     #[clap(name = "deployment", help = "ID of the deployment")]
     pub deployment: Option<String>,
 
-    #[clap(flatten)]
-    pub health_check: self::HealthCheckCreate,
-}
-
-#[derive(Debug, Parser, PartialEq, Eq, Default)]
-pub struct HealthCheckCreate {
-    #[clap(long = "port", help = "Port to check")]
-    pub port: Option<u64>,
-
-    #[clap(long = "path", help = "Path to check")]
-    pub path: Option<String>,
-
-    #[clap(long = "interval", help = "Interval to check")]
-    pub interval: Option<u64>,
-
-    #[clap(long = "timeout", help = "Timeout to check")]
-    pub timeout: Option<u64>,
-
-    #[clap(long = "max-retries", help = "Max retries of the check")]
-    pub max_retries: Option<u64>,
-
-    #[clap(long = "initial-delay", help = "Initial delay of the check")]
-    pub initial_delay: Option<u64>,
+    #[clap(
+        short = 'q',
+        long = "quiet",
+        help = "Only print the IDs of the deployments"
+    )]
+    pub quiet: bool,
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
@@ -58,11 +41,21 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         }
     };
 
-    let health_config = create_health_check_config(options.health_check)?;
+    let health_checks = get_all_health_checks(&state.http, &deployment_id).await?;
 
-    let health_check = create_health_check(&state.http, &deployment_id, health_config).await?;
+    if options.quiet {
+        let ids = health_checks
+            .iter()
+            .map(|d| d.id.as_str())
+            .collect::<Vec<_>>()
+            .join(" ");
 
-    log::info!("Created Health Check `{}`", health_check.id);
+        println!("{}", ids);
+    } else {
+        let health_checks_fmt = format_health_checks(&health_checks, true);
+
+        println!("{}", health_checks_fmt.join("\n"));
+    }
 
     Ok(())
 }

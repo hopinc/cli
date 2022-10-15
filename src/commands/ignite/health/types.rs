@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize)]
@@ -53,4 +54,24 @@ pub struct HealthCheck {
 #[derive(Debug, Deserialize)]
 pub struct SingleHealthCheck {
     pub health_check: HealthCheck,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct MultipleHealthChecks {
+    pub health_checks: Vec<HealthCheck>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct HealthCheckState {
+    pub state: String,
+    pub container_id: String,
+    pub health_check_id: String,
+    pub deployment_id: String,
+    pub created_at: String,
+    pub next_check: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct MultipleHealthCheckState {
+    pub health_check_states: Vec<HealthCheckState>,
 }

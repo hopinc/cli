@@ -1,7 +1,15 @@
-use anyhow::Result;
+use std::io::Write;
 
-use super::types::{CreateHealthCheck, HealthCheck, SingleHealthCheck};
+use anyhow::Result;
+use serde_json::Value;
+use tabwriter::TabWriter;
+
+use super::types::{
+    CreateHealthCheck, HealthCheck, HealthCheckState, MultipleHealthCheckState,
+    MultipleHealthChecks, SingleHealthCheck,
+};
 use crate::state::http::HttpClient;
+use crate::utils::relative_time;
 
 pub fn create_health_check_config(
     config: super::create::HealthCheckCreate,
@@ -98,4 +106,107 @@ pub async fn create_health_check(
         .health_check;
 
     Ok(check)
+}
+
+pub async fn get_all_health_checks(
+    http: &HttpClient,
+    deployment_id: &str,
+) -> Result<Vec<HealthCheck>> {
+    let checks = http
+        .request::<MultipleHealthChecks>(
+            "GET",
+            &format!("/ignite/deployments/{deployment_id}/health-checks"),
+            None,
+        )
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("Could not parse response"))?;
+
+    Ok(checks.health_checks)
+}
+
+pub async fn delete_health_check(http: &HttpClient, health_check_id: &str) -> Result<()> {
+    http.request::<Value>(
+        "DELETE",
+        &format!("/ignite/health-checks/{health_check_id}",),
+        None,
+    )
+    .await?;
+
+    Ok(())
+}
+
+pub async fn get_health_state(
+    http: &HttpClient,
+    deployment_id: &str,
+) -> Result<Vec<HealthCheckState>> {
+    let state = http
+        .request::<MultipleHealthCheckState>(
+            "GET",
+            &format!("/ignite/deployments/{deployment_id}/health-check-state"),
+            None,
+        )
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("Could not parse response"))?;
+
+    Ok(state.health_check_states)
+}
+
+pub fn format_health_checks(checks: &[HealthCheck], title: bool) -> Vec<String> {
+    let mut tw = TabWriter::new(vec![]);
+
+    if title {
+        writeln!(
+            &mut tw,
+            "ID\tINTERVAL\tTIMEOUT\tMAX RETRIES\tINITIAL DELAY\tPORT\tPROTOCOL\tPATH\tCREATED AT"
+        )
+        .unwrap();
+    }
+
+    for check in checks {
+        writeln!(
+            &mut tw,
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
+            check.id,
+            check.interval,
+            check.timeout,
+            check.max_retries,
+            check.initial_delay,
+            check.port,
+            check.protocol,
+            check.path,
+            check.created_at,
+        )
+        .unwrap();
+    }
+
+    String::from_utf8(tw.into_inner().unwrap())
+        .unwrap()
+        .lines()
+        .map(std::string::ToString::to_string)
+        .collect()
+}
+
+pub fn format_health_state(state: &[HealthCheckState], title: bool) -> Vec<String> {
+    let mut tw = TabWriter::new(vec![]);
+
+    if title {
+        writeln!(&mut tw, "CONTAINER ID\tSTATE\tNEXT CHECK IN").unwrap();
+    }
+
+    for check in state {
+        writeln!(
+            &mut tw,
+            "{}\t{}\t{}",
+            check.container_id,
+            check.state,
+            relative_time(check.next_check),
+        )
+        .unwrap();
+    }
+
+    String::from_utf8(tw.into_inner().unwrap())
+        .unwrap()
+        .lines()
+        .map(std::string::ToString::to_string)
+        .collect()
 }
