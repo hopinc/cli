@@ -1,3 +1,4 @@
+use std::env::current_dir;
 use std::path::PathBuf;
 
 use anyhow::Result;
@@ -79,23 +80,30 @@ impl HopFile {
         }
     }
 
-    pub async fn find(path: PathBuf) -> Option<Self> {
-        for filename in VALID_HOP_FILENAMES {
-            let path = path.clone().join(filename);
+    // Find a hopfile in the current directory or any of its parents.
+    pub async fn find(mut path: PathBuf) -> Option<Self> {
+        loop {
+            for filename in VALID_HOP_FILENAMES {
+                let file_path = path.join(filename);
 
-            if fs::metadata(&path).await.is_ok() {
-                let content = fs::read_to_string(&path).await.ok()?;
+                if file_path.exists() {
+                    let content = fs::read_to_string(file_path.clone()).await.ok()?;
 
-                let mut hop_file_content: Self = Self::deserialize(path.clone(), &content)
-                    .expect("Failed to deserialize hop file");
+                    return Self::deserialize(file_path, &content);
+                }
+            }
 
-                hop_file_content.path = path;
-
-                return Some(hop_file_content);
+            if !path.pop() {
+                break;
             }
         }
 
         None
+    }
+
+    #[inline]
+    pub async fn find_current() -> Option<Self> {
+        Self::find(current_dir().ok()?).await
     }
 
     pub async fn save(self) -> Result<Self> {

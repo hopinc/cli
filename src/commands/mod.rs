@@ -7,6 +7,7 @@ mod domains;
 mod gateways;
 pub mod ignite;
 mod link;
+mod oops;
 pub mod projects;
 mod secrets;
 pub mod update;
@@ -36,6 +37,7 @@ pub enum Commands {
     Completions(completions::Options),
     #[clap(alias = "channel", alias = "ch")]
     Channels(channels::Options),
+    Oops(oops::Options),
 }
 
 pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
@@ -70,6 +72,7 @@ pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
                 Commands::Containers(options) => containers::handle(options, state).await,
                 Commands::Gateways(options) => gateways::handle(options, state).await,
                 Commands::Domains(options) => domains::handle(options, state).await,
+                Commands::Oops(options) => oops::handle(&options, state).await,
             }
         }
     }
