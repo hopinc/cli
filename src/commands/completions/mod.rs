@@ -10,7 +10,7 @@ use crate::CLI;
 #[derive(Debug, Parser)]
 #[clap(about = "Generate completion scripts for the specified shell")]
 pub struct Options {
-    #[clap(name = "shell", help = "The shell to print the completion script for")]
+    #[clap(help = "The shell to print the completion script for")]
     shell: CompletionShell,
 }
 

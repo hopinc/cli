@@ -19,7 +19,7 @@ pub struct Options {
     )]
     path: Option<PathBuf>,
 
-    #[clap(name = "deployment", help = "ID of the deployment")]
+    #[clap(help = "ID of the deployment")]
     deployment: Option<String>,
 }
 

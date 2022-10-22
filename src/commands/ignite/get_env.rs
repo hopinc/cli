@@ -10,7 +10,7 @@ use crate::state::State;
 #[derive(Debug, Parser)]
 #[clap(about = "Get current deployments env values")]
 pub struct Options {
-    #[clap(name = "deployment", help = "ID of the deployment to get env values")]
+    #[clap(help = "ID of the deployment to get env values")]
     pub deployment: Option<String>,
 }
 

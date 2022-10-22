@@ -9,10 +9,10 @@ use crate::state::State;
 #[derive(Debug, Parser)]
 #[clap(about = "Delete containers")]
 pub struct Options {
-    #[clap(name = "containers", help = "IDs of the containers")]
+    #[clap(help = "IDs of the containers")]
     containers: Vec<String>,
 
-    #[clap(short = 'f', long = "force", help = "Skip confirmation")]
+    #[clap(short, long, help = "Skip confirmation")]
     force: bool,
 }
 

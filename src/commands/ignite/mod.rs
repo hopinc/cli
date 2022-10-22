@@ -1,8 +1,10 @@
+pub mod builds;
 pub mod create;
 mod delete;
 mod get_env;
 mod health;
 mod list;
+mod promote;
 pub mod rollout;
 mod scale;
 pub mod types;
@@ -33,6 +35,9 @@ pub enum Commands {
     // alias for hop containers
     Containers(super::containers::Options),
     Gateways(super::gateways::Options),
+    #[clap(alias = "rollback")]
+    Promote(promote::Options),
+    Builds(builds::Options),
 }
 
 #[derive(Debug, Parser)]
@@ -54,5 +59,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Commands::Health(options) => health::handle(options, state).await,
         Commands::Containers(options) => super::containers::handle(options, state).await,
         Commands::Gateways(options) => super::gateways::handle(options, state).await,
+        Commands::Promote(options) => promote::handle(options, state).await,
+        Commands::Builds(options) => builds::handle(options, state).await,
     }
 }

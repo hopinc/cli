@@ -11,13 +11,13 @@ use crate::utils::validate_json_non_null;
 #[clap(about = "Create a new Channel")]
 pub struct Options {
     #[clap(short = 'i', long = "id", help = "Custom ID for the channel")]
-    pub custom_id: Option<String>,
+    custom_id: Option<String>,
 
     #[clap(short = 't', long = "type", help = "Type of the channel")]
-    pub channel_type: Option<ChannelType>,
+    channel_type: Option<ChannelType>,
 
-    #[clap(short = 's', long = "state", help = "Initial state of the channel", value_parser = validate_json_non_null )]
-    pub state: Option<Value>,
+    #[clap(short, long, help = "Initial state of the channel", value_parser = validate_json_non_null )]
+    state: Option<Value>,
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {

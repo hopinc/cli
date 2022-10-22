@@ -17,27 +17,27 @@ use crate::utils::in_path;
 #[derive(Debug, Parser)]
 #[clap(about = "Get logs of a container")]
 pub struct Options {
-    #[clap(name = "container", help = "ID of the container")]
+    #[clap(help = "ID of the container")]
     container: Option<String>,
 
-    #[clap(short = 'f', long = "follow", help = "Follow the logs")]
+    #[clap(short, long, help = "Follow the logs")]
     follow: bool,
 
     #[clap(
         short = 'n',
-        long = "lines",
+        long,
         help = "Number of lines to show",
         default_value = "10"
     )]
     lines: u64,
 
-    #[clap(short = 'r', long = "reverse", help = "Show the newest entries first")]
+    #[clap(short, long, help = "Show the newest entries first")]
     reverse: bool,
 
-    #[clap(short = 't', long = "timestamps", help = "Show timestamps")]
+    #[clap(short, long, help = "Show timestamps")]
     timestamps: bool,
 
-    #[clap(short = 'd', long = "details", help = "Show details")]
+    #[clap(short, long, help = "Show details")]
     details: bool,
 }
 

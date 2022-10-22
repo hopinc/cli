@@ -9,7 +9,7 @@ use crate::state::State;
 #[derive(Debug, Parser)]
 #[clap(about = "Detach a domain from a Gateway")]
 pub struct Options {
-    #[clap(name = "domain", help = "ID of the domain")]
+    #[clap(help = "ID of the domain")]
     pub domain: Option<String>,
 }
 

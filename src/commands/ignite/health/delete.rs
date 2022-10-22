@@ -11,7 +11,7 @@ pub struct Options {
     #[clap(name = "heath-checks", help = "IDs of the Health Check")]
     pub health_checks: Vec<String>,
 
-    #[clap(short = 'f', long = "force", help = "Skip confirmation")]
+    #[clap(short, long, help = "Skip confirmation")]
     force: bool,
 }
 
@@ -53,7 +53,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     if !options.force
         && !dialoguer::Confirm::new()
             .with_prompt(format!(
-                "Are you sure you want to delete {} containers?",
+                "Are you sure you want to delete {} Health Checks?",
                 health_checks.len()
             ))
             .interact_opt()?
@@ -65,16 +65,19 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     let mut delete_count = 0;
 
     for health_check in &health_checks {
-        log::info!("Deleting container `{}`", health_check);
+        log::info!("Deleting Health Check `{}`", health_check);
 
         if let Err(err) = delete_health_check(&state.http, health_check).await {
-            log::error!("Failed to delete container `{}`: {}", health_check, err);
+            log::error!("Failed to delete Health Check `{}`: {}", health_check, err);
         } else {
             delete_count += 1;
         }
     }
 
-    log::info!("Deleted {delete_count}/{} containers", health_checks.len());
+    log::info!(
+        "Deleted {delete_count}/{} Health Check",
+        health_checks.len()
+    );
 
     Ok(())
 }

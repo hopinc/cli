@@ -48,16 +48,12 @@ pub struct Options {
     )]
     envfile: bool,
 
-    #[clap(
-        short = 'y',
-        long = "yes",
-        help = "Use the default yes answer to all prompts"
-    )]
+    #[clap(short, long, help = "Use the default yes answer to all prompts")]
     yes: bool,
 
     #[clap(
-        short = 'l',
-        long = "local",
+        short,
+        long,
         help = "Build the container locally using nixpacks or docker instead of using the builder"
     )]
     local: bool,

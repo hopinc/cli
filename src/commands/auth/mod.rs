@@ -18,7 +18,7 @@ pub enum Commands {
     Login(login::Options),
     Logout(logout::Options),
     Switch(switch::Options),
-    #[clap(name = "docker", alias = "registry")]
+    #[clap(alias = "registry")]
     Docker(docker::Options),
 }
 

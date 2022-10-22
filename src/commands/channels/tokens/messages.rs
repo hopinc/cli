@@ -8,15 +8,11 @@ use crate::state::State;
 #[derive(Debug, Parser, Default, PartialEq, Eq)]
 #[clap(about = "Send a message to a Leap Token")]
 pub struct Options {
-    #[clap(
-        short = 't',
-        long = "token",
-        help = "The ID of the Token to send the message to"
-    )]
-    pub token: Option<String>,
+    #[clap(short, long, help = "The ID of the Token to send the message to")]
+    token: Option<String>,
 
     #[clap(flatten)]
-    pub event: EventOptions,
+    event: EventOptions,
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {

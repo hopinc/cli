@@ -11,20 +11,20 @@ use crate::utils::validate_json;
 #[clap(about = "Create a new Leap Token")]
 pub struct Options {
     #[clap(
-        short = 'e',
-        long = "expiration",
+        short,
+        long,
         help = "Expiration date of the token, can be a date (DD/MM/YYYY, DD-MM-YYYY) or a duration (60s, 1d, 30d, 1y)",
         value_parser = parse_expiration
     )]
-    pub expires_at: Option<String>,
+    expiration: Option<String>,
 
     #[clap(
-        short = 's',
-        long = "state",
+        short,
+        long,
         help = "Initial state of the token, can be any JSON value",
         value_parser = validate_json
     )]
-    pub state: Option<Value>,
+    state: Option<Value>,
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
@@ -33,7 +33,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     let (token_state, expires_at) = if options != Options::default() {
         (
             options.state,
-            options.expires_at.map(|ex| parse_expiration(&ex).unwrap()),
+            options.expiration.map(|ex| parse_expiration(&ex).unwrap()),
         )
     } else {
         let token_state = dialoguer::Input::<String>::new()

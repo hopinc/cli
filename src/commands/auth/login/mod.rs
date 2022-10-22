@@ -18,19 +18,17 @@ const PAT_FALLBACK_URL: &str = "https://console.hop.io/settings/pats";
 #[clap(about = "Login to Hop")]
 pub struct Options {
     #[clap(
-        long = "token",
-        help = "Project Token or Personal Authorization Token",
-        long_help = "Project Token or Personal Authorization Token, you can use `--token=` to take the token from stdin"
+        long,
+        help = "Project Token or Personal Authorization Token, you can use `--token=` to take the token from stdin"
     )]
-    pub token: Option<String>,
-    #[clap(long = "email", help = "Email")]
-    pub email: Option<String>,
+    token: Option<String>,
+    #[clap(long, help = "Email")]
+    email: Option<String>,
     #[clap(
-        long = "password",
-        help = "Password",
-        long_help = "Password, you can use `--password=` to take the token from stdin"
+        long,
+        help = "Password, you can use `--password=` to take the token from stdin"
     )]
-    pub password: Option<String>,
+    password: Option<String>,
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {

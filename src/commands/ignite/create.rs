@@ -31,22 +31,22 @@ pub struct DeploymentConfig {
     pub scaling_strategy: Option<ScalingStrategy>,
 
     #[clap(
-        short = 'c',
-        long = "cpu",
+        short,
+        long,
         help = "The number of CPUs to use between 1 to 32, defaults to 1"
     )]
     pub cpu: Option<f64>,
 
     #[clap(
         short = 'm',
-        long = "ram",
+        long,
         help = "Amount of RAM to use between 128MB to 64GB, defaults to 512MB"
     )]
     pub ram: Option<RamSizes>,
 
     #[clap(
         short = 'd',
-        long = "containers",
+        long,
         help = "Amount of containers to deploy if `scaling` is manual, defaults to 1"
     )]
     pub containers: Option<u64>,
@@ -64,14 +64,14 @@ pub struct DeploymentConfig {
     pub max_containers: Option<u64>,
 
     #[clap(
-        short = 'e',
-        long = "env",
+        short,
+        long,
         help = "Environment variables to set, in the form of `key=value`"
     )]
     pub env: Option<Vec<Env>>,
 
     #[clap(
-        short = 'r',
+        short,
         long = "restart-policy",
         help = "Restart policy, defaults to `on-failure`"
     )]

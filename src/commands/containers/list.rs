@@ -8,14 +8,10 @@ use crate::state::State;
 #[derive(Debug, Parser)]
 #[clap(about = "List all containers")]
 pub struct Options {
-    #[clap(name = "deployment", help = "ID of the deployment")]
+    #[clap(help = "ID of the deployment")]
     pub deployment: Option<String>,
 
-    #[clap(
-        short = 'q',
-        long = "quiet",
-        help = "Only print the IDs of the deployments"
-    )]
+    #[clap(short, long, help = "Only print the IDs of the deployments")]
     pub quiet: bool,
 }
 

@@ -23,7 +23,7 @@ pub enum Commands {
     Projects(projects::Options),
     Secrets(secrets::Options),
     Deploy(deploy::Options),
-    #[clap(name = "whoami", alias = "info", alias = "ctx")]
+    #[clap(alias = "info", alias = "ctx")]
     Whoami(whoami::Options),
     Ignite(ignite::Options),
     Link(link::Options),
@@ -32,9 +32,9 @@ pub enum Commands {
     Containers(containers::Options),
     Gateways(gateways::Options),
     Domains(domains::Options),
-    #[clap(name = "completions", alias = "complete", hide = cfg!(not(feature = "update")))]
+    #[clap(alias = "complete", hide = cfg!(not(feature = "update")))]
     Completions(completions::Options),
-    #[clap(name = "channels", alias = "channel", alias = "ch")]
+    #[clap(alias = "channel", alias = "ch")]
     Channels(channels::Options),
 }
 

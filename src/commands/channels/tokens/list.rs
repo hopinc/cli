@@ -7,8 +7,8 @@ use crate::state::State;
 #[derive(Debug, Parser, Default, PartialEq, Eq)]
 #[clap(about = "List all Leap Tokens")]
 pub struct Options {
-    #[clap(short = 'q', long = "quiet", help = "Only print the IDs of the Tokens")]
-    pub quiet: bool,
+    #[clap(short, long, help = "Only print the IDs of the Tokens")]
+    quiet: bool,
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {

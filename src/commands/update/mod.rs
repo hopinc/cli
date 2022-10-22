@@ -23,10 +23,10 @@ use crate::utils::capitalize;
 #[derive(Debug, Parser)]
 #[clap(about = "Update Hop to the latest version")]
 pub struct Options {
-    #[clap(short = 'f', long = "force", help = "Force update")]
+    #[clap(short, long, help = "Force update")]
     pub force: bool,
 
-    #[clap(short = 'b', long = "beta", help = "Update to beta version")]
+    #[clap(short, long, help = "Update to beta version (if available)")]
     pub beta: bool,
 }
 

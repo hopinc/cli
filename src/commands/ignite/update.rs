@@ -12,7 +12,7 @@ use crate::state::State;
 #[derive(Debug, Parser)]
 #[clap(about = "Update a deployment")]
 pub struct Options {
-    #[clap(name = "deployment", help = "ID of the deployment to update")]
+    #[clap(help = "ID of the deployment to update")]
     deployment: Option<String>,
 
     #[clap(flatten)]

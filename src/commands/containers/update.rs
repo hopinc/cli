@@ -10,10 +10,10 @@ use crate::state::State;
 #[derive(Debug, Parser)]
 #[clap(about = "Update a container")]
 pub struct Options {
-    #[clap(name = "containers", help = "ID of the container")]
+    #[clap(help = "ID of the container")]
     container: Option<String>,
 
-    #[clap(name = "state", help = "State to set the container to")]
+    #[clap(help = "State to set the container to")]
     state: Option<ChangeableContainerState>,
 }
 

@@ -9,12 +9,10 @@ use serde_json::Value;
 use crate::utils::validate_json;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
 pub enum ChannelType {
-    #[serde(rename = "public")]
     Public,
-    #[serde(rename = "private")]
     Private,
-    #[serde(rename = "unprotected")]
     Unprotected,
 }
 

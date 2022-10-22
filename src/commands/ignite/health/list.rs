@@ -6,16 +6,12 @@ use crate::commands::ignite::utils::{format_deployments, get_all_deployments};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
-#[clap(about = "Create Health Checks for a deployment")]
+#[clap(about = "List Health Checks in a deployment")]
 pub struct Options {
-    #[clap(name = "deployment", help = "ID of the deployment")]
+    #[clap(help = "ID of the deployment")]
     pub deployment: Option<String>,
 
-    #[clap(
-        short = 'q',
-        long = "quiet",
-        help = "Only print the IDs of the deployments"
-    )]
+    #[clap(short, long, help = "Only print the IDs of the Health Checks")]
     pub quiet: bool,
 }
 

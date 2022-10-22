@@ -9,9 +9,9 @@ use crate::state::State;
 #[derive(Debug, Parser)]
 #[clap(about = "Delete a secret")]
 pub struct Options {
-    #[clap(name = "name", help = "Name of the secret")]
-    pub name: Option<String>,
-    #[clap(long = "no-confirm", help = "Skip confirmation")]
+    #[clap(help = "Name of the secret")]
+    name: Option<String>,
+    #[clap(short, long, help = "Skip confirmation")]
     force: bool,
 }
 

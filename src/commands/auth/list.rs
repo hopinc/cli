@@ -6,11 +6,7 @@ use crate::state::State;
 #[derive(Debug, Parser)]
 #[clap(about = "List all authenticated users")]
 pub struct Options {
-    #[clap(
-        short = 'q',
-        long = "quiet",
-        help = "Only print the IDs of the authorized users"
-    )]
+    #[clap(short, long, help = "Only print the IDs of the authorized users")]
     pub quiet: bool,
 }
 

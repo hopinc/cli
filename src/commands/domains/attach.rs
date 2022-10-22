@@ -9,10 +9,10 @@ use crate::state::State;
 #[derive(Debug, Parser)]
 #[clap(about = "Attach a domain to a Gateway")]
 pub struct Options {
-    #[clap(name = "gateway", help = "ID of the Gateway")]
+    #[clap(help = "ID of the Gateway")]
     pub gateway: Option<String>,
 
-    #[clap(name = "domain", help = "Name of the domain")]
+    #[clap(help = "Name of the domain")]
     pub domain: Option<String>,
 }
 

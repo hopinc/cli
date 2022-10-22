@@ -7,7 +7,7 @@ use crate::state::State;
 #[derive(Debug, Parser)]
 #[clap(about = "Rollout new containers to a deployment")]
 pub struct Options {
-    #[clap(name = "deployment", help = "ID of the deployment to rollout")]
+    #[clap(help = "ID of the deployment")]
     pub deployment: Option<String>,
 }
 

@@ -16,12 +16,10 @@ pub struct Domain {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "snake_case")]
 pub enum DomainState {
-    #[serde(rename = "pending")]
     Pending,
-    #[serde(rename = "ssl_active")]
     SslActive,
-    #[serde(rename = "valid_cname")]
     ValidCname,
 }
 

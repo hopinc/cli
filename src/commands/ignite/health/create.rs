@@ -17,16 +17,16 @@ pub struct Options {
 
 #[derive(Debug, Parser, PartialEq, Eq, Default)]
 pub struct HealthCheckCreate {
-    #[clap(long = "port", help = "Port to check")]
+    #[clap(long, help = "Port to check")]
     pub port: Option<u64>,
 
-    #[clap(long = "path", help = "Path to check")]
+    #[clap(long, help = "Path to check")]
     pub path: Option<String>,
 
-    #[clap(long = "interval", help = "Interval to check")]
+    #[clap(long, help = "Interval to check")]
     pub interval: Option<u64>,
 
-    #[clap(long = "timeout", help = "Timeout to check")]
+    #[clap(long, help = "Timeout to check")]
     pub timeout: Option<u64>,
 
     #[clap(long = "max-retries", help = "Max retries of the check")]

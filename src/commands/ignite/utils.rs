@@ -109,6 +109,18 @@ pub async fn rollout(http: &HttpClient, deployment_id: &str) -> Result<()> {
     Ok(())
 }
 
+pub async fn promote(http: &HttpClient, deployment_id: &str, build_id: &str) -> Result<()> {
+    http.request::<Value>(
+        "POST",
+        &format!("/ignite/deployments/{deployment_id}/promote/{build_id}"),
+        None,
+    )
+    .await?
+    .ok_or_else(|| anyhow!("Failed to parse response"))?;
+
+    Ok(())
+}
+
 pub async fn scale(http: &HttpClient, deployment_id: &str, scale: u64) -> Result<()> {
     http.request::<Value>(
         "PATCH",

@@ -11,15 +11,11 @@ pub struct SingleBuild {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(tag = "e", content = "d")]
+#[serde(tag = "e", content = "d", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum BuildEvents {
-    #[serde(rename = "BUILD_PROGRESS")]
     BuildProgress(BuildProgress),
-    #[serde(rename = "BUILD_CANCELLED")]
     BuildCancelled(BuildEvent),
-    #[serde(rename = "PUSH_SUCCESS")]
     PushSuccess(BuildEvent),
-    #[serde(rename = "PUSH_FAILURE")]
     PushFailure(BuildEvent),
 }
 

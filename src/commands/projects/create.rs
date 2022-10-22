@@ -10,11 +10,11 @@ use crate::state::State;
 #[derive(Debug, Parser)]
 #[clap(about = "Create a new project")]
 pub struct Options {
-    #[clap(name = "namespace", help = "Namespace of the project")]
+    #[clap(help = "Namespace of the project")]
     namespace: String,
-    #[clap(name = "name", help = "Name of the project")]
+    #[clap(help = "Name of the project")]
     name: String,
-    #[clap(short = 'd', long = "default", help = "Set as default project")]
+    #[clap(short, long, help = "Set as default project")]
     default: bool,
 }
 

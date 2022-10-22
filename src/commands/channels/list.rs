@@ -7,11 +7,7 @@ use crate::state::State;
 #[derive(Debug, Parser, Default, PartialEq, Eq)]
 #[clap(about = "List all Channel")]
 pub struct Options {
-    #[clap(
-        short = 'q',
-        long = "quiet",
-        help = "Only print the IDs of the Channels"
-    )]
+    #[clap(short, long, help = "Only print the IDs of the Channels")]
     pub quiet: bool,
 }
 

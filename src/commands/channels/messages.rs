@@ -8,15 +8,11 @@ use crate::state::State;
 #[derive(Debug, Parser, Default, PartialEq, Eq)]
 #[clap(about = "Send a message to a Channel")]
 pub struct Options {
-    #[clap(
-        short = 'c',
-        long = "channel",
-        help = "The ID of the Channel to send the message to"
-    )]
-    pub channel: Option<String>,
+    #[clap(short, long, help = "The ID of the Channel to send the message to")]
+    channel: Option<String>,
 
     #[clap(flatten)]
-    pub event: EventOptions,
+    event: EventOptions,
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {

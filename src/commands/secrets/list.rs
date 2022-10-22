@@ -8,11 +8,7 @@ use crate::state::State;
 #[derive(Debug, Parser)]
 #[clap(about = "List all secrets")]
 pub struct Options {
-    #[clap(
-        short = 'q',
-        long = "quiet",
-        help = "Only print the IDs of the secrets"
-    )]
+    #[clap(short, long, help = "Only print the IDs of the secrets")]
     pub quiet: bool,
 }
 

@@ -9,10 +9,10 @@ use crate::state::State;
 #[derive(Debug, Parser)]
 #[clap(about = "List all domains attached to a Gateway")]
 pub struct Options {
-    #[clap(name = "gateway", help = "ID of the Gateway")]
+    #[clap(help = "ID of the Gateway")]
     pub gateway: Option<String>,
 
-    #[clap(short = 'q', long = "quiet", help = "Only display domain IDs")]
+    #[clap(short, long, help = "Only display domain IDs")]
     pub quiet: bool,
 }
 

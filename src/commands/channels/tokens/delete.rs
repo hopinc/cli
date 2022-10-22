@@ -7,10 +7,10 @@ use crate::state::State;
 #[derive(Debug, Parser)]
 #[clap(about = "Delete Leap Tokens")]
 pub struct Options {
-    #[clap(name = "tokens", help = "IDs of the Leap Tokens")]
+    #[clap(help = "IDs of the Leap Tokens")]
     tokens: Vec<String>,
 
-    #[clap(short = 'f', long = "force", help = "Skip confirmation")]
+    #[clap(short, long, help = "Skip confirmation")]
     force: bool,
 }
 

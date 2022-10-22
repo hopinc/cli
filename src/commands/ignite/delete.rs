@@ -7,10 +7,10 @@ use crate::state::State;
 #[derive(Debug, Parser)]
 #[clap(about = "Delete a deployment")]
 pub struct Options {
-    #[clap(name = "deployment", help = "ID of the deployment to delete")]
+    #[clap(help = "ID of the deployment to delete")]
     deployment: Option<String>,
 
-    #[clap(short = 'f', long = "force", help = "Skip confirmation")]
+    #[clap(short, long, help = "Skip confirmation")]
     force: bool,
 }
 
