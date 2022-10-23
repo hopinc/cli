@@ -150,10 +150,11 @@ pub fn format_deployments(deployments: &Vec<Deployment>, title: bool) -> Vec<Str
     for deployment in deployments {
         writeln!(
             &mut tw,
-            "{}\t{}\t{}\t{}\t{}\t{}\t{}",
+            "{}\t{}\t{}/{}\t{}\t{}\t{}\t{}",
             deployment.name,
             deployment.id,
             deployment.container_count,
+            deployment.target_container_count,
             deployment.created_at,
             deployment.config.type_,
             deployment.config.container_strategy,
