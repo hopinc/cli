@@ -59,9 +59,11 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Commands::Rollout(options) => rollout::handle(options, state).await,
         Commands::Scale(options) => scale::handle(options, state).await,
         Commands::GetEnv(options) => get_env::handle(options, state).await,
+        Commands::Health(options) => health::handle(options, state).await,
         Commands::Containers(options) => super::containers::handle(options, state).await,
         Commands::Gateways(options) => super::gateways::handle(options, state).await,
         Commands::Promote(options) => promote::handle(options, state).await,
         Commands::Builds(options) => builds::handle(options, state).await,
+        Commands::FromCompose(options) => from_compose::handle(options, state).await,
     }
 }
