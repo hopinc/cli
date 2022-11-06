@@ -5,7 +5,7 @@ pub fn parse_restart_policy(policy: &Option<String>) -> Result<&'static str> {
         Some(policy) => match policy.as_str() {
             "always" => "always",
             "unless-stopped" => "always",
-            "on-failure" => "always",
+            "on-failure" => "on-failure",
             _ => {
                 bail!("Unsupported restart policy: {}", policy);
             }
