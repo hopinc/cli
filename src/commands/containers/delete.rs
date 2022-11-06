@@ -3,16 +3,16 @@ use clap::Parser;
 
 use super::utils::delete_container;
 use crate::commands::containers::utils::{format_containers, get_all_containers};
-use crate::commands::ignite::util::{format_deployments, get_all_deployments};
+use crate::commands::ignite::utils::{format_deployments, get_all_deployments};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Delete containers")]
 pub struct Options {
-    #[clap(name = "containers", help = "IDs of the containers", min_values = 0)]
+    #[clap(help = "IDs of the containers")]
     containers: Vec<String>,
 
-    #[clap(short = 'f', long = "force", help = "Skip confirmation")]
+    #[clap(short, long, help = "Skip confirmation")]
     force: bool,
 }
 

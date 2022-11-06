@@ -1,13 +1,13 @@
 use anyhow::Result;
 use clap::Parser;
 
-use crate::commands::projects::util::{format_project, format_projects};
+use crate::commands::projects::utils::{format_project, format_projects};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
-#[clap(name = "switch", about = "Switch to a different project")]
+#[clap(about = "Switch to a different project")]
 pub struct Options {
-    #[clap(name = "project", help = "Namespace or ID of the project to use")]
+    #[clap(help = "Namespace or ID of the project to use")]
     pub project: Option<String>,
 }
 

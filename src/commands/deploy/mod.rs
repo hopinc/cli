@@ -21,11 +21,11 @@ use crate::commands::ignite::create::{
 use crate::commands::ignite::types::{
     CreateDeployment, Deployment, ScalingStrategy, SingleDeployment,
 };
-use crate::commands::ignite::util::{create_deployment, rollout, update_deployment_config};
-use crate::commands::projects::util::format_project;
+use crate::commands::ignite::utils::{create_deployment, rollout, update_deployment_config};
+use crate::commands::projects::utils::format_project;
 use crate::state::State;
 use crate::store::hopfile::HopFile;
-use crate::util::urlify;
+use crate::utils::urlify;
 
 const HOP_BUILD_BASE_URL: &str = "https://builder.hop.io/v1";
 
@@ -48,16 +48,12 @@ pub struct Options {
     )]
     envfile: bool,
 
-    #[clap(
-        short = 'y',
-        long = "yes",
-        help = "Use the default yes answer to all prompts"
-    )]
+    #[clap(short, long, help = "Use the default yes answer to all prompts")]
     yes: bool,
 
     #[clap(
-        short = 'l',
-        long = "local",
+        short,
+        long,
         help = "Build the container locally using nixpacks or docker instead of using the builder"
     )]
     local: bool,

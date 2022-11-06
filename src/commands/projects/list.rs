@@ -1,16 +1,12 @@
 use clap::Parser;
 
-use super::util::format_projects;
+use super::utils::format_projects;
 use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "List all projects")]
 pub struct Options {
-    #[clap(
-        short = 'q',
-        long = "quiet",
-        help = "Only print the IDs of the projects"
-    )]
+    #[clap(short, long, help = "Only print the IDs of the projects")]
     pub quiet: bool,
 }
 
@@ -24,7 +20,7 @@ pub fn handle(options: Options, state: State) {
             .collect::<Vec<_>>()
             .join(" ");
 
-        print!("{}", ids);
+        println!("{}", ids);
     } else {
         let projects_fmt = format_projects(&projects, true);
 

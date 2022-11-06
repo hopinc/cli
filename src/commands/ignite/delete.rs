@@ -1,16 +1,16 @@
 use anyhow::{bail, ensure, Result};
 use clap::Parser;
 
-use crate::commands::ignite::util::{delete_deployment, format_deployments, get_all_deployments};
+use crate::commands::ignite::utils::{delete_deployment, format_deployments, get_all_deployments};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Delete a deployment")]
 pub struct Options {
-    #[clap(name = "deployment", help = "ID of the deployment to delete")]
+    #[clap(help = "ID of the deployment to delete")]
     deployment: Option<String>,
 
-    #[clap(short = 'f', long = "force", help = "Skip confirmation")]
+    #[clap(short, long, help = "Skip confirmation")]
     force: bool,
 }
 

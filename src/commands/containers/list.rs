@@ -2,20 +2,16 @@ use anyhow::{ensure, Result};
 use clap::Parser;
 
 use crate::commands::containers::utils::{format_containers, get_all_containers};
-use crate::commands::ignite::util::{format_deployments, get_all_deployments, get_deployment};
+use crate::commands::ignite::utils::{format_deployments, get_all_deployments, get_deployment};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "List all containers")]
 pub struct Options {
-    #[clap(name = "deployment", help = "ID of the deployment")]
+    #[clap(help = "ID of the deployment")]
     pub deployment: Option<String>,
 
-    #[clap(
-        short = 'q',
-        long = "quiet",
-        help = "Only print the IDs of the deployments"
-    )]
+    #[clap(short, long, help = "Only print the IDs of the deployments")]
     pub quiet: bool,
 }
 
@@ -51,7 +47,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             .collect::<Vec<_>>()
             .join(" ");
 
-        print!("{}", ids);
+        println!("{}", ids);
     } else {
         let containers_fmt = format_containers(&containers, true);
 

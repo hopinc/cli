@@ -3,16 +3,16 @@ use clap::Parser;
 
 use super::util::{format_domains, get_all_domains};
 use crate::commands::gateways::util::{format_gateways, get_all_gateways};
-use crate::commands::ignite::util::{format_deployments, get_all_deployments};
+use crate::commands::ignite::utils::{format_deployments, get_all_deployments};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "List all domains attached to a Gateway")]
 pub struct Options {
-    #[clap(name = "gateway", help = "ID of the Gateway")]
+    #[clap(help = "ID of the Gateway")]
     pub gateway: Option<String>,
 
-    #[clap(short = 'q', long = "quiet", help = "Only display domain IDs")]
+    #[clap(short, long, help = "Only display domain IDs")]
     pub quiet: bool,
 }
 
@@ -59,7 +59,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             .collect::<Vec<_>>()
             .join(" ");
 
-        print!("{}", ids);
+        println!("{}", ids);
     } else {
         let domains_fmt = format_domains(&domains, true);
 

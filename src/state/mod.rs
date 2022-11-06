@@ -9,6 +9,7 @@ use crate::store::context::Context;
 
 #[derive(Debug)]
 pub struct State {
+    pub is_ci: bool,
     pub auth: Auth,
     pub ctx: Context,
     pub http: HttpClient,
@@ -28,9 +29,9 @@ impl State {
         let mut ctx = Context::new().await;
 
         // override the project id if provided
-        if options.override_project.is_some() {
-            ctx.project_override = Some(options.override_project.unwrap());
-        }
+        ctx.project_override = options
+            .override_project
+            .or_else(|| ctx.default_project.clone());
 
         // use the override token if provided
         let init_token = if let Some(override_token) = options.override_token {
@@ -49,6 +50,7 @@ impl State {
         let http = HttpClient::new(token.clone(), ctx.override_api_url.clone());
 
         State {
+            is_ci: Self::check_if_ci(),
             token_type,
             token,
             http,
@@ -64,6 +66,22 @@ impl State {
             .map(|token| TokenType::from_token(token).expect("Invalid token type"));
 
         (token, token_type)
+    }
+
+    /// Checks if the current environment is a CI environment.
+    fn check_if_ci() -> bool {
+        std::env::vars().any(|(key, _)| {
+            matches!(
+                key.as_str(),
+                "BUILD_NUMBER"
+                    | "CONTINUOUS_INTEGRATION"
+                    | "GITLAB_CI"
+                    | "CIRCLECI"
+                    | "APPVEYOR"
+                    | "RUN_ID"
+                    | "CI"
+            )
+        })
     }
 
     /// Login to the API

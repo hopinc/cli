@@ -2,17 +2,17 @@ use anyhow::{bail, ensure, Result};
 use clap::Parser;
 
 use crate::commands::containers::utils::create_containers;
-use crate::commands::ignite::util::{format_deployments, get_all_deployments};
+use crate::commands::ignite::utils::{format_deployments, get_all_deployments};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Create containers for a deployment")]
 pub struct Options {
-    #[clap(short = 'd', long = "deployment", help = "ID of the deployment")]
-    pub deployment: Option<String>,
+    #[clap(short, long, help = "ID of the deployment")]
+    deployment: Option<String>,
 
-    #[clap(name = "count", help = "Number of containers to create")]
-    pub count: Option<u64>,
+    #[clap(help = "Number of containers to create")]
+    count: Option<u64>,
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {

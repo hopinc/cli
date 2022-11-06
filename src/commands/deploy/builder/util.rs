@@ -6,8 +6,8 @@ use async_compression::tokio::write::GzipEncoder;
 use hyper::Method;
 use ignore::WalkBuilder;
 use reqwest::multipart::{Form, Part};
-use serde_json::Value;
-use tokio::{fs::File, io::AsyncWriteExt};
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
 use tokio_tar::Builder as TarBuilder;
 
 use super::types::{Build, SingleBuild};
@@ -41,12 +41,6 @@ pub async fn builder_post(http: &HttpClient, deployment_id: &str, bytes: Vec<u8>
         .build;
 
     Ok(build)
-}
-
-pub async fn cancel_build(http: &HttpClient, build_id: &str) -> Result<()> {
-    http.request::<Value>("POST", &format!("/ignite/builds/{build_id}/cancel"), None)
-        .await?;
-    Ok(())
 }
 
 // default ignore list for tar files

@@ -3,16 +3,16 @@ use clap::Parser;
 
 use super::util::attach_domain;
 use crate::commands::gateways::util::{format_gateways, get_all_gateways};
-use crate::commands::ignite::util::{format_deployments, get_all_deployments};
+use crate::commands::ignite::utils::{format_deployments, get_all_deployments};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Attach a domain to a Gateway")]
 pub struct Options {
-    #[clap(name = "gateway", help = "ID of the Gateway")]
+    #[clap(help = "ID of the Gateway")]
     pub gateway: Option<String>,
 
-    #[clap(name = "domain", help = "Name of the domain")]
+    #[clap(help = "Name of the domain")]
     pub domain: Option<String>,
 }
 

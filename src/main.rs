@@ -7,7 +7,7 @@ use hop_cli::commands::update::util::version_notice;
 #[cfg(feature = "update")]
 use hop_cli::commands::Commands;
 use hop_cli::state::{State, StateOptions};
-use hop_cli::{util, CLI};
+use hop_cli::{utils, CLI};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -18,9 +18,9 @@ async fn main() -> Result<()> {
     let cli = CLI::parse();
 
     // setup panic hook
-    util::set_hook();
+    utils::set_hook();
 
-    util::logs(cli.verbose);
+    utils::logs(cli.verbose);
 
     let state = State::new(StateOptions {
         override_project: cli.project,
@@ -40,7 +40,7 @@ async fn main() -> Result<()> {
         std::process::exit(1);
     }
 
-    util::clean_term();
+    utils::clean_term();
 
     #[cfg(debug_assertions)]
     log::debug!("Finished in {:#?}", now.elapsed());

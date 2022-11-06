@@ -4,8 +4,8 @@ use std::path::PathBuf;
 use anyhow::{ensure, Result};
 use clap::Parser;
 
-use crate::commands::ignite::util::{format_deployments, get_all_deployments, get_deployment};
-use crate::commands::projects::util::format_project;
+use crate::commands::ignite::utils::{format_deployments, get_all_deployments, get_deployment};
+use crate::commands::projects::utils::format_project;
 use crate::config::EXEC_NAME;
 use crate::state::State;
 use crate::store::hopfile::HopFile;
@@ -19,7 +19,7 @@ pub struct Options {
     )]
     path: Option<PathBuf>,
 
-    #[clap(name = "deployment", help = "ID of the deployment")]
+    #[clap(help = "ID of the deployment")]
     deployment: Option<String>,
 }
 

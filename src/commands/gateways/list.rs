@@ -2,7 +2,7 @@ use anyhow::{ensure, Result};
 use clap::Parser;
 
 use crate::commands::gateways::util::{format_gateways, get_all_gateways};
-use crate::commands::ignite::util::{format_deployments, get_all_deployments};
+use crate::commands::ignite::utils::{format_deployments, get_all_deployments};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
@@ -51,7 +51,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             .collect::<Vec<_>>()
             .join(" ");
 
-        print!("{}", ids);
+        println!("{}", ids);
     } else {
         let containers_fmt = format_gateways(&gateways, true);
 

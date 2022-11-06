@@ -2,8 +2,8 @@ use anyhow::Result;
 use clap::Parser;
 use serde_json::Value;
 
-use super::util::format_projects;
-use crate::commands::projects::util::format_project;
+use super::utils::format_projects;
+use crate::commands::projects::utils::format_project;
 use crate::state::State;
 
 static CONFIRM_DELETE_PROJECT_MESSAGE: &str = "I am sure I want to delete the project named ";
@@ -11,9 +11,9 @@ static CONFIRM_DELETE_PROJECT_MESSAGE: &str = "I am sure I want to delete the pr
 #[derive(Debug, Parser)]
 #[clap(about = "Delete a project")]
 pub struct Options {
-    #[clap(name = "project", help = "Namespace or ID of the project")]
+    #[clap(help = "Namespace or ID of the project")]
     project: Option<String>,
-    #[clap(short = 'f', long = "force", help = "Skip confirmation")]
+    #[clap(short, long, help = "Skip confirmation")]
     force: bool,
 }
 

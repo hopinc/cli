@@ -9,7 +9,7 @@ use clap::Parser;
 use self::browser_auth::browser_login;
 use self::flags_auth::flags_login;
 use crate::state::State;
-use crate::util::in_path;
+use crate::utils::in_path;
 
 const WEB_AUTH_URL: &str = "https://console.hop.io/cli-auth";
 const PAT_FALLBACK_URL: &str = "https://console.hop.io/settings/pats";
@@ -18,19 +18,17 @@ const PAT_FALLBACK_URL: &str = "https://console.hop.io/settings/pats";
 #[clap(about = "Login to Hop")]
 pub struct Options {
     #[clap(
-        long = "token",
-        help = "Project Token or Personal Authorization Token",
-        long_help = "Project Token or Personal Authorization Token, you can use `--token=` to take the token from stdin"
+        long,
+        help = "Project Token or Personal Authorization Token, you can use `--token=` to take the token from stdin"
     )]
-    pub token: Option<String>,
-    #[clap(long = "email", help = "Email")]
-    pub email: Option<String>,
+    token: Option<String>,
+    #[clap(long, help = "Email")]
+    email: Option<String>,
     #[clap(
-        long = "password",
-        help = "Password",
-        long_help = "Password, you can use `--password=` to take the token from stdin"
+        long,
+        help = "Password, you can use `--password=` to take the token from stdin"
     )]
-    pub password: Option<String>,
+    password: Option<String>,
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
@@ -61,7 +59,7 @@ pub async fn token(token: &str, mut state: State) -> Result<()> {
         // output the login info
         log::info!("Logged in as: `{}` ({})", authorized.name, authorized.email);
 
-        state.ctx.default_project = None;
+        state.ctx.default_project = authorized.projects.first().map(|x| x.id.clone());
         state.ctx.default_user = Some(authorized.id.clone());
         state.ctx.save().await?;
     }
@@ -73,7 +71,8 @@ pub async fn token(token: &str, mut state: State) -> Result<()> {
         .insert(authorized.id.clone(), token.to_string());
     state.auth.save().await?;
 
-    if in_path("docker").await
+    if !state.is_ci
+        && in_path("docker").await
         && dialoguer::Confirm::new()
             .with_prompt("Docker was detected, would you like to login to the Hop registry?")
             .default(false)

@@ -2,7 +2,7 @@ pub mod commands;
 pub mod config;
 pub mod state;
 pub mod store;
-pub mod util;
+pub mod utils;
 
 use clap::Parser;
 use commands::Commands;
@@ -33,4 +33,16 @@ pub struct CLI {
         global = true
     )]
     pub verbose: bool,
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_cli() {
+        use clap::CommandFactory;
+
+        use super::*;
+
+        CLI::command().debug_assert();
+    }
 }

@@ -10,6 +10,7 @@ use fern::colors::{Color, ColoredLevelConfig};
 use log::{Level, LevelFilter};
 use ms::{__to_string__, ms};
 use serde::{de, Deserialize, Deserializer, Serialize};
+use serde_json::Value;
 use tokio::fs;
 
 pub fn set_hook() {
@@ -36,7 +37,11 @@ pub fn set_hook() {
 
 pub fn clean_term() {
     let term = console::Term::stdout();
-    term.show_cursor().ok();
+
+    // if the terminal is a tty, clear the screen and reset the cursor
+    if term.is_term() {
+        term.show_cursor().ok();
+    }
 }
 
 pub fn logs(verbose: bool) {
@@ -82,7 +87,7 @@ pub fn logs(verbose: bool) {
                 .chain(std::io::stderr()),
         )
         .apply()
-        .unwrap();
+        .ok();
 }
 
 pub fn deserialize_from_str<'de, S, D>(deserializer: D) -> Result<S, D::Error>
@@ -99,10 +104,10 @@ pub fn relative_time(date: DateTime<Utc>) -> String {
     let milis = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
-        .as_millis() as u64
-        - date.timestamp_millis() as u64;
+        .as_millis() as i64
+        - date.timestamp_millis();
 
-    ms!(milis, true)
+    ms!(milis.unsigned_abs(), true)
 }
 
 pub fn ask_question_iter<T>(prompt: &str, choices: &[T], override_default: Option<T>) -> Result<T>
@@ -158,13 +163,11 @@ pub fn urlify(s: &str) -> String {
     style(s).bold().underlined().to_string()
 }
 
-pub fn validate_json(json: &str) -> Result<()> {
-    serde_json::from_str::<serde_json::Value>(json).map_err(|e| anyhow!("Invalid JSON: {e}"))?;
-
-    Ok(())
+pub fn validate_json(json: &str) -> Result<Value> {
+    serde_json::from_str::<serde_json::Value>(json).map_err(|e| anyhow!("Invalid JSON: {e}"))
 }
 
-pub fn validate_json_non_null(json: &str) -> Result<()> {
+pub fn validate_json_non_null(json: &str) -> Result<Value> {
     if json == "null" {
         return Err(anyhow!("JSON cannot be null"));
     }

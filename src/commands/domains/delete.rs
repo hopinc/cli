@@ -3,13 +3,13 @@ use clap::Parser;
 
 use super::util::{delete_domain, format_domains, get_all_domains};
 use crate::commands::gateways::util::{format_gateways, get_all_gateways};
-use crate::commands::ignite::util::{format_deployments, get_all_deployments};
+use crate::commands::ignite::utils::{format_deployments, get_all_deployments};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Detach a domain from a Gateway")]
 pub struct Options {
-    #[clap(name = "domain", help = "ID of the domain")]
+    #[clap(help = "ID of the domain")]
     pub domain: Option<String>,
 }
 

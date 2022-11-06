@@ -1,4 +1,5 @@
 pub mod auth;
+mod channels;
 mod completions;
 pub mod containers;
 pub mod deploy;
@@ -6,6 +7,7 @@ mod domains;
 mod gateways;
 pub mod ignite;
 mod link;
+mod oops;
 pub mod projects;
 mod secrets;
 pub mod update;
@@ -22,7 +24,7 @@ pub enum Commands {
     Projects(projects::Options),
     Secrets(secrets::Options),
     Deploy(deploy::Options),
-    #[clap(name = "whoami", alias = "info", alias = "ctx")]
+    #[clap(alias = "info", alias = "ctx")]
     Whoami(whoami::Options),
     Ignite(ignite::Options),
     Link(link::Options),
@@ -31,8 +33,11 @@ pub enum Commands {
     Containers(containers::Options),
     Gateways(gateways::Options),
     Domains(domains::Options),
-    #[clap(name = "completions", alias = "complete", hide = cfg!(not(feature = "update")))]
+    #[clap(alias = "complete", hide = cfg!(not(feature = "update")))]
     Completions(completions::Options),
+    #[clap(alias = "channel", alias = "ch")]
+    Channels(channels::Options),
+    Oops(oops::Options),
 }
 
 pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
@@ -56,6 +61,8 @@ pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
 
                 #[cfg(feature = "update")]
                 Commands::Update(_) => unreachable!(),
+
+                Commands::Channels(options) => channels::handle(options, state).await,
                 Commands::Projects(options) => projects::handle(options, state).await,
                 Commands::Secrets(options) => secrets::handle(options, state).await,
                 Commands::Deploy(options) => deploy::handle(options, state).await,
@@ -65,6 +72,7 @@ pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
                 Commands::Containers(options) => containers::handle(options, state).await,
                 Commands::Gateways(options) => gateways::handle(options, state).await,
                 Commands::Domains(options) => domains::handle(options, state).await,
+                Commands::Oops(options) => oops::handle(&options, state).await,
             }
         }
     }

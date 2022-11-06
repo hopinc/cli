@@ -3,7 +3,7 @@ use clap::Parser;
 
 use super::create::Options as CreateOptions;
 use crate::commands::ignite::types::ScalingStrategy;
-use crate::commands::ignite::util::{
+use crate::commands::ignite::utils::{
     format_deployments, get_all_deployments, get_deployment, rollout, scale, update_deployment,
     update_deployment_config,
 };
@@ -12,7 +12,7 @@ use crate::state::State;
 #[derive(Debug, Parser)]
 #[clap(about = "Update a deployment")]
 pub struct Options {
-    #[clap(name = "deployment", help = "ID of the deployment to update")]
+    #[clap(help = "ID of the deployment to update")]
     deployment: Option<String>,
 
     #[clap(flatten)]

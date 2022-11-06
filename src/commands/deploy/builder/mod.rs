@@ -10,10 +10,11 @@ use tokio::sync::mpsc::unbounded_channel;
 use tokio::{fs, spawn};
 
 use self::types::BuildEvents;
-use self::util::{builder_post, cancel_build, compress};
+use self::util::{builder_post, compress};
+use crate::commands::ignite::builds::utils::cancel_build;
 use crate::config::HOP_LEAP_PROJECT;
 use crate::state::State;
-use crate::util::urlify;
+use crate::utils::urlify;
 
 pub async fn build(
     state: &State,

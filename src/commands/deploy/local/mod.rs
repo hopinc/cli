@@ -11,7 +11,7 @@ use crate::commands::auth::docker;
 use crate::commands::deploy::local::util::install_nixpacks;
 use crate::state::State;
 use crate::store::utils::home_path;
-use crate::util::in_path;
+use crate::utils::in_path;
 
 #[cfg(not(windows))]
 const NIXPACKS_VENDORED_PATH: &str = ".hop/bin/nixpacks";

@@ -15,7 +15,7 @@ use crate::commands::containers::types::{ContainerOptions, ContainerType};
 use crate::commands::ignite::create::Options;
 use crate::commands::ignite::types::{RamSizes, RestartPolicy, ScalingStrategy};
 use crate::state::http::HttpClient;
-use crate::util::ask_question_iter;
+use crate::utils::ask_question_iter;
 
 pub async fn get_all_deployments(http: &HttpClient, project_id: &str) -> Result<Vec<Deployment>> {
     let response = http
@@ -101,6 +101,18 @@ pub async fn rollout(http: &HttpClient, deployment_id: &str) -> Result<()> {
     http.request::<Value>(
         "POST",
         &format!("/ignite/deployments/{deployment_id}/rollouts"),
+        None,
+    )
+    .await?
+    .ok_or_else(|| anyhow!("Failed to parse response"))?;
+
+    Ok(())
+}
+
+pub async fn promote(http: &HttpClient, deployment_id: &str, build_id: &str) -> Result<()> {
+    http.request::<Value>(
+        "POST",
+        &format!("/ignite/deployments/{deployment_id}/promote/{build_id}"),
         None,
     )
     .await?

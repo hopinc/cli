@@ -12,7 +12,7 @@ use super::types::{GithubRelease, Version};
 use crate::config::VERSION;
 use crate::state::http::HttpClient;
 use crate::store::context::Context;
-use crate::util::is_writable;
+use crate::utils::is_writable;
 
 pub const RELEASE_HOP_CLI_URL: &str = "https://api.github.com/repos/hopinc/hop_cli/releases";
 pub const HOP_CLI_DOWNLOAD_URL: &str = "https://github.com/hopinc/hop_cli/releases/download";

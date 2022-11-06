@@ -18,12 +18,12 @@ pub enum Commands {
     Login(login::Options),
     Logout(logout::Options),
     Switch(switch::Options),
-    #[clap(name = "docker", alias = "registry")]
+    #[clap(alias = "registry")]
     Docker(docker::Options),
 }
 
 #[derive(Debug, Parser)]
-#[clap(name = "auth", about = "Authenticate with Hop")]
+#[clap(about = "Authenticate with Hop")]
 pub struct Options {
     #[clap(subcommand)]
     pub commands: Commands,

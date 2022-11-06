@@ -50,7 +50,9 @@ async fn invalidate_token(http: &HttpClient, token: &str) -> Result<()> {
         }
 
         Some("ptk") => {
-            log::warn!("Project tokens are not invalidated on logout, please revoke them manually.");
+            log::warn!(
+                "Project tokens are not invalidated on logout, please revoke them manually."
+            );
         }
 
         _ => {

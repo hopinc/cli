@@ -5,7 +5,7 @@ use std::str::FromStr;
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 
-use super::util::parse_key_val;
+use super::utils::parse_key_val;
 use crate::commands::containers::types::ContainerType;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]

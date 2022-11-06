@@ -4,9 +4,9 @@ use clap::Parser;
 use super::types::{GatewayProtocol, GatewayType};
 use crate::commands::gateways::types::GatewayConfig;
 use crate::commands::gateways::util::{create_gateway, update_gateway_config};
-use crate::commands::ignite::util::{format_deployments, get_all_deployments};
+use crate::commands::ignite::utils::{format_deployments, get_all_deployments};
 use crate::state::State;
-use crate::util::urlify;
+use crate::utils::urlify;
 
 #[derive(Debug, Parser, Default, PartialEq, Eq)]
 pub struct GatewayOptions {

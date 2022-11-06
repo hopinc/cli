@@ -6,7 +6,7 @@ use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
 
 use crate::state::State;
-use crate::util::in_path;
+use crate::utils::in_path;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Authenticate the current user with Docker")]
@@ -59,7 +59,8 @@ pub async fn login(username: &str, password: &str) -> Result<()> {
 }
 
 pub async fn login_new(username: &str, password: &str) -> Result<()> {
-    // if we are not logged in we need to login using the email and token (pat or bearer, ptk)
+    // if we are not logged in we need to login using the email and token (pat or
+    // bearer, ptk)
     let mut child = Command::new("docker")
         .arg("login")
         .arg("--username")

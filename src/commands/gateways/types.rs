@@ -71,11 +71,10 @@ pub struct MultipleGateways {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Default, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
 pub enum GatewayType {
     #[default]
-    #[serde(rename = "external")]
     External,
-    #[serde(rename = "internal")]
     Internal,
 }
 
@@ -104,9 +103,9 @@ impl GatewayType {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, Default)]
+#[serde(rename_all = "lowercase")]
 pub enum GatewayProtocol {
     #[default]
-    #[serde(rename = "http")]
     Http,
 }
 

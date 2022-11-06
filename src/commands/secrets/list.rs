@@ -2,17 +2,13 @@ use anyhow::Result;
 use clap::Parser;
 
 use crate::commands::secrets::types::Secrets;
-use crate::commands::secrets::util::format_secrets;
+use crate::commands::secrets::utils::format_secrets;
 use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "List all secrets")]
 pub struct Options {
-    #[clap(
-        short = 'q',
-        long = "quiet",
-        help = "Only print the IDs of the secrets"
-    )]
+    #[clap(short, long, help = "Only print the IDs of the secrets")]
     pub quiet: bool,
 }
 
@@ -33,7 +29,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             .collect::<Vec<_>>()
             .join(" ");
 
-        print!("{}", ids);
+        println!("{}", ids);
     } else {
         let secrets_fmt = format_secrets(&secrets, true);
 

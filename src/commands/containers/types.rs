@@ -6,16 +6,14 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::commands::ignite::types::Deployment;
-use crate::util::deserialize_from_str;
+use crate::utils::deserialize_from_str;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, Default)]
+#[serde(rename_all = "lowercase")]
 pub enum ContainerType {
-    #[serde(rename = "ephemeral")]
     Ephemeral,
     #[default]
-    #[serde(rename = "persistent")]
     Persistent,
-    #[serde(rename = "stateful")]
     Stateful,
 }
 
@@ -39,28 +37,18 @@ impl Display for ContainerType {
 
 impl ContainerType {
     pub fn values() -> Vec<Self> {
-        vec![
-            Self::Ephemeral,
-            Self::Persistent,
-            // not supported yet but we should still parse it
-            // Self::Stateful,
-        ]
+        vec![Self::Ephemeral, Self::Persistent, Self::Stateful]
     }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
 pub enum ContainerState {
-    #[serde(rename = "exited")]
     Exited,
-    #[serde(rename = "pending")]
     Pending,
-    #[serde(rename = "running")]
     Running,
-    #[serde(rename = "stopped")]
     Stopped,
-    #[serde(rename = "terminating")]
     Terminating,
-    #[serde(rename = "failed")]
     Failed,
 }
 
