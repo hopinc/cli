@@ -116,4 +116,8 @@ impl State {
 
         Ok(())
     }
+
+    pub fn token(&self) -> Option<String> {
+        self.token.clone()
+    }
 }
