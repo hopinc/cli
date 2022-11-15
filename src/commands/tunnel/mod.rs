@@ -15,6 +15,7 @@ use super::ignite::utils::get_all_deployments;
 use crate::commands::ignite::utils::format_deployments;
 use crate::commands::tunnel::utils::{add_entry_to_hosts, remove_entry_from_hosts};
 use crate::state::State;
+use crate::utils::urlify;
 
 // TLS Socker Uri
 const TONNERU_URI: &str = "tonneru.hop.io";
@@ -171,7 +172,11 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
         })?;
     }
 
-    log::info!("Tonneru listening on port tcp://{domain}:{local_port}");
+    log::info!(
+        "Forwarding to `{}` on {}",
+        deployment.name,
+        urlify(&format!("{domain}:{local_port}"))
+    );
 
     let tonneru = TonneruSocket::new(&token, &deployment.id, remote_port)?;
 

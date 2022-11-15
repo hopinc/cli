@@ -1,6 +1,8 @@
 #[cfg(windows)]
 use std::env::temp_dir;
-use std::{path::PathBuf, sync::Arc};
+use std::path::PathBuf;
+#[cfg(not(windows))]
+use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
 use tokio::fs;
