@@ -1,6 +1,7 @@
 mod types;
 mod utils;
 
+use std::collections::HashSet;
 use std::net::{IpAddr, SocketAddr};
 
 use anyhow::{anyhow, ensure, Result};
@@ -9,7 +10,7 @@ use tokio::io::AsyncWriteExt;
 use tokio::net::TcpListener;
 use tokio::sync::mpsc::unbounded_channel;
 
-use self::utils::{parse_ports, TonneruSocket};
+use self::utils::{parse_publish, TonneruSocket};
 use super::ignite::utils::get_all_deployments;
 use crate::commands::ignite::utils::format_deployments;
 use crate::commands::tunnel::utils::{add_entry_to_hosts, remove_entry_from_hosts};
@@ -25,8 +26,8 @@ const DOMAIN_SUFFIX: &str = "hop";
 pub struct Options {
     #[clap(help = "ID or name of the deployment")]
     pub deployment: Option<String>,
-    #[clap(long, help = "Publish a container's port(s) to the host", value_parser = parse_ports)]
-    pub publish: Option<(u16, u16)>,
+    #[clap(long, help = "Publish a container's port(s) to the host", value_parser = parse_publish)]
+    pub publish: Option<(String, u16, u16)>,
     #[clap(long, help = "Do not add an entry to your hosts file")]
     pub no_hosts: bool,
 }
@@ -55,27 +56,79 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
         deployments[idx].clone()
     };
 
-    let (local_port, remote_port) = if let Some(ports) = options.publish {
-        ports
+    ensure!(
+        deployment.container_count > 0,
+        "Deployment has no running containers."
+    );
+
+    let (ip_address, local_port, remote_port) = if let Some(ref publish_values) = options.publish {
+        publish_values.clone()
     } else {
-        let local_port = dialoguer::Input::<u16>::new()
-            .with_prompt("Local port")
-            .default(8080)
+        let local_address = dialoguer::Input::<String>::new()
+            .with_prompt("Local IP address to bind to")
+            .default("127.0.0.1".to_string())
             .interact()?;
 
-        let remote_port = dialoguer::Input::<u16>::new()
-            .with_prompt("Remote port")
-            .default(local_port)
-            .interact()?;
+        let mut ports = HashSet::new();
 
-        (local_port, remote_port)
+        // metadata is only available for running containers
+        deployment
+            .metadata
+            .unwrap()
+            .container_port_mappings
+            .values()
+            .for_each(|v| {
+                v.iter().for_each(|p| {
+                    let port_split = p.split(':').collect::<Vec<_>>();
+                    ports.insert(port_split.last().unwrap().to_string());
+                });
+            });
+
+        let mut ports = ports.into_iter().collect::<Vec<_>>();
+        ports.push("Custom".to_string());
+
+        log::debug!("Ports set: {:?}", ports);
+
+        let local_port = {
+            let idx = dialoguer::Select::new()
+                .with_prompt("Select a local port")
+                .items(&ports)
+                .default(0)
+                .interact_opt()?
+                .ok_or_else(|| anyhow!("No port selected."))?;
+
+            if idx == ports.len() - 1 {
+                dialoguer::Input::<u16>::new()
+                    .with_prompt("Local port number")
+                    .interact()?
+            } else {
+                ports[idx].parse()?
+            }
+        };
+
+        let remote_port = {
+            let idx = dialoguer::Select::new()
+                .with_prompt("Select the remote port")
+                .items(&ports)
+                .default(0)
+                .interact_opt()?
+                .ok_or_else(|| anyhow!("No port selected."))?;
+
+            if idx == ports.len() - 1 {
+                dialoguer::Input::<u16>::new()
+                    .with_prompt("Remote port number")
+                    .interact()?
+            } else {
+                ports[idx].parse()?
+            }
+        };
+
+        (local_address, local_port, remote_port)
     };
 
     let token = state
         .token()
         .ok_or_else(|| anyhow!("No auth token found."))?;
-
-    let ip_address = "127.0.0.1".to_string();
 
     let listiner = TcpListener::bind(SocketAddr::new(IpAddr::V4(ip_address.parse()?), local_port))
         .await
@@ -88,8 +141,14 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
     };
 
     if !options.no_hosts {
+        let ip_to_add = match ip_address.as_str() {
+            // if users wants to listen on all interfaces lets use loopback for the domain
+            "0.0.0.0" => "127.0.0.1",
+            ip => ip,
+        };
+
         // edit /etc/hosts
-        add_entry_to_hosts(&domain, &ip_address).await?;
+        add_entry_to_hosts(&domain, ip_to_add).await?;
 
         let rm_domain = domain.clone();
 
@@ -114,7 +173,7 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
 
     log::info!("Tonneru listening on port tcp://{domain}:{local_port}");
 
-    let tonneru = TonneruSocket::new(&token, &deployment.id, remote_port);
+    let tonneru = TonneruSocket::new(&token, &deployment.id, remote_port)?;
 
     loop {
         let (mut stream, local_socket) = listiner.accept().await?;

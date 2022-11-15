@@ -149,6 +149,13 @@ pub struct Deployment {
     pub created_at: String,
     pub container_count: u64,
     pub config: Config,
+    #[serde(skip_serializing)]
+    pub metadata: Option<Metadata>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, Default)]
+pub struct Metadata {
+    pub container_port_mappings: HashMap<String, Vec<String>>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
