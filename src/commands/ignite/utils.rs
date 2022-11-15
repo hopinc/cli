@@ -157,7 +157,12 @@ pub fn format_deployments(deployments: &Vec<Deployment>, title: bool) -> Vec<Str
             deployment.created_at,
             deployment.config.type_,
             deployment.config.container_strategy,
-            deployment.config.restart_policy,
+            deployment
+                .config
+                .restart_policy
+                .as_ref()
+                .map(|p| p.to_string())
+                .unwrap_or_else(|| "-".to_string()),
         )
         .unwrap();
     }
@@ -238,78 +243,21 @@ fn update_config_from_args(
         })
         .expect("The argument '--type <CONTAINER_TYPE>' requires a value but none was supplied");
 
-    deployment_config.restart_policy = options
-        .config
-        .restart_policy
-        .or_else(|| {
-            if is_update {
-                Some(deployment_config.restart_policy.clone())
-            } else {
-                None
-            }
-        })
-        .expect("The argument '--restart-policy <RESTART_POLICY>' requires a value but none was supplied");
-
-    deployment_config.container_strategy = options
-        .config
-        .scaling_strategy
-        .or_else(|| {
-            if is_update {
-                Some(deployment_config.container_strategy.clone())
-            } else {
-                None
-            }
-        })
-        .expect(
-            "The argument '--strategy <SCALING_STRATEGY>' requires a value but none was supplied",
-        );
-
-    if deployment_config.container_strategy == ScalingStrategy::Autoscaled {
-        container_options.containers = None;
-
-        container_options.min_containers = Some(
-            options.config.min_containers
-            .or({
-                if is_update {
-                    container_options.min_containers
-                } else {
-                    None
-                }
-            })
-            .expect("The argument '--min-containers <MIN_CONTAINERS>' requires a value but none was supplied"),
-        );
-
-        container_options.max_containers = Some(
-            options.config.max_containers
-            .or({
-                if is_update {
-                    container_options.max_containers
-                } else {
-                    None
-                }
-            })
-            .expect("The argument '--max-containers <MAX_CONTAINERS>' requires a value but none was supplied"),
-        );
-    } else {
-        container_options.min_containers = None;
-        container_options.max_containers = None;
-
-        container_options.containers = Some(
-            options
+    if deployment_config.type_ != ContainerType::Ephemeral {
+        deployment_config.restart_policy = Some(options
                 .config
-                .containers
-                .or({
+                .restart_policy
+                .or_else(|| {
                     if is_update {
-                        container_options.containers
+                        deployment_config.restart_policy.clone()
                     } else {
                         None
                     }
                 })
-                .expect(
-                "The argument '--containers <CONTAINERS>' requires a value but none was supplied",
-            ),
-        )
+                .expect("The argument '--restart-policy <RESTART_POLICY>' requires a value but none was supplied"));
     }
+
+    deployment_config.container_strategy = ScalingStrategy::Manual;
 
     deployment_config.resources.vcpu = options
         .config
@@ -339,6 +287,68 @@ fn update_config_from_args(
         })
         .expect("The argument '--ram <RAM>' requires a value but none was supplied")
         .to_string();
+
+    // TODO: wait for autoscaling to be implemented
+    // deployment_config.container_strategy = options
+    //     .config
+    //     .scaling_strategy
+    //     .or_else(|| {
+    //         if is_update {
+    //             Some(deployment_config.container_strategy.clone())
+    //         } else {
+    //             None
+    //         }
+    //     })
+    //     .expect(
+    //         "The argument '--strategy <SCALING_STRATEGY>' requires a value but none was supplied",
+    //     );
+
+    // if deployment_config.container_strategy == ScalingStrategy::Autoscaled {
+    //     container_options.containers = None;
+
+    //     container_options.min_containers = Some(
+    //         options.config.min_containers
+    //         .or({
+    //             if is_update {
+    //                 container_options.min_containers
+    //             } else {
+    //                 None
+    //             }
+    //         })
+    //         .expect("The argument '--min-containers <MIN_CONTAINERS>' requires a value but none was supplied"),
+    //     );
+
+    //     container_options.max_containers = Some(
+    //         options.config.max_containers
+    //         .or({
+    //             if is_update {
+    //                 container_options.max_containers
+    //             } else {
+    //                 None
+    //             }
+    //         })
+    //         .expect("The argument '--max-containers <MAX_CONTAINERS>' requires a value but none was supplied"),
+    //     );
+    // } else {
+    //     container_options.min_containers = None;
+    //     container_options.max_containers = None;
+
+    container_options.containers = Some(
+        options
+            .config
+            .containers
+            .or({
+                if is_update {
+                    container_options.containers
+                } else {
+                    None
+                }
+            })
+            .expect(
+                "The argument '--containers <CONTAINERS>' requires a value but none was supplied",
+            ),
+    );
+    // }
 
     if let Some(env) = options.config.env {
         deployment_config.env.extend(
@@ -406,81 +416,27 @@ fn update_config_from_guided(
         Some(deployment_config.type_.clone()),
     )?;
 
-    deployment_config.container_strategy = ask_question_iter(
-        "Scaling strategy",
-        &ScalingStrategy::values(),
-        Some(deployment_config.container_strategy.clone()),
-    )?;
-
-    deployment_config.restart_policy = ask_question_iter(
-        "Restart policy",
-        &RestartPolicy::values(),
-        Some(deployment_config.restart_policy.clone()),
-    )?;
-
-    if deployment_config.container_strategy == ScalingStrategy::Autoscaled {
-        container_options.containers = None;
-
-        container_options.min_containers = Some(
-            dialoguer::Input::<u64>::new()
-                .with_prompt("Minimum container amount")
-                .default(1)
-                .validate_with(|containers: &u64| -> Result<(), &str> {
-                    if *containers > 0 {
-                        Ok(())
-                    } else if *containers > 10 {
-                        Err("Container amount must be less than or equal to 10")
-                    } else {
-                        Err("Container amount must be greater than 0")
-                    }
-                })
-                .interact()
-                .expect("Failed to get minimum containers"),
-        );
-        container_options.max_containers = Some(
-            dialoguer::Input::<u64>::new()
-                .with_prompt("Maximum container amount")
-                .default(10)
-                .validate_with(|containers: &u64| -> Result<(), &str> {
-                    if *containers > 0 {
-                        Ok(())
-                    } else if *containers > 10 {
-                        Err("Container amount must be less than or equal to 10")
-                    } else {
-                        Err("Container amount must be greater than 0")
-                    }
-                })
-                .interact()
-                .expect("Failed to get maximum containers"),
-        );
-    } else {
-        container_options.min_containers = None;
-        container_options.max_containers = None;
-
-        container_options.containers = Some(
-            dialoguer::Input::<u64>::new()
-                .with_prompt("Container amount")
-                .default(1)
-                .validate_with(|containers: &u64| -> Result<(), &str> {
-                    if *containers < 1 {
-                        Err("Container amount must be at least 1")
-                    } else if *containers > 10 {
-                        Err("Container amount must be less than or equal to 10")
-                    } else {
-                        Ok(())
-                    }
-                })
-                .interact()
-                .expect("Failed to get containers"),
-        );
+    if deployment_config.type_ != ContainerType::Ephemeral {
+        deployment_config.restart_policy = Some(ask_question_iter(
+            "Restart policy",
+            &RestartPolicy::values(),
+            deployment_config.restart_policy.clone(),
+        )?);
     }
+
+    // TODO: wait for autoscaling to be implemented
+    // deployment_config.container_strategy = ask_question_iter(
+    //     "Scaling strategy",
+    //     &ScalingStrategy::values(),
+    //     Some(deployment_config.container_strategy.clone()),
+    // )?;
+    deployment_config.container_strategy = ScalingStrategy::Manual;
 
     deployment_config.resources.vcpu = dialoguer::Input::<f64>::new()
         .with_prompt("CPUs")
         .default(deployment_config.resources.vcpu)
         .validate_with(validate_cpu_count)
-        .interact_text()
-        .expect("Failed to get CPUs");
+        .interact_text()?;
 
     deployment_config.resources.ram = ask_question_iter(
         "RAM",
@@ -488,6 +444,62 @@ fn update_config_from_guided(
         RamSizes::from_str(&deployment_config.resources.ram).ok(),
     )?
     .to_string();
+
+    // if deployment_config.container_strategy == ScalingStrategy::Autoscaled {
+    //     container_options.containers = None;
+
+    //     container_options.min_containers = Some(
+    //         dialoguer::Input::<u64>::new()
+    //             .with_prompt("Minimum container amount")
+    //             .default(1)
+    //             .validate_with(|containers: &u64| -> Result<(), &str> {
+    //                 if *containers > 0 {
+    //                     Ok(())
+    //                 } else if *containers > 10 {
+    //                     Err("Container amount must be less than or equal to 10")
+    //                 } else {
+    //                     Err("Container amount must be greater than 0")
+    //                 }
+    //             })
+    //             .interact()
+    //             .expect("Failed to get minimum containers"),
+    //     );
+    //     container_options.max_containers = Some(
+    //         dialoguer::Input::<u64>::new()
+    //             .with_prompt("Maximum container amount")
+    //             .default(10)
+    //             .validate_with(|containers: &u64| -> Result<(), &str> {
+    //                 if *containers > 0 {
+    //                     Ok(())
+    //                 } else if *containers > 10 {
+    //                     Err("Container amount must be less than or equal to 10")
+    //                 } else {
+    //                     Err("Container amount must be greater than 0")
+    //                 }
+    //             })
+    //             .interact()
+    //             .expect("Failed to get maximum containers"),
+    //     );
+    // } else {
+    //     container_options.min_containers = None;
+    //     container_options.max_containers = None;
+
+    container_options.containers = Some(
+        dialoguer::Input::<u64>::new()
+            .with_prompt("Container amount to start")
+            .default(1)
+            .validate_with(|containers: &u64| -> Result<(), &str> {
+                if *containers < 1 {
+                    Err("Container amount must be at least 1")
+                } else if *containers > 10 {
+                    Err("Container amount must be less than or equal to 10")
+                } else {
+                    Ok(())
+                }
+            })
+            .interact_text()?,
+    );
+    // }
 
     deployment_config.env = get_multiple_envs();
 

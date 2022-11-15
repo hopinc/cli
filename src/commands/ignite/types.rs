@@ -18,10 +18,10 @@ pub struct Vgpu {
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, Default)]
 #[repr(u32)]
 pub enum RamSizes {
-    #[default]
     #[serde(rename = "128M")]
     M128,
     #[serde(rename = "256M")]
+    #[default]
     M256,
     #[serde(rename = "512M")]
     M512,
@@ -119,7 +119,7 @@ impl Display for ScalingStrategy {
 
 impl ScalingStrategy {
     pub fn values() -> Vec<Self> {
-        vec![Self::Manual, Self::Autoscaled]
+        vec![Self::Manual]
     }
 }
 
@@ -138,8 +138,7 @@ pub struct Config {
     pub container_strategy: ScalingStrategy,
     pub resources: Resources,
 
-    #[serde(default)]
-    pub restart_policy: RestartPolicy,
+    pub restart_policy: Option<RestartPolicy>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
@@ -170,7 +169,7 @@ pub struct MultipleDeployments {
 
 #[derive(Debug, Serialize, Clone, Default, PartialEq)]
 pub struct CreateDeployment {
-    pub restart_policy: RestartPolicy,
+    pub restart_policy: Option<RestartPolicy>,
     pub container_strategy: ScalingStrategy,
     pub env: HashMap<String, String>,
     pub image: Image,
