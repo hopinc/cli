@@ -135,7 +135,7 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
         .await
         .map_err(|e| anyhow!("Failed to bind to port {local_port}: {e}"))?;
 
-    let domain = if options.hosts {
+    let domain = if !options.hosts {
         ip_address.clone()
     } else {
         format!("{}.{DOMAIN_SUFFIX}", deployment.name)
