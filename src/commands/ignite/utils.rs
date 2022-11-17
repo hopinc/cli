@@ -249,7 +249,7 @@ async fn update_config_args(
         .expect("The argument '--name <NAME>' requires a value but none was supplied")
         .to_lowercase();
 
-    assert!(
+    ensure!(
         validate_deployment_name(&name),
         "Invalid deployment name, must be alphanumeric and hyphens only"
     );
@@ -299,8 +299,6 @@ async fn update_config_args(
                 .expect("The argument '--restart-policy <RESTART_POLICY>' requires a value but none was supplied"));
     }
 
-    deployment_config.container_strategy = ScalingStrategy::Manual;
-
     deployment_config.resources.vcpu = options
         .config
         .cpu
@@ -332,6 +330,8 @@ async fn update_config_args(
             }
         })
         .expect("The argument '--ram <RAM>' requires a value but none was supplied");
+
+    deployment_config.container_strategy = ScalingStrategy::Manual;
 
     // TODO: wait for autoscaling to be implemented
     // deployment_config.container_strategy = options
@@ -516,6 +516,43 @@ async fn update_config_visual(
                 .expect("Failed to get image name")
         };
 
+    let mut tiers = get_tiers(http).await?;
+    tiers.push(Tier {
+        name: "Custom".to_string(),
+        description: "Customize the tier to your needs".to_string(),
+        ..Default::default()
+    });
+
+    deployment_config.resources = {
+        let idx = dialoguer::Select::new()
+            .with_prompt("Select a tier that will suit you well")
+            .default(0)
+            .items(&tiers.iter().map(|t| t.to_string()).collect::<Vec<String>>())
+            .interact()?;
+
+        if idx == tiers.len() - 1 {
+            let mut resources = Resources::default();
+
+            resources.vcpu = dialoguer::Input::<f64>::new()
+                .with_prompt("CPUs")
+                .default(deployment_config.resources.vcpu)
+                .show_default(is_update)
+                .validate_with(validate_cpu_count)
+                .interact_text()?;
+
+            resources.ram = ask_question_iter(
+                "Memory",
+                &RamSizes::values(),
+                Some(deployment_config.resources.ram.parse().unwrap_or_default()),
+            )?
+            .to_string();
+
+            resources
+        } else {
+            tiers[idx].resources.clone().into()
+        }
+    };
+
     deployment_config.type_ = Some(ask_question_iter(
         "Container type",
         &ContainerType::values(),
@@ -530,26 +567,14 @@ async fn update_config_visual(
         )?);
     }
 
+    deployment_config.container_strategy = ScalingStrategy::Manual;
+
     // TODO: wait for autoscaling to be implemented
     // deployment_config.container_strategy = ask_question_iter(
     //     "Scaling strategy",
     //     &ScalingStrategy::values(),
     //     Some(deployment_config.container_strategy.clone()),
     // )?;
-    deployment_config.container_strategy = ScalingStrategy::Manual;
-
-    deployment_config.resources.vcpu = dialoguer::Input::<f64>::new()
-        .with_prompt("CPUs")
-        .default(deployment_config.resources.vcpu)
-        .validate_with(validate_cpu_count)
-        .interact_text()?;
-
-    deployment_config.resources.ram = ask_question_iter(
-        "RAM",
-        &RamSizes::values(),
-        RamSizes::from_str(&deployment_config.resources.ram).ok(),
-    )?
-    .to_string();
 
     // if deployment_config.container_strategy == ScalingStrategy::Autoscaled {
     //     container_options.containers = None;

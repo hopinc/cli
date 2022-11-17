@@ -23,7 +23,6 @@ pub enum RamSizes {
     M128,
     #[default]
     #[serde(rename = "256M")]
-    #[default]
     M256,
     #[serde(rename = "512M")]
     M512,
@@ -325,13 +324,13 @@ impl Display for VolumeFs {
     }
 }
 
-#[derive(Debug, Deserialize, Clone, Default)]
+#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
 pub struct TierResources {
     pub cpu: f64,
     pub memory: u64,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default)]
 pub struct Tier {
     pub name: String,
     pub description: String,
@@ -340,11 +339,15 @@ pub struct Tier {
 
 impl Display for Tier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{} - {} ({} cpu, {} ram)",
-            self.name, self.description, self.resources.cpu, self.resources.memory
-        )
+        if self.resources == TierResources::default() {
+            write!(f, "{} - {}", self.name, self.description)
+        } else {
+            write!(
+                f,
+                "{} - {} ({} CPU, {}B ram)",
+                self.name, self.description, self.resources.cpu, self.resources.memory
+            )
+        }
     }
 }
 
