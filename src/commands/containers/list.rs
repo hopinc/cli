@@ -30,9 +30,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .with_prompt("Select a deployment")
                 .items(&deployments_fmt)
                 .default(0)
-                .interact_opt()
-                .expect("Failed to select deployment")
-                .expect("No deployment selected");
+                .interact()?;
 
             deployments[idx].clone()
         }

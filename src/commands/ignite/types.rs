@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::str::FromStr;
+use std::vec;
 
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
@@ -18,9 +19,9 @@ pub struct Vgpu {
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, Default)]
 #[repr(u32)]
 pub enum RamSizes {
-    #[default]
     #[serde(rename = "128M")]
     M128,
+    #[default]
     #[serde(rename = "256M")]
     M256,
     #[serde(rename = "512M")]
@@ -90,6 +91,16 @@ impl Default for Resources {
     }
 }
 
+impl From<TierResources> for Resources {
+    fn from(tier: TierResources) -> Self {
+        Self {
+            vcpu: tier.cpu,
+            ram: format!("{}B", tier.memory),
+            vgpu: vec![],
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, Default)]
 pub enum ScalingStrategy {
     #[default]
@@ -119,7 +130,7 @@ impl Display for ScalingStrategy {
 
 impl ScalingStrategy {
     pub fn values() -> Vec<Self> {
-        vec![Self::Manual, Self::Autoscaled]
+        vec![Self::Manual]
     }
 }
 
@@ -129,6 +140,7 @@ pub struct Image {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
+#[serde(default)]
 pub struct Config {
     pub version: String,
     #[serde(rename = "type")]
@@ -137,12 +149,13 @@ pub struct Config {
     pub env: HashMap<String, String>,
     pub container_strategy: ScalingStrategy,
     pub resources: Resources,
-
-    #[serde(default)]
-    pub restart_policy: RestartPolicy,
+    pub restart_policy: Option<RestartPolicy>,
+    pub entrypoint: Option<Vec<String>>,
+    pub volume: Option<Volume>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
+#[serde(default)]
 pub struct Deployment {
     pub id: String,
     pub name: String,
@@ -150,6 +163,24 @@ pub struct Deployment {
     pub container_count: u64,
     pub target_container_count: u64,
     pub config: Config,
+    #[serde(skip_serializing)]
+    pub metadata: Option<Metadata>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, Default)]
+pub struct Metadata {
+    pub container_port_mappings: HashMap<String, Vec<String>>,
+}
+
+impl Deployment {
+    pub fn can_rollout(&self) -> bool {
+        self.container_count != 0 && self.config.type_ != ContainerType::Stateful
+    }
+
+    pub fn can_scale(&self) -> bool {
+        self.config.container_strategy == ScalingStrategy::Manual
+            && self.config.type_ != ContainerType::Stateful
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -164,15 +195,19 @@ pub struct MultipleDeployments {
 
 #[derive(Debug, Serialize, Clone, Default, PartialEq)]
 pub struct CreateDeployment {
-    pub restart_policy: RestartPolicy,
+    pub restart_policy: Option<RestartPolicy>,
     pub container_strategy: ScalingStrategy,
     pub env: HashMap<String, String>,
     pub image: Image,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     pub resources: Resources,
-    #[serde(rename = "type")]
-    pub type_: ContainerType,
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    pub type_: Option<ContainerType>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub volume: Option<Volume>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub entrypoint: Option<Vec<String>>,
 }
 
 impl CreateDeployment {
@@ -184,7 +219,9 @@ impl CreateDeployment {
             image: deployment.config.image.clone(),
             name: Some(deployment.name.clone()),
             resources: deployment.config.resources.clone(),
-            type_: deployment.config.type_.clone(),
+            type_: Some(deployment.config.type_.clone()),
+            volume: deployment.config.volume.clone(),
+            entrypoint: deployment.config.entrypoint.clone(),
         }
     }
 }
@@ -241,4 +278,95 @@ impl RestartPolicy {
     pub fn values() -> Vec<Self> {
         vec![Self::Never, Self::Always, Self::OnFailure]
     }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+pub struct Volume {
+    pub fs: VolumeFs,
+    #[serde(rename = "mountpath")]
+    pub mount_path: String,
+    pub size: String,
+}
+
+impl Default for Volume {
+    fn default() -> Self {
+        Self {
+            fs: VolumeFs::default(),
+            mount_path: "/data".to_string(),
+            size: "5G".to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum VolumeFs {
+    #[default]
+    Ext4,
+    Xfs,
+}
+
+impl FromStr for VolumeFs {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        serde_json::from_str(&format!("\"{}\"", s.to_lowercase())).map_err(|e| anyhow!(e))
+    }
+}
+
+impl Display for VolumeFs {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self).unwrap().replace('"', "")
+        )
+    }
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct TierResources {
+    pub cpu: f64,
+    pub memory: u64,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Tier {
+    pub name: String,
+    pub description: String,
+    pub resources: TierResources,
+}
+
+impl Display for Tier {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} - {} ({} cpu, {} ram)",
+            self.name, self.description, self.resources.cpu, self.resources.memory
+        )
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Tiers {
+    pub tiers: Vec<Tier>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Premade {
+    pub name: String,
+    pub description: String,
+    #[serde(skip)]
+    pub icon: String,
+    pub image: String,
+    pub entrypoint: Option<Vec<String>>,
+    pub mountpath: String,
+    pub fs: VolumeFs,
+    pub final_note: Option<String>,
+    pub environment: HashMap<String, String>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Premades {
+    pub premades: Vec<Premade>,
 }

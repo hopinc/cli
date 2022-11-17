@@ -1,4 +1,4 @@
-use anyhow::{bail, ensure, Result};
+use anyhow::{ensure, Result};
 use clap::Parser;
 
 use crate::commands::containers::utils::create_containers;
@@ -30,9 +30,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .with_prompt("Select a deployment")
                 .items(&deployments_fmt)
                 .default(0)
-                .interact_opt()
-                .expect("Failed to select deployment")
-                .expect("No deployment selected");
+                .interact()?;
 
             deployments[idx].id.clone()
         }
@@ -42,13 +40,10 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Some(count) => count,
         None => dialoguer::Input::<u64>::new()
             .with_prompt("Number of containers to create")
-            .interact()
-            .expect("Failed to select deployment"),
+            .interact()?,
     };
 
-    if count < 1 {
-        bail!("Count must be greater than 0");
-    }
+    ensure!(count > 0, "Count must be greater than 0");
 
     create_containers(&state.http, &deployment_id, count).await?;
 

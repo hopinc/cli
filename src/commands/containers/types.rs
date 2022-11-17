@@ -1,12 +1,12 @@
 use std::fmt::Display;
 use std::str::FromStr;
+use std::vec;
 
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::commands::ignite::types::Deployment;
-use crate::utils::deserialize_from_str;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, Default)]
 #[serde(rename_all = "lowercase")]
@@ -106,8 +106,7 @@ impl ChangeableContainerState {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Uptime {
-    #[serde(deserialize_with = "deserialize_from_str")]
-    pub last_start: DateTime<Utc>,
+    pub last_start: Option<DateTime<Utc>>,
 }
 #[derive(Debug, Deserialize)]
 pub struct Container {
@@ -138,7 +137,7 @@ pub struct ContainerOptions {
 impl ContainerOptions {
     pub fn from_deployment(deployment: &Deployment) -> Self {
         Self {
-            containers: Some(deployment.container_count as u64),
+            containers: Some(deployment.container_count),
             min_containers: Some(0),
             max_containers: Some(0),
             // min_containers: Some(deployment.config.resources.min_containers as u64),

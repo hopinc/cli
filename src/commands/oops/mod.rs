@@ -4,11 +4,12 @@ use clap::Parser;
 use super::ignite::builds::types::BuildState;
 use super::ignite::builds::utils::get_all_builds;
 use super::ignite::utils::{format_deployments, get_all_deployments, promote};
+use crate::commands::projects::utils::format_project;
 use crate::state::State;
 use crate::store::hopfile::HopFile;
 
 #[derive(Debug, Parser)]
-#[clap(about = "Instantly roll back your deployment to a previous build.")]
+#[clap(about = "Instantly roll back your deployment to a previous build")]
 pub struct Options {
     #[clap(help = "ID of the deployment")]
     pub deployment: Option<String>,
@@ -20,9 +21,11 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
     } else if let Some(hopfile) = HopFile::find_current().await {
         hopfile.config.deployment_id
     } else {
-        let project_id = state.ctx.current_project_error().id;
+        let project = state.ctx.current_project_error();
 
-        let deployments = get_all_deployments(&state.http, &project_id).await?;
+        log::info!("Using project: {}", format_project(&project));
+
+        let deployments = get_all_deployments(&state.http, &project.id).await?;
         ensure!(!deployments.is_empty(), "No deployments found.");
         let deployments_fmt = format_deployments(&deployments, false);
 

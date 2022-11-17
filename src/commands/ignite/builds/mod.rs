@@ -17,7 +17,7 @@ pub enum Commands {
 }
 
 #[derive(Debug, Parser)]
-#[clap(name = "gateways", about = "Interact with Ignite Gateways")]
+#[clap(about = "Interact with Ignite Builds")]
 pub struct Options {
     #[clap(subcommand)]
     pub commands: Commands,

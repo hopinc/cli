@@ -732,7 +732,7 @@ dependencies = [
 
 [[package]]
 name = "hop-cli"
-version = "0.1.49"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "async-compression",
@@ -751,6 +751,7 @@ dependencies = [
  "ignore",
  "log",
  "ms",
+ "native-tls",
  "portpicker",
  "regex",
  "reqwest",
@@ -763,8 +764,12 @@ dependencies = [
  "sys-info",
  "tabwriter",
  "tokio",
+ "tokio-native-tls",
+ "tokio-rustls",
  "tokio-tar",
  "webbrowser",
+ "webpki",
+ "webpki-roots",
  "winapi",
  "winres",
 ]

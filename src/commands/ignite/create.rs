@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
 
-use super::types::{Env, RamSizes, RestartPolicy, ScalingStrategy};
+use super::types::{Env, RestartPolicy, ScalingStrategy, VolumeFs};
 use crate::commands::containers::types::ContainerType;
 use crate::commands::containers::utils::create_containers;
 use crate::commands::ignite::types::Deployment;
@@ -30,19 +30,11 @@ pub struct DeploymentConfig {
     )]
     pub scaling_strategy: Option<ScalingStrategy>,
 
-    #[clap(
-        short,
-        long,
-        help = "The number of CPUs to use between 1 to 32, defaults to 1"
-    )]
+    #[clap(short, long, help = "The number of CPUs to use")]
     pub cpu: Option<f64>,
 
-    #[clap(
-        short = 'm',
-        long,
-        help = "Amount of RAM to use between 128MB to 64GB, defaults to 512MB"
-    )]
-    pub ram: Option<RamSizes>,
+    #[clap(short = 'm', long, help = "Amount of RAM to use")]
+    pub ram: Option<String>,
 
     #[clap(
         short = 'd',
@@ -52,13 +44,13 @@ pub struct DeploymentConfig {
     pub containers: Option<u64>,
 
     #[clap(
-        long = "min-containers",
+        long,
         help = "Minimum amount of containers to use if `scaling` is autoscale, defaults to 1"
     )]
     pub min_containers: Option<u64>,
 
     #[clap(
-        long = "max-containers",
+        long,
         help = "Maximum amount of containers to use if `scaling` is autoscale, defaults to 10"
     )]
     pub max_containers: Option<u64>,
@@ -76,6 +68,18 @@ pub struct DeploymentConfig {
         help = "Restart policy, defaults to `on-failure`"
     )]
     pub restart_policy: Option<RestartPolicy>,
+
+    #[clap(short, long, help = "Volume mount to use")]
+    pub volume: Option<String>,
+
+    #[clap(long, help = "Size of the volume to use, defaults to 5GB")]
+    pub volume_size: Option<String>,
+
+    #[clap(long, help = "Type of the volume file system, defaults to `ext4`")]
+    pub volume_fs: Option<VolumeFs>,
+
+    #[clap(long, help = "Entrypoint to use")]
+    pub entrypoint: Option<String>,
 }
 
 #[derive(Debug, Parser, Default, PartialEq, Clone)]
@@ -98,10 +102,17 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         project.id
     );
 
-    let is_not_guided = options != Options::default();
+    let is_visual = options == Options::default();
 
-    let (deployment_config, container_options) =
-        update_deployment_config(options, is_not_guided, &Deployment::default(), &None)?;
+    let (deployment_config, container_options) = update_deployment_config(
+        &state.http,
+        options,
+        is_visual,
+        &Deployment::default(),
+        &None,
+        false,
+    )
+    .await?;
 
     let deployment = create_deployment(&state.http, &project.id, &deployment_config).await?;
 

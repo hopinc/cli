@@ -62,7 +62,7 @@ impl HopFile {
     }
 
     fn deserialize(path: PathBuf, content: &str) -> Option<Self> {
-        match path.extension() {
+        let hopfile: Option<Self> = match path.extension() {
             Some(ext) => match ext.to_str() {
                 Some("yml") | Some("yaml") => serde_yaml::from_str(content).ok(),
                 Some("json") => serde_json::from_str(content).ok(),
@@ -77,7 +77,12 @@ impl HopFile {
                     None
                 }
             }
-        }
+        };
+
+        hopfile.map(|mut hopfile| {
+            hopfile.path = path;
+            hopfile
+        })
     }
 
     // Find a hopfile in the current directory or any of its parents.
