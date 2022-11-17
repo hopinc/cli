@@ -29,8 +29,8 @@ pub struct Options {
     pub deployment: Option<String>,
     #[clap(long, help = "Publish a container's port(s) to the host", value_parser = parse_publish)]
     pub publish: Option<(String, u16, u16)>,
-    #[clap(long, help = "Do not add an entry to your hosts file")]
-    pub no_hosts: bool,
+    #[clap(long, help = "Add an entry to your hosts file with the tunnel domain")]
+    pub hosts: bool,
 }
 
 pub async fn handle(options: &Options, state: State) -> Result<()> {
@@ -135,13 +135,13 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
         .await
         .map_err(|e| anyhow!("Failed to bind to port {local_port}: {e}"))?;
 
-    let domain = if options.no_hosts {
+    let domain = if options.hosts {
         ip_address.clone()
     } else {
         format!("{}.{DOMAIN_SUFFIX}", deployment.name)
     };
 
-    if !options.no_hosts {
+    if options.hosts {
         let ip_to_add = match ip_address.as_str() {
             // if users wants to listen on all interfaces lets use loopback for the domain
             "0.0.0.0" => "127.0.0.1",
