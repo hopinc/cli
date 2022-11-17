@@ -23,6 +23,7 @@ pub enum RamSizes {
     M128,
     #[default]
     #[serde(rename = "256M")]
+    #[default]
     M256,
     #[serde(rename = "512M")]
     M512,

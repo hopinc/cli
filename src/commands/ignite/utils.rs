@@ -345,8 +345,8 @@ async fn update_config_args(
     //         }
     //     })
     //     .expect(
-    //         "The argument '--strategy <SCALING_STRATEGY>' requires a value but none was supplied",
-    //     );
+    //         "The argument '--strategy <SCALING_STRATEGY>' requires a value but
+    // none was supplied",     );
 
     // if deployment_config.container_strategy == ScalingStrategy::Autoscaled {
     //     container_options.containers = None;
@@ -360,8 +360,8 @@ async fn update_config_args(
     //                 None
     //             }
     //         })
-    //         .expect("The argument '--min-containers <MIN_CONTAINERS>' requires a value but none was supplied"),
-    //     );
+    //         .expect("The argument '--min-containers <MIN_CONTAINERS>' requires a
+    // value but none was supplied"),     );
 
     //     container_options.max_containers = Some(
     //         options.config.max_containers
@@ -372,8 +372,70 @@ async fn update_config_args(
     //                 None
     //             }
     //         })
-    //         .expect("The argument '--max-containers <MAX_CONTAINERS>' requires a value but none was supplied"),
-    //     );
+    //         .expect("The argument '--max-containers <MAX_CONTAINERS>' requires a
+    // value but none was supplied"),     );
+    // } else {
+    //     container_options.min_containers = None;
+    //     container_options.max_containers = None;
+
+    container_options.containers = Some(
+        options
+            .config
+            .containers
+            .or({
+                if is_update {
+                    container_options.containers
+                } else {
+                    None
+                }
+            })
+            .expect(
+                "The argument '--containers <CONTAINERS>' requires a value but none was supplied",
+            ),
+    );
+    // }
+
+    // TODO: wait for autoscaling to be implemented
+    // deployment_config.container_strategy = options
+    //     .config
+    //     .scaling_strategy
+    //     .or_else(|| {
+    //         if is_update {
+    //             Some(deployment_config.container_strategy.clone())
+    //         } else {
+    //             None
+    //         }
+    //     })
+    //     .expect(
+    //         "The argument '--strategy <SCALING_STRATEGY>' requires a value but
+    // none was supplied",     );
+
+    // if deployment_config.container_strategy == ScalingStrategy::Autoscaled {
+    //     container_options.containers = None;
+
+    //     container_options.min_containers = Some(
+    //         options.config.min_containers
+    //         .or({
+    //             if is_update {
+    //                 container_options.min_containers
+    //             } else {
+    //                 None
+    //             }
+    //         })
+    //         .expect("The argument '--min-containers <MIN_CONTAINERS>' requires a
+    // value but none was supplied"),     );
+
+    //     container_options.max_containers = Some(
+    //         options.config.max_containers
+    //         .or({
+    //             if is_update {
+    //                 container_options.max_containers
+    //             } else {
+    //                 None
+    //             }
+    //         })
+    //         .expect("The argument '--max-containers <MAX_CONTAINERS>' requires a
+    // value but none was supplied"),     );
     // } else {
     //     container_options.min_containers = None;
     //     container_options.max_containers = None;

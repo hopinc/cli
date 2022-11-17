@@ -10,6 +10,7 @@ mod link;
 mod oops;
 pub mod projects;
 mod secrets;
+mod tunnel;
 pub mod update;
 mod whoami;
 
@@ -38,6 +39,8 @@ pub enum Commands {
     #[clap(alias = "channel", alias = "ch")]
     Channels(channels::Options),
     Oops(oops::Options),
+    #[clap(alias = "fwd", alias = "forward")]
+    Tunnel(tunnel::Options),
 }
 
 pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
@@ -73,6 +76,7 @@ pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
                 Commands::Gateways(options) => gateways::handle(options, state).await,
                 Commands::Domains(options) => domains::handle(options, state).await,
                 Commands::Oops(options) => oops::handle(&options, state).await,
+                Commands::Tunnel(options) => tunnel::handle(&options, state).await,
             }
         }
     }
