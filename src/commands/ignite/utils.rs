@@ -373,8 +373,14 @@ async fn update_config_args(
         deployment_config.entrypoint = Some(get_entrypoint_array(&entry));
     }
 
-    if let Some(policy) = options.config.restart_policy {
-        deployment_config.restart_policy = Some(policy);
+    if deployment_config.type_ != Some(ContainerType::Ephemeral) {
+        if let Some(policy) = options.config.restart_policy {
+            deployment_config.restart_policy = Some(policy);
+        } else {
+            deployment_config.restart_policy = Some(RestartPolicy::OnFailure);
+        }
+    } else {
+        deployment_config.restart_policy = None;
     }
 
     Ok((deployment_config.clone(), container_options.clone()))
@@ -425,6 +431,13 @@ async fn update_config_visual(
                 .with_prompt("Image name")
                 .default(deployment_config.image.name.clone())
                 .show_default(!deployment_config.image.name.is_empty())
+                .validate_with(|image: &String| -> Result<(), &str> {
+                    if image.is_empty() {
+                        Err("Please specify an image")
+                    } else {
+                        Ok(())
+                    }
+                })
                 .interact_text()?
         };
 
@@ -522,7 +535,9 @@ async fn update_config_visual(
 
     if dialoguer::Confirm::new()
         .with_prompt("Do you want to change advanced settings?")
-        .interact()?
+        .default(false)
+        .interact_opt()?
+        .unwrap_or(false)
     {
         if deployment_config.type_ != Some(ContainerType::Stateful)
             && dialoguer::Confirm::new()
@@ -566,6 +581,8 @@ async fn update_config_visual(
                 deployment_config.restart_policy.clone(),
             )?);
         }
+    } else {
+        deployment_config.restart_policy = Some(RestartPolicy::OnFailure);
     }
 
     Ok((deployment_config.clone(), container_options.clone()))

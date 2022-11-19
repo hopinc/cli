@@ -96,7 +96,7 @@ impl From<TierResources> for Resources {
     fn from(tier: TierResources) -> Self {
         Self {
             vcpu: tier.cpu,
-            ram: format!("{}B", tier.memory),
+            ram: format!("{}M", tier.memory),
             vgpu: vec![],
         }
     }
@@ -351,7 +351,7 @@ impl Display for Tier {
         } else {
             write!(
                 f,
-                "{} - {} ({} CPU, {}B ram)",
+                "{} - {} ({} CPU, {}MB ram)",
                 self.name, self.description, self.resources.cpu, self.resources.memory
             )
         }
