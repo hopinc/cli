@@ -128,7 +128,11 @@ pub fn format_containers(containers: &Vec<Container>, title: bool) -> Vec<String
                 container
                     .uptime
                     .as_ref()
-                    .map(|u| relative_time(u.last_start))
+                    .map(|u| {
+                        u.last_start
+                            .map(relative_time)
+                            .unwrap_or_else(|| UNAVAILABLE_ELEMENT.to_string())
+                    })
                     .unwrap_or_else(|| UNAVAILABLE_ELEMENT.to_string())
             },
         )

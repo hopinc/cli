@@ -1,8 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
 
-use super::types::{Env, RamSizes, RestartPolicy, ScalingStrategy};
-use crate::commands::containers::types::ContainerType;
+use super::types::{Env, RestartPolicy, ScalingStrategy, VolumeFs};
 use crate::commands::containers::utils::create_containers;
 use crate::commands::ignite::types::Deployment;
 use crate::commands::ignite::utils::{create_deployment, update_deployment_config};
@@ -17,32 +16,20 @@ pub struct DeploymentConfig {
     pub name: Option<String>,
 
     #[clap(
-        short = 't',
-        long = "type",
-        help = "Type of the container, defaults to `persistent`"
-    )]
-    pub container_type: Option<ContainerType>,
-
-    #[clap(
         short = 's',
         long = "strategy",
         help = "Scaling strategy, defaults to `autoscale`"
     )]
     pub scaling_strategy: Option<ScalingStrategy>,
 
-    #[clap(
-        short,
-        long,
-        help = "The number of CPUs to use between 1 to 32, defaults to 1"
-    )]
+    #[clap(short, long, help = "Tier of the deployment")]
+    pub tier: Option<String>,
+
+    #[clap(short, long, help = "The number of CPUs to use, overrides the tier")]
     pub cpu: Option<f64>,
 
-    #[clap(
-        short = 'm',
-        long,
-        help = "Amount of RAM to use between 128MB to 64GB, defaults to 512MB"
-    )]
-    pub ram: Option<RamSizes>,
+    #[clap(short = 'm', long, help = "Amount of RAM to use, overrides the tier")]
+    pub ram: Option<String>,
 
     #[clap(
         short = 'd',
@@ -50,18 +37,6 @@ pub struct DeploymentConfig {
         help = "Amount of containers to deploy if `scaling` is manual, defaults to 1"
     )]
     pub containers: Option<u64>,
-
-    #[clap(
-        long = "min-containers",
-        help = "Minimum amount of containers to use if `scaling` is autoscale, defaults to 1"
-    )]
-    pub min_containers: Option<u64>,
-
-    #[clap(
-        long = "max-containers",
-        help = "Maximum amount of containers to use if `scaling` is autoscale, defaults to 10"
-    )]
-    pub max_containers: Option<u64>,
 
     #[clap(
         short,
@@ -76,6 +51,27 @@ pub struct DeploymentConfig {
         help = "Restart policy, defaults to `on-failure`"
     )]
     pub restart_policy: Option<RestartPolicy>,
+
+    #[clap(flatten)]
+    pub volume: VolumeConfig,
+
+    #[clap(long, help = "Entrypoint to use")]
+    pub entrypoint: Option<String>,
+
+    #[clap(long, help = "Make containers delete on exit")]
+    pub rm: bool,
+}
+
+#[derive(Debug, Parser, Default, PartialEq, Eq, Clone)]
+pub struct VolumeConfig {
+    #[clap(short, long, help = "Volume mount to use")]
+    pub volume_mount: Option<String>,
+
+    #[clap(long, help = "Size of the volume to use, defaults to 3GB")]
+    pub volume_size: Option<String>,
+
+    #[clap(long, help = "Type of the volume file system, defaults to `ext4`")]
+    pub volume_fs: Option<VolumeFs>,
 }
 
 #[derive(Debug, Parser, Default, PartialEq, Clone)]
@@ -98,10 +94,17 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         project.id
     );
 
-    let is_not_guided = options != Options::default();
+    let is_visual = options == Options::default();
 
-    let (deployment_config, container_options) =
-        update_deployment_config(options, is_not_guided, &Deployment::default(), &None)?;
+    let (deployment_config, container_options) = update_deployment_config(
+        &state.http,
+        options,
+        is_visual,
+        &Deployment::default(),
+        &None,
+        false,
+    )
+    .await?;
 
     let deployment = create_deployment(&state.http, &project.id, &deployment_config).await?;
 

@@ -35,12 +35,12 @@ pub enum Commands {
     FromCompose(from_compose::Options),
     #[clap(alias = "check")]
     Health(health::Options),
+    Builds(builds::Options),
+    #[clap(alias = "rollback")]
+    Promote(promote::Options),
     // alias for hop containers
     Containers(super::containers::Options),
     Gateways(super::gateways::Options),
-    #[clap(alias = "rollback")]
-    Promote(promote::Options),
-    Builds(builds::Options),
 }
 
 #[derive(Debug, Parser)]

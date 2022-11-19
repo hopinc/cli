@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{ensure, Result};
 use clap::Parser;
 
 use super::utils::format_users;
@@ -12,7 +12,7 @@ pub struct Options {}
 pub async fn handle(_options: Options, state: State) -> Result<()> {
     let users = state.auth.authorized.keys().collect::<Vec<_>>();
 
-    assert!(
+    ensure!(
         !users.is_empty(),
         "You are not logged in into any accounts, run `{} auth login` to login",
         EXEC_NAME
@@ -24,9 +24,7 @@ pub async fn handle(_options: Options, state: State) -> Result<()> {
         .with_prompt("Select a user")
         .items(&users_fmt)
         .default(0)
-        .interact_opt()
-        .expect("Failed to select a user")
-        .expect("Failed to select a user");
+        .interact()?;
 
     let user_id = users.get(idx).unwrap().to_owned();
 

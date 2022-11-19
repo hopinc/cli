@@ -66,7 +66,7 @@ pub async fn compress(id: &str, base_dir: PathBuf) -> Result<String> {
 
     log::info!("Finding files to compress...");
 
-    let mut walker = WalkBuilder::new(&base_dir.clone());
+    let mut walker = WalkBuilder::new(base_dir.clone());
     walker.add_ignore(create_global_ignore_file().await);
     walker.add_custom_ignore_filename(".hopignore");
     walker.hidden(false).follow_links(true);

@@ -30,18 +30,16 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             .with_prompt("Select a deployment")
             .items(&deployments_fmt)
             .default(0)
-            .interact_opt()
-            .expect("Failed to select deployment")
-            .expect("No deployment selected");
+            .interact()?;
 
         let containers = get_all_containers(&state.http, &deployments[idx].id).await?;
+        ensure!(!containers.is_empty(), "No containers found");
         let containers_fmt = format_containers(&containers, false);
 
         let idxs = dialoguer::MultiSelect::new()
             .with_prompt("Select containers to delete")
             .items(&containers_fmt)
-            .interact_opt()?
-            .expect("No container selected");
+            .interact()?;
 
         containers
             .iter()

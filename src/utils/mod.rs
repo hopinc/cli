@@ -1,6 +1,6 @@
-use std::fmt::Display;
+pub mod size;
+
 use std::path::PathBuf;
-use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, Ok, Result};
@@ -9,7 +9,7 @@ use console::style;
 use fern::colors::{Color, ColoredLevelConfig};
 use log::{Level, LevelFilter};
 use ms::{__to_string__, ms};
-use serde::{de, Deserialize, Deserializer, Serialize};
+use serde::Serialize;
 use serde_json::Value;
 use tokio::fs;
 
@@ -88,16 +88,6 @@ pub fn logs(verbose: bool) {
         )
         .apply()
         .ok();
-}
-
-pub fn deserialize_from_str<'de, S, D>(deserializer: D) -> Result<S, D::Error>
-where
-    S: FromStr,
-    S::Err: Display,
-    D: Deserializer<'de>,
-{
-    let s: String = Deserialize::deserialize(deserializer)?;
-    S::from_str(&s).map_err(de::Error::custom)
 }
 
 pub fn relative_time(date: DateTime<Utc>) -> String {
