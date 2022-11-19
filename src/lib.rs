@@ -19,20 +19,15 @@ pub struct CLI {
     pub commands: Commands,
 
     #[clap(
-        short = 'p',
-        long = "project",
+        short,
+        long,
         help = "Namespace or ID of the project to use",
         global = true
     )]
     pub project: Option<String>,
 
-    #[clap(
-        short = 'v',
-        long = "verbose",
-        help = "Print more information",
-        global = true
-    )]
-    pub verbose: bool,
+    #[clap(short = 'D', long, help = "Enable debug mode", global = true)]
+    pub debug: bool,
 }
 
 #[cfg(test)]

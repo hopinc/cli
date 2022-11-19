@@ -67,10 +67,11 @@ impl HttpClient {
             }
         };
 
-        match response.json::<Base<T>>().await {
-            Ok(base) => Ok(Some(base.data)),
-            Err(e) => Err(anyhow!(e)),
-        }
+        response
+            .json::<Base<T>>()
+            .await
+            .map(|base| Some(base.data))
+            .map_err(|e| anyhow!(e))
     }
 
     async fn handle_error<T>(
@@ -101,27 +102,30 @@ impl HttpClient {
     {
         let mut request = self.client.request(
             method.parse().unwrap(),
-            &format!("{}{}", self.base_url, path),
+            format!("{}{}", self.base_url, path),
         );
 
         log::debug!("request: {} {} {:?}", method, path, data);
 
         if let Some((body, content_type)) = data {
             request = request.header("content-type", content_type);
+
+            // show body in debug mode / when developing
+            #[cfg(debug_assertions)]
+            log::debug!(
+                "request body: {:?}",
+                String::from_utf8(body.as_bytes().unwrap().to_vec())?
+            );
+
             request = request.body(body);
         }
 
-        let request = request.build().unwrap();
+        let request = request.build()?;
 
         #[cfg(debug_assertions)]
         let now = tokio::time::Instant::now();
 
-        let response = self
-            .client
-            .execute(request)
-            .await
-            .map_err(|e| e.to_string())
-            .expect("Failed to send the request");
+        let response = self.client.execute(request).await?;
 
         #[cfg(debug_assertions)]
         log::debug!("response in: {:#?}", now.elapsed());

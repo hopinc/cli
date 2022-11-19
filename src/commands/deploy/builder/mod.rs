@@ -30,6 +30,7 @@ pub async fn build(
     })
     .await?;
 
+    // all projects should already be subscribed but this is a precaution
     leap.channel_subscribe(project_id).await?;
 
     // deployment id is used not to colide if the user is deploying multiple items
@@ -87,15 +88,9 @@ pub async fn build(
                 continue;
             }
 
-            let build_data =
-                match serde_json::from_value(serde_json::to_value(capsuled.data).unwrap()) {
-                    Ok(build_data) => build_data,
-                    Err(_) => {
-                        // silently ignore
-
-                        continue;
-                    }
-                };
+            let Ok(build_data) = serde_json::from_value(serde_json::to_value(capsuled.data)?) else {
+                continue;
+            };
 
             match build_data {
                 BuildEvents::BuildProgress(build_progress) => {
@@ -131,9 +126,10 @@ pub async fn build(
                         println!();
 
                         bail!(
-                                "Push failed, for help contact us on {} and mention the deployment id: {}",
+                                "Push failed, for help contact us on {} and mention the deployment id: {} and build id: {}",
                                 urlify("https://discord.gg/hop"),
-                                deployment_id
+                                deployment_id,
+                                build.id
                             );
                     }
                 }

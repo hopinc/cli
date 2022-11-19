@@ -5,7 +5,7 @@ use clap::Parser;
 use hop_cli::commands::handle_command;
 use hop_cli::commands::update::util::version_notice;
 #[cfg(feature = "update")]
-use hop_cli::commands::Commands;
+use hop_cli::commands::Commands::Update;
 use hop_cli::state::{State, StateOptions};
 use hop_cli::{utils, CLI};
 
@@ -20,7 +20,7 @@ async fn main() -> Result<()> {
     // setup panic hook
     utils::set_hook();
 
-    utils::logs(cli.verbose);
+    utils::logs(cli.debug);
 
     let state = State::new(StateOptions {
         override_project: cli.project,
@@ -30,7 +30,7 @@ async fn main() -> Result<()> {
 
     match cli.commands {
         #[cfg(feature = "update")]
-        Commands::Update(_) => None,
+        Update(_) => None,
         // its okay for the notice to fail
         _ => version_notice(state.ctx.clone()).await.ok(),
     };
