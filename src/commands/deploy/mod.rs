@@ -73,7 +73,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     log::info!("Attempting to deploy {}", dir.display());
 
-    let is_not_guided = options.config != DeploymentConfig::default();
+    let is_visual = options.config == DeploymentConfig::default();
 
     let (project, deployment, container_options, existing) = match HopFile::find(dir.clone()).await
     {
@@ -99,7 +99,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .find_project_by_id_or_namespace(hopfile.config.project_id)
                 .unwrap();
 
-            if is_not_guided {
+            if is_visual {
                 log::warn!("Deployment exists, skipping arguments");
             }
 
@@ -158,7 +158,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                         // temporary value that gets replaced after we get the name
                         image: Some("".to_string()),
                     },
-                    is_not_guided,
+                    is_visual,
                     &Deployment::default(),
                     &Some(default_name),
                     false,
@@ -184,7 +184,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
             // skip gateway creation if using default config
             if !options.yes
-                && !is_not_guided
+                && !is_visual
                 && dialoguer::Confirm::new()
                     .with_prompt("Do you want to create a Gateway? (You can always add one later)")
                     .interact()?

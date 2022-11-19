@@ -46,7 +46,8 @@ impl FromStr for RamSizes {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        serde_json::from_str(&format!("\"{}\"", s.to_uppercase())).map_err(|e| anyhow!(e))
+        serde_json::from_str(&format!("\"{}\"", s.replace('B', "").to_uppercase()))
+            .map_err(|e| anyhow!(e))
     }
 }
 
@@ -293,7 +294,7 @@ impl Default for Volume {
         Self {
             fs: VolumeFs::default(),
             mount_path: "/data".to_string(),
-            size: "5G".to_string(),
+            size: "3G".to_string(),
         }
     }
 }
@@ -321,6 +322,12 @@ impl Display for VolumeFs {
             "{}",
             serde_json::to_string(self).unwrap().replace('"', "")
         )
+    }
+}
+
+impl VolumeFs {
+    pub fn values() -> Vec<Self> {
+        vec![Self::Ext4, Self::Xfs]
     }
 }
 

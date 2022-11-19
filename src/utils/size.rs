@@ -18,11 +18,15 @@ impl FromStr for UnitMultiplier {
     type Err = anyhow::Error;
 
     fn from_str(u: &str) -> Result<Self, Self::Err> {
-        match u {
+        match u.to_uppercase().as_str() {
             "B" => Ok(UnitMultiplier::B),
+            "K" => Ok(UnitMultiplier::KB),
             "KB" => Ok(UnitMultiplier::KB),
+            "M" => Ok(UnitMultiplier::MB),
             "MB" => Ok(UnitMultiplier::MB),
+            "G" => Ok(UnitMultiplier::GB),
             "GB" => Ok(UnitMultiplier::GB),
+
             _ => Err(anyhow!("Invalid unit: {u}")),
         }
     }
