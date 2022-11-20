@@ -1,5 +1,4 @@
 use std::collections::hash_map::HashMap;
-use std::error::Error;
 use std::io::Write;
 
 use anyhow::{anyhow, bail, ensure, Context, Result};
@@ -586,19 +585,6 @@ async fn update_config_visual(
     }
 
     Ok((deployment_config.clone(), container_options.clone()))
-}
-
-pub fn parse_key_val<T, U>(s: &str) -> Result<(T, U), Box<dyn Error>>
-where
-    T: std::str::FromStr,
-    T::Err: Error + 'static,
-    U: std::str::FromStr,
-    U::Err: Error + 'static,
-{
-    let pos = s
-        .find('=')
-        .ok_or_else(|| format!("invalid KEY=value: no `=` found in `{}`", s))?;
-    Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
 }
 
 fn get_multiple_envs() -> Result<HashMap<String, String>> {

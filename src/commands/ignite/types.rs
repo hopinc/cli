@@ -6,8 +6,7 @@ use std::vec;
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 
-use super::utils::parse_key_val;
-use crate::commands::containers::types::ContainerType;
+use crate::{commands::containers::types::ContainerType, utils::parse_key_val};
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct Vgpu {
