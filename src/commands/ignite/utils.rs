@@ -581,7 +581,11 @@ async fn update_config_visual(
                 deployment_config.restart_policy.clone(),
             )?);
         }
-    } else {
+    }
+
+    if deployment_config.restart_policy.is_none()
+        || deployment_config.type_ == Some(ContainerType::Ephemeral)
+    {
         deployment_config.restart_policy = Some(RestartPolicy::OnFailure);
     }
 
