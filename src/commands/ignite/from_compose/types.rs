@@ -162,7 +162,7 @@ pub struct Service {
     pub build: Option<ServiceBuildUnion>,
     pub depends_on: Option<Vec<String>>,
     pub volumes: Option<DockerVolume>,
-    pub command: Option<DockerCmd>,
+    pub entrypoint: Option<DockerEntrypoint>,
     // ignored
     pub networks: Option<Value>,
     pub healthcheck: Option<Value>,
@@ -186,7 +186,7 @@ impl From<Service> for Deployment {
                     mount_path: volume.1,
                     ..Default::default()
                 }),
-                entrypoint: service.command.map(|ep| ep.0),
+                entrypoint: service.entrypoint.map(|ep| ep.0),
                 ..Default::default()
             },
             ..Default::default()
@@ -222,7 +222,7 @@ impl<'de> Deserialize<'de> for Env {
                     map.insert(key, value);
                 }
 
-                Ok(Env(map))
+                Ok(Self(map))
             }
 
             Value::Mapping(mapping) => {
@@ -246,7 +246,7 @@ impl<'de> Deserialize<'de> for Env {
                     map.insert(key.to_string(), value.to_string());
                 }
 
-                Ok(Env(map))
+                Ok(Self(map))
             }
 
             _ => Err(serde::de::Error::custom(
@@ -273,7 +273,7 @@ impl<'de> Deserialize<'de> for Port {
                     .context("Failed to parse port")
                     .map_err(serde::de::Error::custom)?;
 
-                Ok(Port(port as u16))
+                Ok(Self(port as u16))
             }
 
             Value::String(string) => {
@@ -293,13 +293,13 @@ impl<'de> Deserialize<'de> for Port {
                     .context("Failed to parse port")
                     .map_err(serde::de::Error::custom)?;
 
-                Ok(Port(port))
+                Ok(Self(port))
             }
 
             Value::Mapping(mut map) => map
                 .remove("target")
                 .and_then(|target| target.as_u64())
-                .map(|target| Port(target as u16))
+                .map(|target| Self(target as u16))
                 .ok_or_else(|| serde::de::Error::custom("Failed to parse port")),
 
             _ => Err(serde::de::Error::custom("Failed to parse port")),
@@ -342,7 +342,7 @@ impl<'de> Deserialize<'de> for DockerVolume {
 
                 if let Some(volume) = volume {
                     if volume.len() == 2 {
-                        return Ok(DockerVolume(volume[0].clone(), volume[1].clone()));
+                        return Ok(Self(volume[0].clone(), volume[1].clone()));
                     }
                 }
 
@@ -358,9 +358,9 @@ impl<'de> Deserialize<'de> for DockerVolume {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DockerCmd(pub Vec<String>);
+pub struct DockerEntrypoint(pub Vec<String>);
 
-impl<'de> Deserialize<'de> for DockerCmd {
+impl<'de> Deserialize<'de> for DockerEntrypoint {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -380,10 +380,10 @@ impl<'de> Deserialize<'de> for DockerCmd {
                     cmd.push(item_str.to_string());
                 }
 
-                Ok(DockerCmd(cmd))
+                Ok(Self(cmd))
             }
 
-            Value::String(string) => Ok(DockerCmd(get_entrypoint_array(&string))),
+            Value::String(string) => Ok(Self(get_entrypoint_array(&string))),
 
             unx => Err(serde::de::Error::invalid_type(
                 serde::de::Unexpected::Other(&format!("{:?}", unx)),
@@ -416,10 +416,10 @@ impl<'de> Deserialize<'de> for EnvFile {
                     env_files.push(item_str.to_string());
                 }
 
-                Ok(EnvFile(env_files))
+                Ok(Self(env_files))
             }
 
-            Value::String(string) => Ok(EnvFile(vec![string])),
+            Value::String(string) => Ok(Self(vec![string])),
 
             unx => Err(serde::de::Error::invalid_type(
                 serde::de::Unexpected::Other(&format!("{:?}", unx)),
