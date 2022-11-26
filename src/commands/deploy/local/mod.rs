@@ -32,6 +32,9 @@ pub async fn build(state: &State, image: &str, dir: PathBuf) -> Result<()> {
     )
     .await?;
 
+    // allows us to build a lot more stuff
+    std::env::set_var("DOCKER_BUILDKIT", "1");
+
     // if the dir has a dockerfile act like a normal docker build
     if fs::metadata(dir.join("Dockerfile")).await.is_ok() {
         let command = Command::new("docker")

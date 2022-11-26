@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 // types for the API response
 #[derive(Debug, Deserialize)]
@@ -26,4 +26,10 @@ pub struct Project {
 pub struct ThisProjectResponse {
     pub leap_token: String,
     pub project: Project,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CreateParams {
+    pub name: String,
+    pub namespace: String,
 }

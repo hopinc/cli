@@ -55,6 +55,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     let gateway_config = update_gateway_config(
         &options.config,
         options.config != GatewayOptions::default(),
+        true,
         &GatewayConfig::from_gateway(&gateway),
     )?;
 

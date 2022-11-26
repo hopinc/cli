@@ -1,5 +1,5 @@
-mod builder;
-mod local;
+pub mod builder;
+pub mod local;
 pub mod util;
 
 use std::env::current_dir;
@@ -128,10 +128,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .unwrap()
                 .to_str()
                 .unwrap()
-                .to_string()
-                // make the filename semi safe
-                .replace(['_', ' ', '.'], "-")
-                .to_lowercase();
+                .to_string();
 
             let (mut deployment_config, container_options) = if options.yes {
                 log::warn!("Using default config, skipping arguments");
@@ -192,6 +189,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 let gateway_config = update_gateway_config(
                     &GatewayOptions::default(),
                     false,
+                    false,
                     &GatewayConfig::default(),
                 )?;
 
@@ -207,13 +205,9 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 }
             }
 
-            HopFile::new(
-                dir.clone().join("hop.yml"),
-                project.id.clone(),
-                deployment.id.clone(),
-            )
-            .save()
-            .await?;
+            HopFile::new(dir.clone().join("hop.yml"), &project.id, &deployment.id)
+                .save()
+                .await?;
 
             (project, deployment, container_options, false)
         }

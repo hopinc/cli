@@ -204,8 +204,12 @@ pub async fn update_deployment_config(
     fallback_name: &Option<String>,
     is_update: bool,
 ) -> Result<(CreateDeployment, ContainerOptions)> {
-    let mut config = CreateDeployment::from_deployment(deployment);
+    let mut config = CreateDeployment::from(deployment.clone());
     let mut container_options = ContainerOptions::from_deployment(deployment);
+    // make the filename semi safe
+    let fallback_name = fallback_name
+        .clone()
+        .map(|s| s.replace(['_', ' ', '.'], "-").to_lowercase());
 
     if is_visual {
         update_config_visual(
@@ -213,7 +217,7 @@ pub async fn update_deployment_config(
             options,
             &mut config,
             &mut container_options,
-            fallback_name,
+            &fallback_name,
             is_update,
         )
         .await
@@ -336,7 +340,8 @@ async fn update_config_args(
 
     deployment_config.container_strategy = ScalingStrategy::Manual;
 
-    container_options.containers = Some(
+    if deployment_config.type_ != Some(ContainerType::Stateful) {
+        container_options.containers = Some(
         options
             .config
             .containers
@@ -351,6 +356,7 @@ async fn update_config_args(
                 "The argument '--containers <CONTAINERS>' requires a value but none was supplied",
             ),
     );
+    }
 
     if let Some(env) = options.config.env {
         deployment_config.env.extend(
@@ -423,7 +429,7 @@ async fn update_config_visual(
 
     deployment_config.image.name =
         // if name is "" it's using hopdeploy ie. image is created on the fly
-        if options.image.is_some() && options.image.clone().unwrap() == "" {
+        if options.image.is_some() && options.image.clone().unwrap() == ""  {
             options.image.unwrap()
         } else {
             dialoguer::Input::<String>::new()
@@ -484,11 +490,15 @@ async fn update_config_visual(
     // default deployments to be persistent unless this is an update
     deployment_config.type_ = Some(deployment_config.type_.take().unwrap_or_default());
 
+    log::debug!("Deployment type: {:?}", deployment_config.volume);
+
     if !is_update
-        && dialoguer::Confirm::new()
-            .with_prompt("Would you like to attach a volume?")
-            .default(false)
-            .interact()?
+        // volume only will be some and is_update to false in the `from-compose` command
+        && (deployment_config.volume.is_some()
+            || dialoguer::Confirm::new()
+                .with_prompt("Would you like to attach a volume?")
+                .default(false)
+                .interact()?)
     {
         // remove the previous line for the question
         Term::stderr().clear_last_lines(1)?;
@@ -516,21 +526,25 @@ async fn update_config_visual(
 
     deployment_config.container_strategy = ScalingStrategy::Manual;
 
-    container_options.containers = Some(
-        dialoguer::Input::<u64>::new()
-            .with_prompt("Container amount to start")
-            .default(container_options.containers.unwrap_or(1))
-            .validate_with(|containers: &u64| -> Result<(), &str> {
-                if *containers > 10 {
-                    Err("Container amount must be less than or equal to 10")
-                } else {
-                    Ok(())
-                }
-            })
-            .interact_text()?,
-    );
+    if deployment_config.type_ != Some(ContainerType::Stateful) {
+        container_options.containers = Some(
+            dialoguer::Input::<u64>::new()
+                .with_prompt("Container amount to start")
+                .default(container_options.containers.unwrap_or(1))
+                .validate_with(|containers: &u64| -> Result<(), &str> {
+                    if deployment_config.type_ == Some(ContainerType::Stateful) && *containers > 1 {
+                        Err("Stateful deployments can only have 1 container")
+                    } else if *containers > 10 {
+                        Err("Container amount must be less than or equal to 10")
+                    } else {
+                        Ok(())
+                    }
+                })
+                .interact_text()?,
+        );
+    }
 
-    deployment_config.env = get_multiple_envs()?;
+    deployment_config.env.extend(get_multiple_envs()?);
 
     if dialoguer::Confirm::new()
         .with_prompt("Do you want to change advanced settings?")
@@ -661,7 +675,7 @@ fn validate_cpu_count(cpu: &f64) -> Result<(), &'static str> {
     }
 }
 
-fn get_entrypoint_array(entrypoint: &str) -> Vec<String> {
+pub fn get_entrypoint_array(entrypoint: &str) -> Vec<String> {
     let regex = Regex::new(r#"".*"|[^\s]+"#).unwrap();
 
     regex

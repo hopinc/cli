@@ -31,12 +31,12 @@ pub struct HopFileConfig {
 }
 
 impl HopFile {
-    pub fn new(path: PathBuf, project: String, deployment: String) -> HopFile {
+    pub fn new(path: PathBuf, project: &str, deployment: &str) -> HopFile {
         HopFile {
             version: 1,
             config: HopFileConfig {
-                project_id: project,
-                deployment_id: deployment,
+                project_id: project.to_string(),
+                deployment_id: deployment.to_string(),
             },
             path,
         }

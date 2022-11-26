@@ -64,7 +64,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         }
     };
 
-    HopFile::new(dir.join("hop.yml"), project.id, deployment.id.clone())
+    HopFile::new(dir.join("hop.yml"), &project.id, &deployment.id)
         .save()
         .await?;
 

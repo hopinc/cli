@@ -6,7 +6,6 @@ use anyhow::{anyhow, Result};
 pub const BYTE_UNITS: [&str; 4] = ["GB", "MB", "KB", "B"];
 
 #[derive(Debug)]
-#[repr(u64)]
 pub enum UnitMultiplier {
     B = 1,
     KB = 1024,
@@ -18,13 +17,16 @@ impl FromStr for UnitMultiplier {
     type Err = anyhow::Error;
 
     fn from_str(u: &str) -> Result<Self, Self::Err> {
-        match u.to_uppercase().as_str() {
+        let mut u = u.to_uppercase();
+
+        if !u.ends_with('B') {
+            u = format!("{u}B");
+        }
+
+        match u.as_str() {
             "B" => Ok(UnitMultiplier::B),
-            "K" => Ok(UnitMultiplier::KB),
             "KB" => Ok(UnitMultiplier::KB),
-            "M" => Ok(UnitMultiplier::MB),
             "MB" => Ok(UnitMultiplier::MB),
-            "G" => Ok(UnitMultiplier::GB),
             "GB" => Ok(UnitMultiplier::GB),
 
             _ => Err(anyhow!("Invalid unit: {u}")),
@@ -33,7 +35,11 @@ impl FromStr for UnitMultiplier {
 }
 
 pub fn parse_size(size: &str) -> Result<u64> {
-    let size = size.trim().to_uppercase();
+    let mut size = size.trim().to_uppercase();
+
+    if !size.ends_with('B') {
+        size = format!("{size}B");
+    }
 
     let Some(unit) = BYTE_UNITS.iter().find(|unit| size.ends_with(&unit.to_string())) else {
         return Err(anyhow!("Invalid size unit: {size}"));

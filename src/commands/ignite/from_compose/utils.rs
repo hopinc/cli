@@ -1,18 +1,35 @@
-use anyhow::{bail, Ok, Result};
+use super::types::Service;
 
-pub fn parse_restart_policy(policy: &Option<String>) -> Result<&'static str> {
-    let result = match policy {
-        Some(policy) => match policy.as_str() {
-            "always" => "always",
-            "unless-stopped" => "always",
-            "on-failure" => "on-failure",
-            _ => {
-                bail!("Unsupported restart policy: {}", policy);
-            }
-        },
+// order services by their dependencies
+// unsure of the accuracy of this algorithm but its fine for now
+pub fn order_by_dependencies(services: &mut [(&String, &Service)]) {
+    services.sort_by(|(a_name, a_service), (b_name, b_service)| {
+        let a_depends_on = a_service.depends_on.clone();
+        let b_depends_on = b_service.depends_on.clone();
 
-        None => "never",
-    };
+        if a_depends_on.is_none() && b_depends_on.is_none() {
+            return std::cmp::Ordering::Equal;
+        }
 
-    Ok(result)
+        if a_depends_on.is_none() {
+            return std::cmp::Ordering::Less;
+        }
+
+        if b_depends_on.is_none() {
+            return std::cmp::Ordering::Greater;
+        }
+
+        let a_depends_on = a_depends_on.unwrap();
+        let b_depends_on = b_depends_on.unwrap();
+
+        if a_depends_on.contains(b_name) {
+            return std::cmp::Ordering::Less;
+        }
+
+        if b_depends_on.contains(a_name) {
+            return std::cmp::Ordering::Greater;
+        }
+
+        std::cmp::Ordering::Equal
+    });
 }

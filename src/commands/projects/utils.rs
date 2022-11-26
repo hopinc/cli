@@ -1,8 +1,11 @@
 use std::io::Write;
 
+use anyhow::Result;
 use tabwriter::TabWriter;
 
-use super::types::Project;
+use crate::state::http::HttpClient;
+
+use super::types::{CreateParams, Project, SingleProjectResponse};
 
 pub fn format_projects(projects: &Vec<Project>, title: bool) -> Vec<String> {
     let mut tw = TabWriter::new(vec![]);
@@ -33,4 +36,25 @@ pub fn format_projects(projects: &Vec<Project>, title: bool) -> Vec<String> {
 
 pub fn format_project(project: &Project) -> String {
     format_projects(&vec![project.clone()], false)[0].clone()
+}
+
+pub async fn create_project(http: &HttpClient, name: &str, namespace: &str) -> Result<Project> {
+    let json = http
+        .request::<SingleProjectResponse>(
+            "POST",
+            "/projects",
+            Some((
+                serde_json::to_vec(&CreateParams {
+                    name: name.to_string(),
+                    namespace: namespace.to_string(),
+                })
+                .unwrap()
+                .into(),
+                "application/json",
+            )),
+        )
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("Error while parsing response"))?;
+
+    Ok(json.project)
 }
