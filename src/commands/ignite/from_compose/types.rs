@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fmt::Display;
+use std::path::Path;
 
 use anyhow::{bail, Context, Result};
 use serde::Deserialize;
@@ -7,7 +8,7 @@ use serde_yaml::Value;
 
 use crate::commands::containers::types::ContainerType;
 use crate::commands::ignite::types::{Config, Deployment, Image, RestartPolicy, Volume};
-use crate::commands::ignite::utils::get_entrypoint_array;
+use crate::commands::ignite::utils::{env_file_to_map, get_entrypoint_array};
 use crate::utils::parse_key_val;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -24,7 +25,7 @@ pub struct DockerCompose {
 }
 
 impl DockerCompose {
-    pub fn validate(&self) -> Result<()> {
+    pub async fn validate_and_update(&mut self, path: &Path) -> Result<()> {
         if self.services.is_none() {
             bail!("No services found in docker-compose.yml");
         }
@@ -36,9 +37,12 @@ impl DockerCompose {
         let cloned_volumes = self.volumes.clone().unwrap_or_default();
         let mut used_volumes = vec![];
 
-        for (name, service) in self.services.clone().unwrap() {
-            if let Some(vols) = service.volumes {
-                let vol_name = vols.0;
+        let services = self.services.clone().unwrap();
+        let mut parsed_services = HashMap::new();
+
+        for (name, mut service) in services {
+            if let Some(vols) = service.volumes.as_ref() {
+                let vol_name = vols.0.clone();
 
                 if used_volumes.contains(&vol_name) {
                     bail!("Volume `{name}` is already used by another service");
@@ -52,7 +56,32 @@ impl DockerCompose {
 
                 used_volumes.push(vol_name);
             }
+
+            if let Some(files) = service.env_file.as_ref() {
+                for env_file in files.0.iter() {
+                    let env_file_path = path.join(env_file);
+
+                    if !env_file_path.exists() {
+                        bail!(
+                            "Env file `{}` does not exist but is referenced in service `{}`",
+                            env_file_path.display(),
+                            name
+                        );
+                    }
+
+                    let env_file = env_file_to_map(env_file_path.clone()).await;
+
+                    let mut env = service.environment.unwrap_or_default();
+                    env.0.extend(env_file);
+
+                    service.environment = Some(env);
+                }
+            }
+
+            parsed_services.insert(name, service);
         }
+
+        self.services = Some(parsed_services);
 
         Ok(())
     }
@@ -76,13 +105,13 @@ pub struct Secret {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(untagged)]
+#[serde(untagged, deny_unknown_fields)]
 pub enum ServiceBuildUnion {
     String(String),
     Map {
         context: String,
         // TODO: support custom dockerfile and args
-        // dockerfile: Option<String>,
+        dockerfile: Option<String>,
         // args: Option<HashMap<String, Value>>,
     },
 }
@@ -127,7 +156,7 @@ pub struct Service {
     pub expose: Option<Vec<Port>>,
     pub ports: Option<Vec<Port>>,
     pub environment: Option<Env>,
-    // pub env_file: Option<Vec<String>>,
+    pub env_file: Option<EnvFile>,
     pub restart: Option<Restart>,
     pub image: Option<String>,
     pub build: Option<ServiceBuildUnion>,
@@ -355,6 +384,42 @@ impl<'de> Deserialize<'de> for DockerCmd {
             }
 
             Value::String(string) => Ok(DockerCmd(get_entrypoint_array(&string))),
+
+            unx => Err(serde::de::Error::invalid_type(
+                serde::de::Unexpected::Other(&format!("{:?}", unx)),
+                &"Expected a sequence",
+            )),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EnvFile(pub Vec<String>);
+
+impl<'de> Deserialize<'de> for EnvFile {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = Value::deserialize(deserializer)?;
+
+        match value {
+            Value::Sequence(seq) => {
+                let mut env_files = Vec::new();
+
+                for item in seq {
+                    let item_str = item
+                        .as_str()
+                        .context("Failed to parse env file")
+                        .map_err(serde::de::Error::custom)?;
+
+                    env_files.push(item_str.to_string());
+                }
+
+                Ok(EnvFile(env_files))
+            }
+
+            Value::String(string) => Ok(EnvFile(vec![string])),
 
             unx => Err(serde::de::Error::invalid_type(
                 serde::de::Unexpected::Other(&format!("{:?}", unx)),

@@ -11,7 +11,7 @@ pub fn order_by_dependencies(services: &mut [(&String, &Service)]) {
             return std::cmp::Ordering::Equal;
         }
 
-        if a_depends_on.is_none() {
+        if a_depends_on.is_none() && b_depends_on.is_some() {
             return std::cmp::Ordering::Less;
         }
 

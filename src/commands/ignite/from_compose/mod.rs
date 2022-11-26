@@ -25,10 +25,7 @@ use crate::store::hopfile::HopFile;
 #[derive(Debug, Parser)]
 #[clap(about = "Creates new Ignite deployments from a Docker compose file")]
 pub struct Options {
-    #[clap(
-        name = "file",
-        help = "The file to read from. Defaults to docker-compose.yml"
-    )]
+    #[clap(help = "The file to read from. Defaults to docker-compose.yml")]
     pub file: Option<PathBuf>,
 }
 
@@ -44,11 +41,12 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     let parent_dir = file
         .parent()
-        .with_context(|| format!("Could not get parent directory of {}", file.display()))?;
+        .with_context(|| format!("Could not get parent directory of {}", file.display()))?
+        .to_path_buf();
 
     let compose = fs::read(file.clone()).await?;
 
-    let compose: DockerCompose = match serde_yaml::from_slice(&compose) {
+    let mut compose: DockerCompose = match serde_yaml::from_slice(&compose) {
         Ok(compose) => compose,
         Err(error) => {
             log::debug!("Failed to parse compose file: {}", error);
@@ -89,9 +87,11 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         }
     };
 
-    compose.validate()?;
+    compose.validate_and_update(&parent_dir).await?;
 
     let project = state.ctx.clone().current_project_error();
+
+    // let deployments = get_all_deployments(&state.http, &project.id).await?;
 
     let services = compose.services.unwrap_or_default();
     // let volumes = compose.volumes.unwrap_or_default();
@@ -153,6 +153,8 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             let mut gateways = vec![];
 
             for port in ports {
+                println!();
+
                 log::info!("Found port `{port}` in the compose file for `{name}`");
 
                 let config = GatewayConfig {
@@ -197,8 +199,10 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     });
 
     let build_localy = if has_unbuilt {
+        log::info!("Some of the services in the compose file require building. They can be built locally or on our build servers");
+
         let answer = dialoguer::Confirm::new()
-            .with_prompt("Some of the services in the compose file require building. Would you like to build them locally?")
+            .with_prompt("Would you like to build them locally?")
             .default(true)
             .interact()?;
 
@@ -262,7 +266,10 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     }
 
     log::info!("Finished creating deployments from {}", file.display());
-    log::info!("You can view the deployments by running `hop ignite ls --project {}`", project.namespace);
+    log::info!(
+        "You can view the deployments by running `hop ignite ls --project {}`",
+        project.namespace
+    );
 
     Ok(())
 }

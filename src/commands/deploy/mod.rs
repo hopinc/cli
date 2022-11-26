@@ -1,6 +1,5 @@
 pub mod builder;
 pub mod local;
-pub mod util;
 
 use std::env::current_dir;
 use std::path::PathBuf;
@@ -8,7 +7,6 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::Parser;
 
-use self::util::env_file_to_map;
 use crate::commands::auth::docker::HOP_REGISTRY_URL;
 use crate::commands::containers::types::{ContainerOptions, ContainerType};
 use crate::commands::containers::utils::create_containers;
@@ -21,7 +19,9 @@ use crate::commands::ignite::create::{
 use crate::commands::ignite::types::{
     CreateDeployment, Deployment, ScalingStrategy, SingleDeployment,
 };
-use crate::commands::ignite::utils::{create_deployment, rollout, update_deployment_config};
+use crate::commands::ignite::utils::{
+    create_deployment, env_file_to_map, rollout, update_deployment_config,
+};
 use crate::commands::projects::utils::format_project;
 use crate::state::State;
 use crate::store::hopfile::HopFile;

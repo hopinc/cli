@@ -1,11 +1,13 @@
 use std::collections::hash_map::HashMap;
 use std::io::Write;
+use std::path::PathBuf;
 
 use anyhow::{anyhow, bail, ensure, Context, Result};
 use console::Term;
 use regex::Regex;
 use serde_json::Value;
 use tabwriter::TabWriter;
+use tokio::fs;
 
 use super::types::{
     CreateDeployment, Deployment, MultipleDeployments, Premade, Premades, ScaleRequest,
@@ -17,8 +19,8 @@ use crate::commands::ignite::types::{
     RamSizes, Resources, RestartPolicy, ScalingStrategy, VolumeFs,
 };
 use crate::state::http::HttpClient;
-use crate::utils::ask_question_iter;
 use crate::utils::size::parse_size;
+use crate::utils::{ask_question_iter, parse_key_val};
 
 pub async fn get_all_deployments(http: &HttpClient, project_id: &str) -> Result<Vec<Deployment>> {
     let response = http
@@ -706,4 +708,39 @@ mod test {
         );
         assert_eq!(entrypoint_array.next(), None);
     }
+}
+
+pub async fn env_file_to_map(path: PathBuf) -> HashMap<String, String> {
+    let mut env = HashMap::new();
+
+    assert!(
+        path.exists(),
+        "Could not find .env file at {}",
+        path.display()
+    );
+
+    let file = fs::read_to_string(path).await.unwrap();
+    let lines = file.lines();
+
+    for line in lines {
+        let line = line.trim();
+
+        // ignore comments
+        if line.starts_with('#') {
+            continue;
+        }
+
+        if line.is_empty() {
+            continue;
+        }
+
+        match parse_key_val(line) {
+            Ok((key, value)) => {
+                env.insert(key, value);
+            }
+            Err(e) => log::warn!("Failed to parse env file line: {}", e),
+        }
+    }
+
+    env
 }
