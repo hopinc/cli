@@ -1,7 +1,7 @@
 pub mod builds;
 pub mod create;
 mod delete;
-mod from_compose;
+pub mod from_compose;
 mod get_env;
 mod health;
 mod list;

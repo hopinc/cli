@@ -4,7 +4,7 @@ pub mod local;
 use std::env::current_dir;
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{ensure, Context, Result};
 use clap::Parser;
 
 use crate::commands::auth::docker::HOP_REGISTRY_URL;
@@ -66,10 +66,10 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         dir = dir
             .join(path)
             .canonicalize()
-            .expect("Could not get canonical path");
+            .context("Could not get canonical path")?;
     }
 
-    assert!(dir.is_dir(), "{} is not a directory", dir.display());
+    ensure!(dir.is_dir(), "{} is not a directory", dir.display());
 
     log::info!("Attempting to deploy {}", dir.display());
 
