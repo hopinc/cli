@@ -18,9 +18,12 @@ use crate::commands::gateways::util::{create_gateway, update_gateway_config};
 use crate::commands::ignite::create::Options as CreateOptions;
 use crate::commands::ignite::from_compose::types::ServiceBuildUnion;
 use crate::commands::ignite::types::Deployment;
-use crate::commands::ignite::utils::{create_deployment, scale, update_deployment_config};
+use crate::commands::ignite::utils::{
+    create_deployment, scale, update_deployment_config, WEB_IGNITE_URL,
+};
 use crate::state::State;
 use crate::store::hopfile::HopFile;
+use crate::utils::urlify;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Creates new Ignite deployments from a Docker compose file")]
@@ -206,12 +209,6 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             .default(true)
             .interact()?;
 
-        if answer {
-            log::info!("Building images locally");
-        } else {
-            log::info!("Images will be built by the Hop Builder");
-        }
-
         println!();
 
         answer
@@ -263,11 +260,14 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             create_gateway(&state.http, &dep.id, &gateway).await?;
             log::info!("Created gateway for `{}`", dep.name);
         }
+
+        println!();
     }
 
     log::info!("Finished creating deployments from {}", file.display());
     log::info!(
-        "You can view the deployments by running `hop ignite ls --project {}`",
+        "You can view the deployments by running `hop ignite ls --project {}` or on {}",
+        urlify(&format!("{}?project={}", WEB_IGNITE_URL, project.namespace)),
         project.namespace
     );
 

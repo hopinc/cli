@@ -13,14 +13,12 @@ use crate::commands::containers::utils::create_containers;
 use crate::commands::gateways::create::GatewayOptions;
 use crate::commands::gateways::types::{GatewayConfig, GatewayType};
 use crate::commands::gateways::util::{create_gateway, update_gateway_config};
-use crate::commands::ignite::create::{
-    DeploymentConfig, Options as CreateOptions, WEB_DEPLOYMENTS_URL,
-};
+use crate::commands::ignite::create::{DeploymentConfig, Options as CreateOptions};
 use crate::commands::ignite::types::{
     CreateDeployment, Deployment, ScalingStrategy, SingleDeployment,
 };
 use crate::commands::ignite::utils::{
-    create_deployment, env_file_to_map, rollout, update_deployment_config,
+    create_deployment, env_file_to_map, rollout, update_deployment_config, WEB_IGNITE_URL,
 };
 use crate::commands::projects::utils::format_project;
 use crate::state::State;
@@ -234,8 +232,8 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     log::info!(
         "Deployed successfuly, you can find it at: {}",
         urlify(&format!(
-            "{}{}?project={}",
-            WEB_DEPLOYMENTS_URL, deployment.id, project.namespace
+            "{}/deployment/{}?project={}",
+            WEB_IGNITE_URL, deployment.id, project.namespace
         ))
     );
 

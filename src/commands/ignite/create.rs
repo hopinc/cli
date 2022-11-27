@@ -4,11 +4,9 @@ use clap::Parser;
 use super::types::{Env, RestartPolicy, ScalingStrategy, VolumeFs};
 use crate::commands::containers::utils::create_containers;
 use crate::commands::ignite::types::Deployment;
-use crate::commands::ignite::utils::{create_deployment, update_deployment_config};
+use crate::commands::ignite::utils::{create_deployment, update_deployment_config, WEB_IGNITE_URL};
 use crate::state::State;
 use crate::utils::urlify;
-
-pub const WEB_DEPLOYMENTS_URL: &str = "https://console.hop.io/ignite/deployment/";
 
 #[derive(Debug, Parser, Default, PartialEq, Clone)]
 pub struct DeploymentConfig {
@@ -126,7 +124,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         "Deployed successfuly, you can find it at: {}",
         urlify(&format!(
             "{}{}?project={}",
-            WEB_DEPLOYMENTS_URL, deployment.id, project.namespace
+            WEB_IGNITE_URL, deployment.id, project.namespace
         ))
     );
 

@@ -41,7 +41,7 @@ impl DockerCompose {
         let mut parsed_services = HashMap::new();
 
         for (name, mut service) in services {
-            if service.image.is_none() || service.build.is_none() {
+            if service.image.is_none() && service.build.is_none() {
                 bail!("Service {name} must have either an image or a build context");
             }
 

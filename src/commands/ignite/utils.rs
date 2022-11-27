@@ -22,6 +22,8 @@ use crate::state::http::HttpClient;
 use crate::utils::size::parse_size;
 use crate::utils::{ask_question_iter, parse_key_val};
 
+pub const WEB_IGNITE_URL: &str = "https://console.hop.io/ignite";
+
 pub async fn get_all_deployments(http: &HttpClient, project_id: &str) -> Result<Vec<Deployment>> {
     let response = http
         .request::<MultipleDeployments>(
