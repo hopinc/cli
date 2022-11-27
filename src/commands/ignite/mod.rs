@@ -1,6 +1,7 @@
 pub mod builds;
 pub mod create;
 mod delete;
+pub mod from_compose;
 mod get_env;
 mod health;
 mod list;
@@ -30,6 +31,8 @@ pub enum Commands {
     Scale(scale::Options),
     #[clap(name = "get-env")]
     GetEnv(get_env::Options),
+    #[clap(name = "from-compose")]
+    FromCompose(from_compose::Options),
     #[clap(alias = "check")]
     Health(health::Options),
     Builds(builds::Options),
@@ -61,5 +64,6 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Commands::Gateways(options) => super::gateways::handle(options, state).await,
         Commands::Promote(options) => promote::handle(options, state).await,
         Commands::Builds(options) => builds::handle(options, state).await,
+        Commands::FromCompose(options) => from_compose::handle(options, state).await,
     }
 }

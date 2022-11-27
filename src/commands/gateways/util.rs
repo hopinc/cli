@@ -86,14 +86,15 @@ pub async fn delete_gateway(http: &HttpClient, gateway_id: &str) -> Result<()> {
 pub fn update_gateway_config(
     options: &GatewayOptions,
     is_not_guided: bool,
+    is_update: bool,
     gateway_config: &GatewayConfig,
 ) -> Result<GatewayConfig> {
     let mut gateway_config = gateway_config.clone();
 
     if is_not_guided {
-        update_config_from_args(options, &mut gateway_config)?;
+        update_config_from_args(options, &mut gateway_config, is_update)?;
     } else {
-        update_config_from_guided(&mut gateway_config)?;
+        update_config_from_guided(&mut gateway_config, is_update)?;
     }
 
     Ok(gateway_config)
@@ -102,9 +103,8 @@ pub fn update_gateway_config(
 fn update_config_from_args(
     options: &GatewayOptions,
     gateway_config: &mut GatewayConfig,
+    is_update: bool,
 ) -> Result<()> {
-    let is_update = gateway_config != &GatewayConfig::default();
-
     let gateway_type = if !is_update {
         let value = options.type_.clone().ok_or_else(|| {
             anyhow!("The argument '--type <TYPE>' requires a value but none was supplied")
@@ -174,17 +174,13 @@ fn update_config_from_args(
     Ok(())
 }
 
-fn update_config_from_guided(gateway_config: &mut GatewayConfig) -> Result<()> {
-    let is_update = gateway_config != &GatewayConfig::default();
-
-    log::debug!("is_update: {is_update}");
-
+fn update_config_from_guided(gateway_config: &mut GatewayConfig, is_update: bool) -> Result<()> {
     let name = gateway_config.name.clone().unwrap_or_default();
 
     gateway_config.name = Some(
         dialoguer::Input::<String>::new()
-            .with_prompt("Gateway name")
-            .show_default(is_update && !name.is_empty())
+            .with_prompt("Gateway name (optional)")
+            .show_default(name.is_empty())
             .default(name)
             .interact()?,
     );
@@ -219,7 +215,7 @@ fn update_config_from_guided(gateway_config: &mut GatewayConfig) -> Result<()> {
             gateway_config.internal_domain = Some(
                 dialoguer::Input::<String>::new()
                     .with_prompt("Internal domain")
-                    .show_default(is_update && !internal_domain.is_empty())
+                    .show_default(!internal_domain.is_empty())
                     .default(internal_domain)
                     .validate_with(|domain: &String| {
                         if domain.is_empty() {
@@ -260,8 +256,8 @@ fn update_config_from_guided(gateway_config: &mut GatewayConfig) -> Result<()> {
             gateway_config.target_port = Some(
                 dialoguer::Input::<u16>::new()
                     .with_prompt("Target port")
-                    .default(gateway_config.target_port.unwrap_or(0))
-                    .show_default(is_update)
+                    .default(gateway_config.target_port.unwrap_or(8080))
+                    .show_default(gateway_config.target_port.is_some())
                     .interact()?,
             );
         }

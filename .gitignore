@@ -1,4 +1,5 @@
 /target
 hop.yml
 .env
+.DS_Store
 docker-compose*

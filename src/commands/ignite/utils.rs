@@ -1,12 +1,13 @@
 use std::collections::hash_map::HashMap;
-use std::error::Error;
 use std::io::Write;
+use std::path::PathBuf;
 
 use anyhow::{anyhow, bail, ensure, Context, Result};
 use console::Term;
 use regex::Regex;
 use serde_json::Value;
 use tabwriter::TabWriter;
+use tokio::fs;
 
 use super::types::{
     CreateDeployment, Deployment, MultipleDeployments, Premade, Premades, ScaleRequest,
@@ -18,8 +19,10 @@ use crate::commands::ignite::types::{
     RamSizes, Resources, RestartPolicy, ScalingStrategy, VolumeFs,
 };
 use crate::state::http::HttpClient;
-use crate::utils::ask_question_iter;
 use crate::utils::size::parse_size;
+use crate::utils::{ask_question_iter, parse_key_val};
+
+pub const WEB_IGNITE_URL: &str = "https://console.hop.io/ignite";
 
 pub async fn get_all_deployments(http: &HttpClient, project_id: &str) -> Result<Vec<Deployment>> {
     let response = http
@@ -205,8 +208,12 @@ pub async fn update_deployment_config(
     fallback_name: &Option<String>,
     is_update: bool,
 ) -> Result<(CreateDeployment, ContainerOptions)> {
-    let mut config = CreateDeployment::from_deployment(deployment);
+    let mut config = CreateDeployment::from(deployment.clone());
     let mut container_options = ContainerOptions::from_deployment(deployment);
+    // make the filename semi safe
+    let fallback_name = fallback_name
+        .clone()
+        .map(|s| s.replace(['_', ' ', '.'], "-").to_lowercase());
 
     if is_visual {
         update_config_visual(
@@ -214,7 +221,7 @@ pub async fn update_deployment_config(
             options,
             &mut config,
             &mut container_options,
-            fallback_name,
+            &fallback_name,
             is_update,
         )
         .await
@@ -337,7 +344,8 @@ async fn update_config_args(
 
     deployment_config.container_strategy = ScalingStrategy::Manual;
 
-    container_options.containers = Some(
+    if deployment_config.type_ != Some(ContainerType::Stateful) {
+        container_options.containers = Some(
         options
             .config
             .containers
@@ -352,6 +360,7 @@ async fn update_config_args(
                 "The argument '--containers <CONTAINERS>' requires a value but none was supplied",
             ),
     );
+    }
 
     if let Some(env) = options.config.env {
         deployment_config.env.extend(
@@ -424,7 +433,7 @@ async fn update_config_visual(
 
     deployment_config.image.name =
         // if name is "" it's using hopdeploy ie. image is created on the fly
-        if options.image.is_some() && options.image.clone().unwrap() == "" {
+        if options.image.is_some() && options.image.clone().unwrap() == ""  {
             options.image.unwrap()
         } else {
             dialoguer::Input::<String>::new()
@@ -485,11 +494,15 @@ async fn update_config_visual(
     // default deployments to be persistent unless this is an update
     deployment_config.type_ = Some(deployment_config.type_.take().unwrap_or_default());
 
+    log::debug!("Deployment type: {:?}", deployment_config.volume);
+
     if !is_update
-        && dialoguer::Confirm::new()
-            .with_prompt("Would you like to attach a volume?")
-            .default(false)
-            .interact()?
+        // volume only will be some and is_update to false in the `from-compose` command
+        && (deployment_config.volume.is_some()
+            || dialoguer::Confirm::new()
+                .with_prompt("Would you like to attach a volume?")
+                .default(false)
+                .interact()?)
     {
         // remove the previous line for the question
         Term::stderr().clear_last_lines(1)?;
@@ -517,21 +530,25 @@ async fn update_config_visual(
 
     deployment_config.container_strategy = ScalingStrategy::Manual;
 
-    container_options.containers = Some(
-        dialoguer::Input::<u64>::new()
-            .with_prompt("Container amount to start")
-            .default(container_options.containers.unwrap_or(1))
-            .validate_with(|containers: &u64| -> Result<(), &str> {
-                if *containers > 10 {
-                    Err("Container amount must be less than or equal to 10")
-                } else {
-                    Ok(())
-                }
-            })
-            .interact_text()?,
-    );
+    if deployment_config.type_ != Some(ContainerType::Stateful) {
+        container_options.containers = Some(
+            dialoguer::Input::<u64>::new()
+                .with_prompt("Container amount to start")
+                .default(container_options.containers.unwrap_or(1))
+                .validate_with(|containers: &u64| -> Result<(), &str> {
+                    if deployment_config.type_ == Some(ContainerType::Stateful) && *containers > 1 {
+                        Err("Stateful deployments can only have 1 container")
+                    } else if *containers > 10 {
+                        Err("Container amount must be less than or equal to 10")
+                    } else {
+                        Ok(())
+                    }
+                })
+                .interact_text()?,
+        );
+    }
 
-    deployment_config.env = get_multiple_envs()?;
+    deployment_config.env.extend(get_multiple_envs()?);
 
     if dialoguer::Confirm::new()
         .with_prompt("Do you want to change advanced settings?")
@@ -590,19 +607,6 @@ async fn update_config_visual(
     }
 
     Ok((deployment_config.clone(), container_options.clone()))
-}
-
-pub fn parse_key_val<T, U>(s: &str) -> Result<(T, U), Box<dyn Error>>
-where
-    T: std::str::FromStr,
-    T::Err: Error + 'static,
-    U: std::str::FromStr,
-    U::Err: Error + 'static,
-{
-    let pos = s
-        .find('=')
-        .ok_or_else(|| format!("invalid KEY=value: no `=` found in `{}`", s))?;
-    Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
 }
 
 fn get_multiple_envs() -> Result<HashMap<String, String>> {
@@ -679,7 +683,7 @@ fn validate_cpu_count(cpu: &f64) -> Result<(), &'static str> {
     }
 }
 
-fn get_entrypoint_array(entrypoint: &str) -> Vec<String> {
+pub fn get_entrypoint_array(entrypoint: &str) -> Vec<String> {
     let regex = Regex::new(r#"".*"|[^\s]+"#).unwrap();
 
     regex
@@ -706,4 +710,39 @@ mod test {
         );
         assert_eq!(entrypoint_array.next(), None);
     }
+}
+
+pub async fn env_file_to_map(path: PathBuf) -> HashMap<String, String> {
+    let mut env = HashMap::new();
+
+    assert!(
+        path.exists(),
+        "Could not find .env file at {}",
+        path.display()
+    );
+
+    let file = fs::read_to_string(path).await.unwrap();
+    let lines = file.lines();
+
+    for line in lines {
+        let line = line.trim();
+
+        // ignore comments
+        if line.starts_with('#') {
+            continue;
+        }
+
+        if line.is_empty() {
+            continue;
+        }
+
+        match parse_key_val(line) {
+            Ok((key, value)) => {
+                env.insert(key, value);
+            }
+            Err(e) => log::warn!("Failed to parse env file line: {}", e),
+        }
+    }
+
+    env
 }

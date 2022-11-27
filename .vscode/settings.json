@@ -1,0 +1,4 @@
+{
+	"rust-analyzer.checkOnSave.command": "clippy",
+	"editor.defaultFormatter": "rust-lang.rust-analyzer"
+}

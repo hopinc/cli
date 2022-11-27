@@ -6,8 +6,7 @@ use std::vec;
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 
-use super::utils::parse_key_val;
-use crate::commands::containers::types::ContainerType;
+use crate::{commands::containers::types::ContainerType, utils::parse_key_val};
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct Vgpu {
@@ -211,18 +210,18 @@ pub struct CreateDeployment {
     pub entrypoint: Option<Vec<String>>,
 }
 
-impl CreateDeployment {
-    pub fn from_deployment(deployment: &Deployment) -> Self {
+impl From<Deployment> for CreateDeployment {
+    fn from(deployment: Deployment) -> Self {
         Self {
-            restart_policy: deployment.config.restart_policy.clone(),
-            container_strategy: deployment.config.container_strategy.clone(),
-            env: deployment.config.env.clone(),
-            image: deployment.config.image.clone(),
-            name: Some(deployment.name.clone()),
-            resources: deployment.config.resources.clone(),
-            type_: Some(deployment.config.type_.clone()),
-            volume: deployment.config.volume.clone(),
-            entrypoint: deployment.config.entrypoint.clone(),
+            restart_policy: deployment.config.restart_policy,
+            container_strategy: deployment.config.container_strategy,
+            env: deployment.config.env,
+            image: deployment.config.image,
+            name: Some(deployment.name),
+            resources: deployment.config.resources,
+            type_: Some(deployment.config.type_),
+            volume: deployment.config.volume,
+            entrypoint: deployment.config.entrypoint,
         }
     }
 }

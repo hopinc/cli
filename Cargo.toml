@@ -15,6 +15,11 @@ OriginalFilename = "hop.exe"
 LegalCopyright = "© 2022 Hop Inc."
 FileDescription = "Interact with Hop in your terminal"
 
+[profile.release]
+strip = true
+lto = true
+panic = "abort"
+
 [[bin]]
 name = "hop"
 path = "./src/main.rs"

@@ -1,27 +1,25 @@
-mod builder;
-mod local;
-pub mod util;
+pub mod builder;
+pub mod local;
 
 use std::env::current_dir;
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{ensure, Context, Result};
 use clap::Parser;
 
-use self::util::env_file_to_map;
 use crate::commands::auth::docker::HOP_REGISTRY_URL;
 use crate::commands::containers::types::{ContainerOptions, ContainerType};
 use crate::commands::containers::utils::create_containers;
 use crate::commands::gateways::create::GatewayOptions;
 use crate::commands::gateways::types::{GatewayConfig, GatewayType};
 use crate::commands::gateways::util::{create_gateway, update_gateway_config};
-use crate::commands::ignite::create::{
-    DeploymentConfig, Options as CreateOptions, WEB_DEPLOYMENTS_URL,
-};
+use crate::commands::ignite::create::{DeploymentConfig, Options as CreateOptions};
 use crate::commands::ignite::types::{
     CreateDeployment, Deployment, ScalingStrategy, SingleDeployment,
 };
-use crate::commands::ignite::utils::{create_deployment, rollout, update_deployment_config};
+use crate::commands::ignite::utils::{
+    create_deployment, env_file_to_map, rollout, update_deployment_config, WEB_IGNITE_URL,
+};
 use crate::commands::projects::utils::format_project;
 use crate::state::State;
 use crate::store::hopfile::HopFile;
@@ -66,10 +64,10 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         dir = dir
             .join(path)
             .canonicalize()
-            .expect("Could not get canonical path");
+            .context("Could not get canonical path")?;
     }
 
-    assert!(dir.is_dir(), "{} is not a directory", dir.display());
+    ensure!(dir.is_dir(), "{} is not a directory", dir.display());
 
     log::info!("Attempting to deploy {}", dir.display());
 
@@ -128,10 +126,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .unwrap()
                 .to_str()
                 .unwrap()
-                .to_string()
-                // make the filename semi safe
-                .replace(['_', ' ', '.'], "-")
-                .to_lowercase();
+                .to_string();
 
             let (mut deployment_config, container_options) = if options.yes {
                 log::warn!("Using default config, skipping arguments");
@@ -192,6 +187,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 let gateway_config = update_gateway_config(
                     &GatewayOptions::default(),
                     false,
+                    false,
                     &GatewayConfig::default(),
                 )?;
 
@@ -207,13 +203,9 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 }
             }
 
-            HopFile::new(
-                dir.clone().join("hop.yml"),
-                project.id.clone(),
-                deployment.id.clone(),
-            )
-            .save()
-            .await?;
+            HopFile::new(dir.clone().join("hop.yml"), &project.id, &deployment.id)
+                .save()
+                .await?;
 
             (project, deployment, container_options, false)
         }
@@ -240,8 +232,8 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     log::info!(
         "Deployed successfuly, you can find it at: {}",
         urlify(&format!(
-            "{}{}?project={}",
-            WEB_DEPLOYMENTS_URL, deployment.id, project.namespace
+            "{}/deployment/{}?project={}",
+            WEB_IGNITE_URL, deployment.id, project.namespace
         ))
     );
 

@@ -1,9 +1,10 @@
 pub mod size;
 
+use std::error::Error;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use anyhow::{anyhow, Ok, Result};
+use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
 use console::style;
 use fern::colors::{Color, ColoredLevelConfig};
@@ -187,4 +188,18 @@ pub async fn is_writable(path: &PathBuf) -> bool {
     }
 
     false
+}
+
+pub fn parse_key_val<T, U>(s: &str) -> core::result::Result<(T, U), Box<dyn Error>>
+where
+    T: std::str::FromStr,
+    T::Err: Error + 'static,
+    U: std::str::FromStr,
+    U::Err: Error + 'static,
+{
+    let pos = s
+        .find('=')
+        .ok_or_else(|| format!("invalid KEY=value: no `=` found in `{}`", s))?;
+
+    Ok((s[..pos].parse::<T>()?, s[pos + 1..].parse::<U>()?))
 }

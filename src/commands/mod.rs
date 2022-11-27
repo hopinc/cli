@@ -41,6 +41,8 @@ pub enum Commands {
     Oops(oops::Options),
     #[clap(alias = "fwd", alias = "forward")]
     Tunnel(tunnel::Options),
+    #[clap(alias = "compose")]
+    FromCompose(ignite::from_compose::Options),
 }
 
 pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
@@ -77,6 +79,9 @@ pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
                 Commands::Domains(options) => domains::handle(options, state).await,
                 Commands::Oops(options) => oops::handle(&options, state).await,
                 Commands::Tunnel(options) => tunnel::handle(&options, state).await,
+                Commands::FromCompose(options) => {
+                    ignite::from_compose::handle(options, state).await
+                }
             }
         }
     }
