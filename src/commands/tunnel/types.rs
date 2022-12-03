@@ -19,7 +19,9 @@ pub enum TonneruPacket {
         resource_id: String,
         port: u16,
     },
-    Connect,
+    Connect {
+        container_id: String,
+    },
 }
 
 impl<'de> Deserialize<'de> for TonneruPacket {
@@ -36,7 +38,27 @@ impl<'de> Deserialize<'de> for TonneruPacket {
             .map_err(SerdeDeError::custom)?;
 
         match op_code {
-            OpCodes::Connect => Ok(Self::Connect),
+            OpCodes::Connect => {
+                let data = gw_event
+                    .remove("d")
+                    .ok_or_else(|| serde::de::Error::missing_field("d"))?;
+
+                let data = data
+                    .as_object()
+                    .ok_or_else(|| serde::de::Error::custom("d is not an object"))?;
+
+                let container_id = data
+                    .get("container_id")
+                    .ok_or_else(|| serde::de::Error::missing_field("container_id"))?;
+
+                let container_id = container_id
+                    .as_str()
+                    .ok_or_else(|| serde::de::Error::custom("container_id is not a string"))?;
+
+                Ok(TonneruPacket::Connect {
+                    container_id: container_id.to_string(),
+                })
+            }
             _ => Err(SerdeDeError::custom("invalid opcode received")),
         }
     }

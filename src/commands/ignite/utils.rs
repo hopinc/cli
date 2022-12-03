@@ -459,6 +459,16 @@ async fn update_config_visual(
         ..Default::default()
     });
 
+    if is_update {
+        let mut tmp = vec![Tier {
+            name: "Current".to_string(),
+            description: "Do not update the tier".to_string(),
+            ..Default::default()
+        }];
+        tmp.extend(tiers);
+        tiers = tmp;
+    }
+
     deployment_config.resources = {
         let idx = dialoguer::Select::new()
             .with_prompt("Select a tier that will suit you well")
@@ -466,7 +476,11 @@ async fn update_config_visual(
             .items(&tiers.iter().map(|t| t.to_string()).collect::<Vec<String>>())
             .interact()?;
 
-        if idx == tiers.len() - 1 {
+        // first in update is `Current` which is not a tier
+        if idx == 0 && is_update {
+            // dont update the tier
+            deployment_config.resources.clone()
+        } else if idx == tiers.len() - 1 {
             Term::stderr().clear_last_lines(1)?;
 
             let mut resources = Resources::default();
@@ -631,13 +645,12 @@ fn get_multiple_envs() -> Result<HashMap<String, String>> {
             break;
         }
 
-        let confirm = dialoguer::Confirm::new()
+        if !dialoguer::Confirm::new()
             .with_prompt("Add another environment variable?")
             .default(false)
             .interact_opt()?
-            .unwrap_or(false);
-
-        if !confirm {
+            .unwrap_or(false)
+        {
             break;
         }
     }

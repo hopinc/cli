@@ -13,6 +13,7 @@ use ms::{__to_string__, ms};
 use serde::Serialize;
 use serde_json::Value;
 use tokio::fs;
+use tokio::process::Command;
 
 pub fn set_hook() {
     // setup a panic hook to easily exit the program on panic
@@ -159,11 +160,10 @@ pub fn validate_json(json: &str) -> Result<Value> {
 }
 
 pub fn validate_json_non_null(json: &str) -> Result<Value> {
-    if json == "null" {
-        return Err(anyhow!("JSON cannot be null"));
+    match validate_json(json)? {
+        Value::Null => Err(anyhow!("JSON cannot be null")),
+        value => Ok(value),
     }
-
-    validate_json(json)
 }
 
 pub fn capitalize(s: &str) -> String {
@@ -177,7 +177,7 @@ pub fn capitalize(s: &str) -> String {
 pub async fn is_writable(path: &PathBuf) -> bool {
     if fs::OpenOptions::new()
         .write(true)
-        .create_new(true)
+        .create_new(false)
         .open(path)
         .await
         .is_ok()
@@ -202,4 +202,31 @@ where
         .ok_or_else(|| format!("invalid KEY=value: no `=` found in `{}`", s))?;
 
     Ok((s[..pos].parse::<T>()?, s[pos + 1..].parse::<U>()?))
+}
+
+pub async fn sudo_fix() -> Result<()> {
+    // check if in sudo and user real user home
+    if let Ok(user) = std::env::var("USER") {
+        if user != "root" {
+            return Ok(()); // not in sudo
+        }
+
+        if let Ok(user) = std::env::var("SUDO_USER") {
+            log::debug!("Running as SUDO, using home of `{user}`");
+
+            // running ~user to get home path
+            let home = Command::new("eval")
+                .arg(format!("echo ~{}", user))
+                .output()
+                .await?
+                .stdout;
+
+            // set home path
+            std::env::set_var("HOME", String::from_utf8(home)?.trim());
+        } else {
+            log::debug!("Running as root without sudo, using home `{user}`");
+        }
+    }
+
+    Ok(())
 }

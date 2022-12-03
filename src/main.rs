@@ -22,18 +22,22 @@ async fn main() -> Result<()> {
 
     utils::logs(cli.debug);
 
+    utils::sudo_fix().await?;
+
     let state = State::new(StateOptions {
         override_project: cli.project,
         override_token: std::env::var("HOP_TOKEN").ok(),
     })
     .await;
 
-    match cli.commands {
-        #[cfg(feature = "update")]
-        Update(_) => None,
-        // its okay for the notice to fail
-        _ => version_notice(state.ctx.clone()).await.ok(),
-    };
+    if !state.is_ci {
+        match cli.commands {
+            #[cfg(feature = "update")]
+            Update(_) => None,
+            // its okay for the notice to fail
+            _ => version_notice(state.ctx.clone()).await.ok(),
+        };
+    }
 
     if let Err(error) = handle_command(cli.commands, state).await {
         log::error!("{}", error);

@@ -24,7 +24,7 @@ use crate::utils::is_writable;
 #[derive(Clone)]
 pub struct TonneruSocket {
     token: String,
-    deployment_id: String,
+    resource_id: String,
     port: u16,
     #[cfg(windows)]
     pub config: TlsConnector,
@@ -33,7 +33,7 @@ pub struct TonneruSocket {
 }
 
 impl TonneruSocket {
-    pub fn new(token: &str, deployment_id: &str, port: u16) -> Result<Self> {
+    pub fn new(token: &str, resource_id: &str, port: u16) -> Result<Self> {
         #[cfg(windows)]
         let config = native_tls::TlsConnector::new()?;
 
@@ -59,7 +59,7 @@ impl TonneruSocket {
 
         Ok(Self {
             token: token.to_string(),
-            deployment_id: deployment_id.to_string(),
+            resource_id: resource_id.to_string(),
             port,
             config,
         })
@@ -86,7 +86,7 @@ impl TonneruSocket {
 
         let packet = serde_json::to_vec(&TonneruPacket::Auth {
             token: self.token.clone(),
-            resource_id: self.deployment_id.clone(),
+            resource_id: self.resource_id.clone(),
             port: self.port,
         })?;
 
@@ -101,7 +101,7 @@ impl TonneruSocket {
 
         match socket.read(&mut buf).await {
             Ok(n) => match serde_json::from_slice::<TonneruPacket>(&buf[..n]) {
-                Ok(TonneruPacket::Connect) => Ok(socket),
+                Ok(TonneruPacket::Connect { .. }) => Ok(socket),
                 _ => Err(anyhow!(
                     "Unexpected packet. Received: {}",
                     String::from_utf8_lossy(&buf[..n])

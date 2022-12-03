@@ -17,13 +17,7 @@ impl FromStr for UnitMultiplier {
     type Err = anyhow::Error;
 
     fn from_str(u: &str) -> Result<Self, Self::Err> {
-        let mut u = u.to_uppercase();
-
-        if !u.ends_with('B') {
-            u = format!("{u}B");
-        }
-
-        match u.as_str() {
+        match u.to_uppercase().as_str() {
             "B" => Ok(UnitMultiplier::B),
             "KB" => Ok(UnitMultiplier::KB),
             "MB" => Ok(UnitMultiplier::MB),
@@ -37,7 +31,7 @@ impl FromStr for UnitMultiplier {
 pub fn parse_size(size: &str) -> Result<u64> {
     let mut size = size.trim().to_uppercase();
 
-    if !size.ends_with('B') {
+    if size.ends_with(['G', 'M', 'K']) {
         size = format!("{size}B");
     }
 

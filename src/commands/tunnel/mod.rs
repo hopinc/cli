@@ -25,7 +25,7 @@ const DOMAIN_SUFFIX: &str = "hop";
 #[derive(Debug, Parser)]
 #[clap(about = "Access your application via a tunnel")]
 pub struct Options {
-    #[clap(help = "ID or name of the deployment")]
+    #[clap(help = "Resource to tunnel to, can be a deployment name, ID")]
     pub deployment: Option<String>,
     #[clap(long, help = "Publish a container's port(s) to the host", value_parser = parse_publish)]
     pub publish: Option<(String, u16, u16)>,
