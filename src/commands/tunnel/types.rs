@@ -20,7 +20,7 @@ pub enum TonneruPacket {
         port: u16,
     },
     Connect {
-        container_id: String,
+        resource_id: String,
     },
 }
 
@@ -56,7 +56,7 @@ impl<'de> Deserialize<'de> for TonneruPacket {
                     .ok_or_else(|| serde::de::Error::custom("container_id is not a string"))?;
 
                 Ok(TonneruPacket::Connect {
-                    container_id: container_id.to_string(),
+                    resource_id: container_id.to_string(),
                 })
             }
             _ => Err(SerdeDeError::custom("invalid opcode received")),

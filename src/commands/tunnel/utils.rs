@@ -126,7 +126,7 @@ impl TonneruSocket {
 
         let packet = serde_json::to_vec(&TonneruPacket::Auth {
             token: self.token.clone(),
-            resource_id: self.deployment_id.clone(),
+            resource_id: self.resource_id.clone(),
             port: self.port,
         })?;
 
@@ -141,7 +141,7 @@ impl TonneruSocket {
 
         match socket.read(&mut buf).await {
             Ok(n) => match serde_json::from_slice::<TonneruPacket>(&buf[..n]) {
-                Ok(TonneruPacket::Connect) => Ok(socket),
+                Ok(TonneruPacket::Connect { .. }) => Ok(socket),
                 _ => Err(anyhow!(
                     "Unexpected packet. Received: {}",
                     String::from_utf8_lossy(&buf[..n])
