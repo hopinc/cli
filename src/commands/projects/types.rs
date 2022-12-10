@@ -29,7 +29,8 @@ pub struct ThisProjectResponse {
 }
 
 #[derive(Debug, Serialize)]
-pub struct CreateParams {
+pub struct CreateProject {
     pub name: String,
     pub namespace: String,
+    pub payment_method_id: String,
 }

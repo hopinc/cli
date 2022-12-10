@@ -2,6 +2,7 @@ pub mod docker;
 mod list;
 pub mod login;
 mod logout;
+pub mod payment;
 mod switch;
 pub mod types;
 mod utils;

@@ -1,11 +1,12 @@
 use std::io::Write;
 
-use anyhow::Result;
+use anyhow::{bail, Result};
+use regex::Regex;
 use tabwriter::TabWriter;
 
 use crate::state::http::HttpClient;
 
-use super::types::{CreateParams, Project, SingleProjectResponse};
+use super::types::{CreateProject, Project, SingleProjectResponse};
 
 pub fn format_projects(projects: &Vec<Project>, title: bool) -> Vec<String> {
     let mut tw = TabWriter::new(vec![]);
@@ -38,15 +39,21 @@ pub fn format_project(project: &Project) -> String {
     format_projects(&vec![project.clone()], false)[0].clone()
 }
 
-pub async fn create_project(http: &HttpClient, name: &str, namespace: &str) -> Result<Project> {
-    let json = http
+pub async fn create_project(
+    http: &HttpClient,
+    name: &str,
+    namespace: &str,
+    payment_method_id: &str,
+) -> Result<Project> {
+    let data = http
         .request::<SingleProjectResponse>(
             "POST",
             "/projects",
             Some((
-                serde_json::to_vec(&CreateParams {
+                serde_json::to_vec(&CreateProject {
                     name: name.to_string(),
                     namespace: namespace.to_string(),
+                    payment_method_id: payment_method_id.to_string(),
                 })
                 .unwrap()
                 .into(),
@@ -54,7 +61,20 @@ pub async fn create_project(http: &HttpClient, name: &str, namespace: &str) -> R
             )),
         )
         .await?
-        .ok_or_else(|| anyhow::anyhow!("Error while parsing response"))?;
+        .ok_or_else(|| anyhow::anyhow!("Error while parsing response"))?
+        .project;
 
-    Ok(json.project)
+    Ok(data)
+}
+
+pub fn validate_namespace(namespace: &str) -> Result<()> {
+    let regex = Regex::new(r"(?i)[a-z0-9_]")?;
+
+    if namespace.len() > 15 {
+        bail!("Namespace must be less than 15 characters")
+    } else if !regex.is_match(namespace) {
+        bail!("Namespace must contain only letters, numbers and underscores")
+    } else {
+        Ok(())
+    }
 }
