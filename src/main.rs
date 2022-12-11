@@ -22,7 +22,7 @@ async fn main() -> Result<()> {
 
     utils::logs(cli.debug);
 
-    utils::sudo_fix().await?;
+    utils::sudo::fix().await?;
 
     let state = State::new(StateOptions {
         override_project: cli.project,

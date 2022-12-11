@@ -37,7 +37,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     } else if let Ok(env_token) = std::env::var("HOP_TOKEN") {
         env_token
     } else {
-        browser_login().await
+        browser_login().await?
     };
 
     token(&init_token, state).await
