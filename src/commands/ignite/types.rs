@@ -151,6 +151,7 @@ pub struct Config {
     pub resources: Resources,
     pub restart_policy: Option<RestartPolicy>,
     pub entrypoint: Option<Vec<String>>,
+    pub cmd: Option<Vec<String>>,
     pub volume: Option<Volume>,
 }
 
@@ -173,6 +174,10 @@ pub struct Metadata {
 }
 
 impl Deployment {
+    pub fn is_ephemeral(&self) -> bool {
+        self.config.type_ == ContainerType::Ephemeral
+    }
+
     pub fn can_rollout(&self) -> bool {
         self.container_count != 0 && self.config.type_ != ContainerType::Stateful
     }
@@ -208,6 +213,8 @@ pub struct CreateDeployment {
     pub volume: Option<Volume>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub entrypoint: Option<Vec<String>>,
+    #[serde(rename = "cmd", skip_serializing_if = "Option::is_none")]
+    pub command: Option<Vec<String>>,
 }
 
 impl From<Deployment> for CreateDeployment {
@@ -222,6 +229,7 @@ impl From<Deployment> for CreateDeployment {
             type_: Some(deployment.config.type_),
             volume: deployment.config.volume,
             entrypoint: deployment.config.entrypoint,
+            command: deployment.config.cmd,
         }
     }
 }

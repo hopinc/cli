@@ -17,6 +17,8 @@ use crate::commands::gateways::types::GatewayConfig;
 use crate::commands::gateways::util::{create_gateway, update_gateway_config};
 use crate::commands::ignite::create::Options as CreateOptions;
 use crate::commands::ignite::from_compose::types::ServiceBuildUnion;
+use crate::commands::ignite::health::types::CreateHealthCheck;
+use crate::commands::ignite::health::utils::create_health_check;
 use crate::commands::ignite::types::Deployment;
 use crate::commands::ignite::utils::{
     create_deployment, scale, update_deployment_config, WEB_IGNITE_URL,
@@ -108,7 +110,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     log::info!("Using project `{}` ({})", project.name, project.namespace);
 
-    let mut deployments_with_gateway = vec![];
+    let mut deployments_with_extras = vec![];
 
     for (name, service) in services {
         log::info!("Creating deployment for {name}");
@@ -182,24 +184,21 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 format!("{}/{}/{}", HOP_REGISTRY_URL, project.namespace, dep_name);
         }
 
-        deployments_with_gateway.push((
+        deployments_with_extras.push((
             deployment_config.0,
             deployment_config.1,
             service.build.clone(),
             gateways,
+            service.healthcheck.clone().map(CreateHealthCheck::from),
         ));
 
         // add a new line
         println!();
     }
 
-    let has_unbuilt = deployments_with_gateway.iter().any(|(_, _, build, _)| {
-        if build.is_some() {
-            return true;
-        }
-
-        false
-    });
+    let has_unbuilt = deployments_with_extras
+        .iter()
+        .any(|(_, _, build, _, _)| build.is_some());
 
     let build_localy = if has_unbuilt {
         log::info!("Some of the services in the compose file require building. They can be built locally or on our build servers");
@@ -216,7 +215,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         false
     };
 
-    for (deployment, containers, builder, gateways) in deployments_with_gateway {
+    for (deployment, containers, builder, gateways, health_checks) in deployments_with_extras {
         let dep = create_deployment(&state.http, &project.id, &deployment).await?;
         log::info!("Created deployment `{}`", dep.name);
 
@@ -261,14 +260,23 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             log::info!("Created gateway for `{}`", dep.name);
         }
 
+        if let Some(health_check) = health_checks {
+            if !dep.is_ephemeral() {
+                create_health_check(&state.http, &dep.id, health_check).await?;
+                log::info!("Created health check for `{}`", dep.name);
+            } else {
+                log::warn!("Health checks are not supported for ephemeral deployments, skipping");
+            }
+        }
+
         println!();
     }
 
     log::info!("Finished creating deployments from {}", file.display());
     log::info!(
         "You can view the deployments by running `hop ignite ls --project {}` or on {}",
-        urlify(&format!("{}?project={}", WEB_IGNITE_URL, project.namespace)),
-        project.namespace
+        project.namespace,
+        urlify(&format!("{}?project={}", WEB_IGNITE_URL, project.namespace))
     );
 
     Ok(())

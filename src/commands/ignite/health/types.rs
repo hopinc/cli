@@ -8,7 +8,7 @@ pub struct CreateHealthCheck {
     pub max_retries: u64,
     pub path: String,
     pub protocol: String,
-    pub port: u64,
+    pub port: u16,
     pub timeout: u64,
     pub success_threshold: u64,
 }

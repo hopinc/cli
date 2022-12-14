@@ -1,3 +1,6 @@
+use anyhow::{bail, Result};
+use regex::Regex;
+
 use super::types::Service;
 
 // order services by their dependencies
@@ -32,4 +35,38 @@ pub fn order_by_dependencies(services: &mut [(&String, &Service)]) {
 
         std::cmp::Ordering::Equal
     });
+}
+
+const DURATION_UNITS: [&str; 5] = ["us", "ms", "s", "m", "h"];
+
+pub fn get_seconds_from_docker_duration(duration: &str) -> Result<u64> {
+    let validate = Regex::new(&format!(r"^((\d*)({}))+$", DURATION_UNITS.join("|")))?;
+
+    if !validate.is_match(duration) {
+        bail!("Invalid duration: {duration}");
+    }
+
+    let regex = Regex::new(&format!(r"(\d+)({})", DURATION_UNITS.join("|")))?;
+
+    let captures = regex.captures_iter(duration);
+
+    let mut out: u64 = 0;
+
+    for capture in captures {
+        let value = capture.get(1).unwrap().as_str().parse::<u64>()?;
+        let unit = capture.get(2).unwrap().as_str();
+
+        let multiplier = match unit {
+            "us" => 1,
+            "ms" => 1000,
+            "s" => 1000 * 1000,
+            "m" => 1000 * 1000 * 60,
+            "h" => 1000 * 1000 * 60 * 60,
+            _ => bail!("Invalid unit: {unit}",),
+        };
+
+        out += value * multiplier;
+    }
+
+    Ok(out / 1000 / 1000)
 }

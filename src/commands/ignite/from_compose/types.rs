@@ -3,13 +3,17 @@ use std::fmt::Display;
 use std::path::Path;
 
 use anyhow::{bail, Context, Result};
+use regex::Regex;
 use serde::Deserialize;
 use serde_yaml::Value;
 
 use crate::commands::containers::types::ContainerType;
+use crate::commands::ignite::health::types::CreateHealthCheck;
 use crate::commands::ignite::types::{Config, Deployment, Image, RestartPolicy, Volume};
-use crate::commands::ignite::utils::{env_file_to_map, get_entrypoint_array};
+use crate::commands::ignite::utils::{env_file_to_map, get_shell_array};
 use crate::utils::parse_key_val;
+
+use super::utils::get_seconds_from_docker_duration;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -54,7 +58,7 @@ impl DockerCompose {
 
                 let find = cloned_volumes.keys().find(|v| *v == &vol_name);
 
-                if find.is_none() {
+                if find.is_none() && (!vol_name.starts_with('/') || vol_name != ".") {
                     bail!("Volume `{name}` not found in volumes section");
                 }
 
@@ -166,10 +170,11 @@ pub struct Service {
     pub build: Option<ServiceBuildUnion>,
     pub depends_on: Option<Vec<String>>,
     pub volumes: Option<DockerVolume>,
-    pub entrypoint: Option<DockerEntrypoint>,
+    pub entrypoint: Option<DockerShellString>,
+    pub command: Option<DockerShellString>,
+    pub healthcheck: Option<DockerHealthcheck>,
     // ignored
     pub networks: Option<Value>,
-    pub healthcheck: Option<Value>,
 }
 
 impl From<Service> for Deployment {
@@ -191,10 +196,170 @@ impl From<Service> for Deployment {
                     ..Default::default()
                 }),
                 entrypoint: service.entrypoint.map(|ep| ep.0),
+                cmd: service.command.map(|cmd| cmd.0),
                 ..Default::default()
             },
             ..Default::default()
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields, remote = "Self")]
+pub struct DockerHealthcheck {
+    pub test: HealthCheckTest,
+    pub interval: Option<DockerDuration>,
+    pub timeout: Option<DockerDuration>,
+    pub retries: Option<u32>,
+    pub start_period: Option<DockerDuration>,
+}
+
+impl<'de> Deserialize<'de> for DockerHealthcheck {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let this = Self::deserialize(deserializer)?;
+
+        if let Some(interval) = this.interval.clone() {
+            if interval.0 < 5 {
+                return Err(serde::de::Error::custom(
+                    "interval must be greater than 5 seconds",
+                ));
+            } else if interval.0 > 120 {
+                return Err(serde::de::Error::custom(
+                    "interval must be less than 120 seconds",
+                ));
+            }
+        }
+
+        if let Some(retries) = this.retries {
+            if retries < 1 {
+                return Err(serde::de::Error::custom("retries must be greater than 1"));
+            } else if retries > 10 {
+                return Err(serde::de::Error::custom("retries must be less than 10"));
+            }
+        }
+
+        Ok(Self {
+            test: this.test,
+            interval: this.interval,
+            timeout: this.timeout,
+            retries: this.retries,
+            start_period: this.start_period,
+        })
+    }
+}
+
+impl From<DockerHealthcheck> for CreateHealthCheck {
+    fn from(healthcheck: DockerHealthcheck) -> Self {
+        let mut current = Self {
+            path: healthcheck.test.0,
+            port: healthcheck.test.1,
+            ..Default::default()
+        };
+
+        // divide by 1000 to convert from ms to s for the API
+        if let Some(interval) = healthcheck.interval {
+            current.interval = interval.0;
+        }
+
+        if let Some(timeout) = healthcheck.timeout {
+            current.timeout = timeout.0;
+        }
+
+        if let Some(retries) = healthcheck.retries {
+            current.max_retries = retries.into();
+        }
+
+        if let Some(start_period) = healthcheck.start_period {
+            current.initial_delay = start_period.0;
+        }
+
+        current
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HealthCheckTest(String, u16);
+
+impl<'de> Deserialize<'de> for HealthCheckTest {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = Value::deserialize(deserializer)?;
+
+        // regex to extract the hostname port and path from a given curl command
+        let re =
+            Regex::new(r#"^curl\s?((?:-|--)[A-Za-z]+)*\s+(https?://)?([^/:\s]+)(:\d+)?(/.*)?$"#)
+                .unwrap();
+
+        let test_string = match value {
+            Value::String(s) => s,
+            Value::Sequence(a) => {
+                // change sequenc of values to a sequence of strings
+                let collected = a
+                    .into_iter()
+                    .map(|v| match v {
+                        Value::String(s) => Ok(s),
+                        _ => Err(serde::de::Error::custom("Invalid healthcheck test")),
+                    })
+                    .collect::<Result<Vec<String>, _>>()?;
+
+                if collected.first() == Some(&"NONE".to_string()) {
+                    return Err(serde::de::Error::custom("Invalid healthcheck test"));
+                } else if collected.first() == Some(&"CMD".to_string())
+                    || collected.first() == Some(&"CMD-SHELL".to_string())
+                {
+                    collected[1..].join(" ")
+                } else {
+                    return Err(serde::de::Error::custom("Invalid healthcheck test"));
+                }
+            }
+            _ => return Err(serde::de::Error::custom("Invalid healthcheck test")),
+        };
+
+        let captures = re.captures(&test_string).ok_or_else(|| {
+            serde::de::Error::custom(format!(
+                "Invalid healthcheck test: {test_string}, currently only curl is supported"
+            ))
+        })?;
+
+        let path = captures
+            .get(5)
+            .map(|m| m.as_str().to_string())
+            .unwrap_or_else(|| "/".to_string());
+
+        let port = captures
+            .get(4)
+            .map(|m| m.as_str().to_string())
+            .unwrap_or_else(|| ":80".to_string())
+            .trim_start_matches(':')
+            .parse::<u16>()
+            .map_err(|_| {
+                serde::de::Error::custom(format!(
+                    "Invalid healthcheck test: {test_string}, port must be a number"
+                ))
+            })?;
+
+        Ok(HealthCheckTest(path, port))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DockerDuration(u64);
+
+impl<'de> Deserialize<'de> for DockerDuration {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+
+        get_seconds_from_docker_duration(&s)
+            .map(DockerDuration)
+            .map_err(serde::de::Error::custom)
     }
 }
 
@@ -212,7 +377,7 @@ impl<'de> Deserialize<'de> for Env {
             Value::Sequence(seq) => {
                 let mut map = HashMap::new();
 
-                log::debug!("Sequence: {:?}", seq);
+                // log::debug!("Sequence: {:?}", seq);
 
                 for item in seq {
                     let item_str = item
@@ -232,7 +397,7 @@ impl<'de> Deserialize<'de> for Env {
             Value::Mapping(mapping) => {
                 let mut map = HashMap::new();
 
-                log::debug!("Mapping: {:?}", mapping);
+                // log::debug!("Mapping: {:?}", mapping);
 
                 for (key, value) in mapping {
                     let key = key
@@ -345,7 +510,9 @@ impl<'de> Deserialize<'de> for DockerVolume {
                 });
 
                 if let Some(volume) = volume {
-                    if volume.len() == 2 {
+                    // valid if we have 2 or 3 elements
+                    // since the 3rd element is optional and is the mode
+                    if volume.len() == 2 || volume.len() == 3 {
                         return Ok(Self(volume[0].clone(), volume[1].clone()));
                     }
                 }
@@ -362,9 +529,9 @@ impl<'de> Deserialize<'de> for DockerVolume {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DockerEntrypoint(pub Vec<String>);
+pub struct DockerShellString(pub Vec<String>);
 
-impl<'de> Deserialize<'de> for DockerEntrypoint {
+impl<'de> Deserialize<'de> for DockerShellString {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -387,7 +554,7 @@ impl<'de> Deserialize<'de> for DockerEntrypoint {
                 Ok(Self(cmd))
             }
 
-            Value::String(string) => Ok(Self(get_entrypoint_array(&string))),
+            Value::String(string) => Ok(Self(get_shell_array(&string))),
 
             unx => Err(serde::de::Error::invalid_type(
                 serde::de::Unexpected::Other(&format!("{:?}", unx)),

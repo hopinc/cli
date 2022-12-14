@@ -56,6 +56,9 @@ pub struct DeploymentConfig {
     #[clap(long, help = "Entrypoint to use")]
     pub entrypoint: Option<String>,
 
+    #[clap(long, help = "Command to use")]
+    pub command: Option<String>,
+
     #[clap(long, help = "Make containers delete on exit")]
     pub rm: bool,
 }

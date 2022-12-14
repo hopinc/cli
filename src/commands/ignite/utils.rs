@@ -379,7 +379,11 @@ async fn update_config_args(
     }
 
     if let Some(entry) = options.config.entrypoint {
-        deployment_config.entrypoint = Some(get_entrypoint_array(&entry));
+        deployment_config.entrypoint = Some(get_shell_array(&entry));
+    }
+
+    if let Some(cmd) = options.config.command {
+        deployment_config.command = Some(get_shell_array(&cmd));
     }
 
     if deployment_config.type_ != Some(ContainerType::Ephemeral) {
@@ -596,7 +600,28 @@ async fn update_config_visual(
                     .show_default(is_update && !ep.is_empty())
                     .default(ep)
                     .interact_text()
-                    .map(|s| get_entrypoint_array(&s))?,
+                    .map(|s| get_shell_array(&s))?,
+            );
+        }
+
+        if dialoguer::Confirm::new()
+            .with_prompt("Do you want to specify a custom command?")
+            .default(false)
+            .interact()?
+        {
+            let cmd = deployment_config
+                .command
+                .clone()
+                .unwrap_or_default()
+                .join(" ");
+
+            deployment_config.command = Some(
+                dialoguer::Input::<String>::new()
+                    .with_prompt("Command")
+                    .show_default(is_update && !cmd.is_empty())
+                    .default(cmd)
+                    .interact_text()
+                    .map(|s| get_shell_array(&s))?,
             );
         }
 
@@ -696,7 +721,7 @@ fn validate_cpu_count(cpu: &f64) -> Result<(), &'static str> {
     }
 }
 
-pub fn get_entrypoint_array(entrypoint: &str) -> Vec<String> {
+pub fn get_shell_array(entrypoint: &str) -> Vec<String> {
     let regex = Regex::new(r#"".*"|[^\s]+"#).unwrap();
 
     regex
@@ -713,7 +738,7 @@ mod test {
     fn test_get_entrypoint_array() {
         let entrypoint = r#"/bin/bash -c "echo hello world""#;
 
-        let mut entrypoint_array = get_entrypoint_array(entrypoint).into_iter();
+        let mut entrypoint_array = get_shell_array(entrypoint).into_iter();
 
         assert_eq!(entrypoint_array.next(), Some("/bin/bash".to_string()));
         assert_eq!(entrypoint_array.next(), Some("-c".to_string()));

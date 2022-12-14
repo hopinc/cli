@@ -57,7 +57,7 @@ pub fn update_config_from_args(
 }
 
 pub fn update_config_from_guided(config: &mut CreateHealthCheck) -> Result<()> {
-    config.port = dialoguer::Input::<u64>::new()
+    config.port = dialoguer::Input::<u16>::new()
         .with_prompt("Port of the health check")
         .default(config.port)
         .interact()?;

@@ -36,8 +36,8 @@ pub async fn get_payment_method_from_user(http: &HttpClient) -> Result<String> {
             );
 
             if let Err(why) = webbrowser::open(&url) {
-                log::error!("Could not open web a browser: {}", why);
-                log::error!(
+                log::error!("Could not open web a browser: {why}",);
+                log::info!(
                     "Please open this URL in your browser: {}",
                     urlify(WEB_PAYMENTS_URL)
                 );

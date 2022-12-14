@@ -18,7 +18,7 @@ pub struct Options {
 #[derive(Debug, Parser, PartialEq, Eq, Default)]
 pub struct HealthCheckCreate {
     #[clap(long, help = "Port to check")]
-    pub port: Option<u64>,
+    pub port: Option<u16>,
 
     #[clap(long, help = "Path to check")]
     pub path: Option<String>,

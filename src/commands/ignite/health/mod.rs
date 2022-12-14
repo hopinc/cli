@@ -2,8 +2,8 @@ mod create;
 mod delete;
 mod list;
 mod state;
-mod types;
-mod utils;
+pub mod types;
+pub mod utils;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
