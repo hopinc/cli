@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use tokio::process::Command;
 
 pub async fn fix() -> Result<()> {
@@ -12,14 +12,20 @@ pub async fn fix() -> Result<()> {
             log::debug!("Running as SUDO, using home of `{user}`");
 
             // running ~user to get home path
-            let home = Command::new("eval")
-                .arg(format!("echo ~{}", user))
+            let home = Command::new("sh")
+                .arg("-c")
+                .arg(format!("eval echo ~{}", user))
                 .output()
-                .await?
+                .await
+                .with_context(|| format!("Failed to get home path of `{}`", user))?
                 .stdout;
 
+            let home = String::from_utf8(home)?;
+
+            log::debug!("Setting home to `{}`", home);
+
             // set home path
-            std::env::set_var("HOME", String::from_utf8(home)?.trim());
+            std::env::set_var("HOME", home.trim());
         } else {
             log::debug!("Running as root without sudo, using home `{user}`");
         }
