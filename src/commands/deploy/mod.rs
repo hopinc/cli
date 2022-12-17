@@ -197,7 +197,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
                 if gateway.type_ == GatewayType::External {
                     log::info!(
-                        "Your deployment will be accesible via {}",
+                        "Your deployment will be accessible via {}",
                         urlify(&gateway.full_url())
                     );
                 }
@@ -230,7 +230,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     }
 
     log::info!(
-        "Deployed successfuly, you can find it at: {}",
+        "Deployed successfully, you can find it at: {}",
         urlify(&format!(
             "{}/deployment/{}?project={}",
             WEB_IGNITE_URL, deployment.id, project.namespace

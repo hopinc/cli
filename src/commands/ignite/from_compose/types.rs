@@ -298,7 +298,7 @@ impl<'de> Deserialize<'de> for HealthCheckTest {
         let test_string = match value {
             Value::String(s) => s,
             Value::Sequence(a) => {
-                // change sequenc of values to a sequence of strings
+                // change sequence of values to a sequence of strings
                 let collected = a
                     .into_iter()
                     .map(|v| match v {

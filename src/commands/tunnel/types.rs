@@ -9,7 +9,7 @@ use serde_repr::Deserialize_repr;
 pub enum OpCodes {
     Auth = 1,
     Connect = 2,
-    Unkown = !0,
+    Unknown = !0,
 }
 
 #[derive(Debug, Clone)]
