@@ -59,7 +59,7 @@ async-compression = { version = "0.3.14", features = ["tokio", "gzip"] }
 
 
 # *nix only deps
-[target.'cfg(not(all(windows, macos)))'.dependencies]
+[target.'cfg(all(not(windows), not(macos)))'.dependencies]
 hop_leap = { version = "0.1.0", features = [
     "zlib",
     "rustls-tls-webpki-roots",
