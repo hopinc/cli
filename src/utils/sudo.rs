@@ -17,12 +17,12 @@ pub async fn fix() -> Result<()> {
                 .arg(format!("eval echo ~{}", user))
                 .output()
                 .await
-                .with_context(|| format!("Failed to get home path of `{}`", user))?
+                .with_context(|| format!("Failed to get home path of `{user}`"))?
                 .stdout;
 
             let home = String::from_utf8(home)?;
 
-            log::debug!("Setting home to `{}`", home);
+            log::debug!("Setting home to `{home}`");
 
             // set home path
             std::env::set_var("HOME", home.trim());

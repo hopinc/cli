@@ -41,6 +41,7 @@ pub enum Commands {
     // alias for hop containers
     Containers(super::containers::Options),
     Gateways(super::gateways::Options),
+    Tunnel(super::tunnel::Options),
 }
 
 #[derive(Debug, Parser)]
@@ -65,5 +66,6 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Commands::Promote(options) => promote::handle(options, state).await,
         Commands::Builds(options) => builds::handle(options, state).await,
         Commands::FromCompose(options) => from_compose::handle(options, state).await,
+        Commands::Tunnel(options) => super::tunnel::handle(&options, state).await,
     }
 }
