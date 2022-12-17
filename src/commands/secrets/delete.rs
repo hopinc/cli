@@ -25,16 +25,16 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     let secret_name = match options.name {
         Some(name) => name,
         None => {
-            let secrests = state
+            let secrets = state
                 .http
                 .request::<Secrets>("GET", &format!("/projects/{}/secrets", project_id), None)
                 .await?
                 .unwrap()
                 .secrets;
 
-            assert!(!secrests.is_empty(), "No secrets found");
+            assert!(!secrets.is_empty(), "No secrets found");
 
-            let secrets_fmt = secrests
+            let secrets_fmt = secrets
                 .iter()
                 .map(|s| format!(" {} ({})", s.name, s.id))
                 .collect::<Vec<_>>();
@@ -47,7 +47,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .expect("Failed to select secret")
                 .expect("No secret selected");
 
-            secrests[idx].name.clone()
+            secrets[idx].name.clone()
         }
     };
 
