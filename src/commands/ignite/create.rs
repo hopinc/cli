@@ -124,7 +124,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     }
 
     log::info!(
-        "Deployed successfuly, you can find it at: {}",
+        "Deployed successfully, you can find it at: {}",
         urlify(&format!(
             "{}{}?project={}",
             WEB_IGNITE_URL, deployment.id, project.namespace

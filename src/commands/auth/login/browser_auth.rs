@@ -26,7 +26,7 @@ pub async fn browser_login() -> Result<String> {
         log::info!("Please provide a personal access token manually.");
         log::info!("You can create one at {PAT_FALLBACK_URL}");
 
-        // falback to simpe input
+        // fallback to simple input
         dialoguer::Password::new()
             .with_prompt("Enter your token")
             .interact()

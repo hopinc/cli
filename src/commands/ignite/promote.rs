@@ -62,7 +62,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     promote(&state.http, &deployment_id, &build_id).await?;
 
-    log::info!("Rollling out new containers");
+    log::info!("Rolling out new containers");
 
     Ok(())
 }
