@@ -59,7 +59,7 @@ async-compression = { version = "0.3.14", features = ["tokio", "gzip"] }
 
 
 # *nix only deps
-[target.'cfg(not(windows))'.dependencies]
+[target.'cfg(not(all(windows, macos)))'.dependencies]
 hop_leap = { version = "0.1.0", features = [
     "zlib",
     "rustls-tls-webpki-roots",
@@ -72,11 +72,15 @@ reqwest = { version = "0.11.11", features = [
 tokio-rustls = { version = "0.23", default-features = false }
 webpki = "0.22"
 webpki-roots = "0.22"
+async-tungstenite = { version = "0.19", features = [
+    "tokio-runtime",
+    "tokio-rustls-webpki-roots",
+] }
 
 
 # windows only deps
-[target.'cfg(windows)'.dependencies]
-async_zip = "0.0.8"
+[target.'cfg(any(windows, macos))'.dependencies]
+async_zip = "0.0.9"
 reqwest = { version = "0.11.11", features = [
     "json",
     "multipart",
@@ -88,6 +92,10 @@ hop_leap = { version = "0.1.0", features = [
 ], default-features = false }
 native-tls = "0.2.10"
 tokio-native-tls = "0.3.0"
+async-tungstenite = { version = "0.19", features = [
+    "tokio-runtime",
+    "tokio-native-tls",
+] }
 
 
 [target.'cfg(windows)'.build-dependencies]

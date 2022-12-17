@@ -83,7 +83,25 @@ dependencies = [
  "tokio",
  "tokio-native-tls",
  "tokio-rustls",
- "tungstenite",
+ "tungstenite 0.17.3",
+ "webpki-roots",
+]
+
+[[package]]
+name = "async-tungstenite"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e6acf7e4a267eecbb127ed696bb2d50572c22ba7f586a646321e1798d8336a1"
+dependencies = [
+ "futures-io",
+ "futures-util",
+ "log",
+ "native-tls",
+ "pin-project-lite",
+ "tokio",
+ "tokio-native-tls",
+ "tokio-rustls",
+ "tungstenite 0.18.0",
  "webpki-roots",
 ]
 
@@ -98,9 +116,9 @@ dependencies = [
 
 [[package]]
 name = "async_zip"
-version = "0.0.8"
+version = "0.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "76c7255e8cf3719aaed04f4cb181f3a79ae53bd45c0aba1866b8969ac888ed80"
+checksum = "6a36d43bdefc7215b2b3a97edd03b1553b7969ad76551025eedd3b913c645f6e"
 dependencies = [
  "async-compression",
  "async_io_utilities",
@@ -753,6 +771,7 @@ version = "0.2.10"
 dependencies = [
  "anyhow",
  "async-compression",
+ "async-tungstenite 0.19.0",
  "async_zip",
  "chrono",
  "clap",
@@ -799,7 +818,7 @@ checksum = "ded623eacc0643b088d1779cab5cb85f679435372b0865a9bbdb17aaa1d424ab"
 dependencies = [
  "async-compression",
  "async-trait",
- "async-tungstenite",
+ "async-tungstenite 0.17.2",
  "futures",
  "log",
  "serde",
@@ -1698,6 +1717,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "sha1"
+version = "0.10.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f04293dc80c3993519f2d7f6f511707ee7094fe0c6d3406feb330cdb3540eba3"
+dependencies = [
+ "cfg-if",
+ "cpufeatures",
+ "digest",
+]
+
+[[package]]
 name = "signal-hook-registry"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2028,6 +2058,28 @@ dependencies = [
  "rand",
  "rustls",
  "sha-1",
+ "thiserror",
+ "url",
+ "utf-8",
+ "webpki",
+]
+
+[[package]]
+name = "tungstenite"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30ee6ab729cd4cf0fd55218530c4522ed30b7b6081752839b68fcec8d0960788"
+dependencies = [
+ "base64",
+ "byteorder",
+ "bytes",
+ "http",
+ "httparse",
+ "log",
+ "native-tls",
+ "rand",
+ "rustls",
+ "sha1",
  "thiserror",
  "url",
  "utf-8",

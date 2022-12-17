@@ -156,8 +156,8 @@ fn format_log(log: &Log, colors: bool, timestamps: bool, details: bool) -> Strin
     let log_level = if details {
         (if colors {
             match log.level.as_str() {
-                "info" => style("INFO").cyan(),
-                "error" => style("ERROR").red(),
+                "info" | "stdout" => style("INFO").cyan(),
+                "error" | "stderr" => style("ERROR").red(),
                 // there are only info and error, this is left for future use
                 level => style(level).yellow(),
             }

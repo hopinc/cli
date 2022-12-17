@@ -1,17 +1,15 @@
 use std::env::temp_dir;
-use std::time::Duration;
 
 use anyhow::{ensure, Result};
 use clap::Parser;
+use futures_util::StreamExt;
 use tokio::fs;
 use tokio::process::Command;
-use tokio::time::sleep;
 
-use crate::commands::containers::utils::{
-    format_containers, format_logs, get_all_containers, get_container_logs,
-};
+use super::utils::{format_containers, format_logs, get_all_containers, get_container_logs};
 use crate::commands::ignite::utils::{format_deployments, get_all_deployments};
 use crate::state::State;
+use crate::utils::arisu::{ArisuClient, ArisuMessage};
 use crate::utils::in_path;
 
 #[cfg(windows)]
@@ -51,7 +49,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Some(id) => id,
 
         None => {
-            let project_id = state.ctx.current_project_error().id;
+            let project_id = state.ctx.clone().current_project_error().id;
 
             let deployments = get_all_deployments(&state.http, &project_id).await?;
             ensure!(!deployments.is_empty(), "No deployments found");
@@ -124,45 +122,21 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         format_logs(&logs, true, options.timestamps, options.details).join("\n")
     );
 
-    let mut last_log_nonce = logs.last().map(|log| log.nonce.clone());
+    let token = state.token().unwrap();
 
-    // TODO: replace in the future with socket
-    loop {
-        let logs = get_container_logs(
-            &state.http,
-            &container,
-            50, // max out the limit
-            if options.reverse { "asc" } else { "desc" },
-        )
-        .await?;
+    let mut arisu = ArisuClient::new("container_ODYyNTEzMTQ3MzE5NzA4MjU", &token).await?;
 
-        if !logs.is_empty() {
-            let idx = logs
-                .iter()
-                .position(|log| {
-                    if let Some(last_log_nonce) = last_log_nonce.clone() {
-                        log.nonce == last_log_nonce
-                    } else {
-                        // quick get first log
-                        true
-                    }
-                })
-                .map(|idx| idx + 1)
-                .unwrap_or(0);
-
-            let logs_to_display = logs.into_iter().skip(idx).collect::<Vec<_>>();
-
-            if logs_to_display.is_empty() {
-                last_log_nonce = logs_to_display.last().map(|log| log.nonce.clone());
-
-                println!(
+    while let Some(message) = arisu.next().await {
+        match message {
+            ArisuMessage::ServiceMessage(data) => log::info!("Service: {data}"),
+            ArisuMessage::Out(log) => {
+                print!(
                     "{}",
-                    format_logs(&logs_to_display, true, options.timestamps, options.details)
-                        .join("\n")
+                    format_logs(&[log], true, options.timestamps, options.details)[0]
                 );
             }
         }
-
-        sleep(Duration::from_millis(1_500)).await;
     }
+
+    Ok(())
 }

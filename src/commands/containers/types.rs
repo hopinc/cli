@@ -156,9 +156,8 @@ pub struct UpdateContainerState {
     pub preferred_state: ContainerState,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Log {
-    pub nonce: String,
     pub timestamp: DateTime<Utc>,
     pub level: String,
     pub message: String,
