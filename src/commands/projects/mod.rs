@@ -1,5 +1,6 @@
 mod create;
 mod delete;
+pub mod finance;
 pub mod info;
 mod list;
 mod switch;
