@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use async_tungstenite::tungstenite::Message;
 use async_tungstenite::{tokio::connect_async_with_config, tungstenite::protocol::WebSocketConfig};
 use futures_util::{SinkExt, StreamExt};
@@ -57,7 +57,10 @@ impl ArisuShard {
     async fn send_json(&mut self, json: Value) -> Result<()> {
         let body = serde_json::to_string(&json)?;
 
-        log::debug!("Sending message: {body}");
+        log::debug!(
+            "Sending message: {}",
+            body /* .replace(&self.token, "*****") */
+        );
 
         self.client
             .send(Message::Text(body))
@@ -71,10 +74,24 @@ impl ArisuShard {
                 Message::Text(text) => {
                     log::debug!("Received message: {text}");
 
-                    let data = serde_json::from_str(&text)?;
+                    match serde_json::from_str(&text) {
+                        Ok(data) => Ok(Some(data)),
+                        Err(error) => {
+                            log::debug!("Failed to parse message: {}", error);
 
-                    Ok(Some(data))
+                            Ok(None)
+                        }
+                    }
                 }
+
+                Message::Close(frame) => {
+                    if let Some(close) = frame {
+                        bail!("Received close frame {}: {}", close.code, close.reason);
+                    }
+
+                    Err(anyhow!("Received close frame"))
+                }
+
                 _ => Err(anyhow!("Unexpected message type")),
             },
             Ok(Some(Err(error))) => Err(error.into()),
@@ -183,7 +200,7 @@ impl ArisuShard {
                 }
 
                 Err(error) => {
-                    log::error!("Failed to parse arisu message: {error}");
+                    return Err(error);
                 }
 
                 Ok(None) => {}
