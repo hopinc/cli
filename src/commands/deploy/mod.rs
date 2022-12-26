@@ -214,7 +214,13 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     if !options.local {
         builder::build(&state, &project.id, &deployment.id, dir.clone()).await?;
     } else {
-        local::build(&state, &deployment.config.image.name, dir.clone()).await?;
+        local::build(
+            &state,
+            &deployment.config.image.name,
+            dir.clone(),
+            &deployment.config.env,
+        )
+        .await?;
     }
 
     if existing {

@@ -241,7 +241,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             log::info!("Created hop.yml for `{}`", dep.name);
 
             if build_localy {
-                local::build(&state, &dep.config.image.name, path).await?;
+                local::build(&state, &dep.config.image.name, path, &dep.config.env).await?;
             } else {
                 builder::build(&state, &project.id, &dep.id, path).await?;
             }

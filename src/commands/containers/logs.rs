@@ -124,7 +124,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     let token = state.token().unwrap();
 
-    let mut arisu = ArisuClient::new("container_ODYyNTEzMTQ3MzE5NzA4MjU", &token).await?;
+    let mut arisu = ArisuClient::new(&container, &token).await?;
 
     while let Some(message) = arisu.next().await {
         match message {
