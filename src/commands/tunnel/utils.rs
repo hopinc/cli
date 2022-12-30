@@ -1,12 +1,13 @@
 #[cfg(windows)]
 use std::env::temp_dir;
+use std::net::IpAddr;
 use std::path::PathBuf;
 #[cfg(not(windows))]
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
 use tokio::fs;
-use tokio::io::AsyncWriteExt;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 #[cfg(windows)]
 use tokio_native_tls::{native_tls::TlsConnector, TlsStream};
@@ -16,7 +17,7 @@ use tokio_rustls::{
     rustls::{ClientConfig, OwnedTrustAnchor, RootCertStore},
 };
 
-use super::types::TonneruPacket;
+use super::types::{Prefix, TonneruPacket};
 use super::{TONNERU_PORT, TONNERU_URI};
 use crate::commands::update::util::execute_commands;
 use crate::utils::is_writable;
@@ -31,6 +32,8 @@ pub struct TonneruSocket {
     #[cfg(not(windows))]
     pub config: Arc<ClientConfig>,
 }
+
+type TlsSocket = TlsStream<TcpStream>;
 
 impl TonneruSocket {
     pub fn new(token: &str, resource_id: &str, port: u16) -> Result<Self> {
@@ -66,8 +69,7 @@ impl TonneruSocket {
     }
 
     #[cfg(not(windows))]
-    pub async fn connect(&self) -> Result<TlsStream<TcpStream>> {
-        use tokio::io::AsyncReadExt;
+    async fn open_socket(&self) -> Result<TlsSocket> {
         use tokio_rustls::rustls::ServerName;
         use tokio_rustls::TlsConnector;
 
@@ -79,50 +81,28 @@ impl TonneruSocket {
 
         log::debug!("Connecting to {TONNERU_URI} with TLS");
 
-        let mut socket = TlsConnector::from(self.config.clone())
+        TlsConnector::from(self.config.clone())
             .connect(dns_name, remote)
             .await
-            .map_err(|e| anyhow!("Failed to connect to {}: {}", TONNERU_URI, e))?;
-
-        let packet = serde_json::to_vec(&TonneruPacket::Auth {
-            token: self.token.clone(),
-            resource_id: self.resource_id.clone(),
-            port: self.port,
-        })?;
-
-        log::debug!(
-            "Sending auth packet: {}",
-            String::from_utf8_lossy(&packet).replace(&self.token, "********")
-        );
-
-        socket.write_all(&packet).await?;
-
-        let mut buf = [0; 1024];
-
-        match socket.read(&mut buf).await {
-            Ok(n) => match serde_json::from_slice::<TonneruPacket>(&buf[..n]) {
-                Ok(TonneruPacket::Connect { .. }) => Ok(socket),
-                _ => Err(anyhow!(
-                    "Unexpected packet. Received: {}",
-                    String::from_utf8_lossy(&buf[..n])
-                )),
-            },
-            Err(e) => Err(anyhow!("Failed to read from socket: {}", e)),
-        }
+            .map_err(|e| anyhow!("Failed to connect to {TONNERU_URI}: {e}"))
     }
 
     #[cfg(windows)]
-    pub async fn connect(&self) -> Result<TlsStream<TcpStream>> {
-        use tokio::io::AsyncReadExt;
+    async fn open_socket(&self) -> Result<TlsSocket> {
         use tokio_native_tls::TlsConnector;
 
         let remote = TcpStream::connect(format!("{TONNERU_URI}:{TONNERU_PORT}")).await?;
 
-        log::debug!("Connected to {TONNERU_URI}:{TONNERU_PORT}");
+        log::debug!("TLS connection open to {TONNERU_URI}:{TONNERU_PORT}");
 
-        let mut socket = TlsConnector::from(self.config.clone())
+        TlsConnector::from(self.config.clone())
             .connect(TONNERU_URI, remote)
-            .await?;
+            .await
+            .map_err(|e| anyhow!("Failed to connect to {TONNERU_URI}: {e}"))
+    }
+
+    pub async fn connect(&self) -> Result<TlsSocket> {
+        let mut socket = self.open_socket().await?;
 
         let packet = serde_json::to_vec(&TonneruPacket::Auth {
             token: self.token.clone(),
@@ -141,7 +121,14 @@ impl TonneruSocket {
 
         match socket.read(&mut buf).await {
             Ok(n) => match serde_json::from_slice::<TonneruPacket>(&buf[..n]) {
-                Ok(TonneruPacket::Connect { .. }) => Ok(socket),
+                Ok(TonneruPacket::Connect { .. }) => {
+                    log::debug!(
+                        "Successfully established connection to Tonneru, forwarding traffic"
+                    );
+
+                    Ok(socket)
+                }
+
                 _ => Err(anyhow!(
                     "Unexpected packet. Received: {}",
                     String::from_utf8_lossy(&buf[..n])
@@ -152,7 +139,7 @@ impl TonneruSocket {
     }
 }
 
-pub fn parse_publish(publish: &str) -> Result<(String, u16, u16)> {
+pub fn parse_publish(publish: &str) -> Result<(IpAddr, u16, u16)> {
     let mut split = publish.split(':');
 
     if split.clone().count() > 3 {
@@ -160,22 +147,24 @@ pub fn parse_publish(publish: &str) -> Result<(String, u16, u16)> {
     }
 
     match (split.next(), split.next(), split.next()) {
-        (Some(ip), Some(local), Some(external)) => Ok((
-            ip.to_string(),
-            local.parse::<u16>()?,
-            external.parse::<u16>()?,
-        )),
+        (Some(ip), Some(local), Some(external)) => {
+            Ok((ip.parse()?, local.parse::<u16>()?, external.parse::<u16>()?))
+        }
 
-        (Some(local), Some(external), None) => Ok((
-            "127.0.0.1".to_string(),
-            local.parse::<u16>()?,
-            external.parse::<u16>()?,
-        )),
+        (Some(local), Some(external), None) => {
+            if local.contains('.') {
+                let port = external.parse::<u16>()?;
+
+                Ok((local.parse()?, port, port))
+            } else {
+                Ok(([127, 0, 0, 1].into(), local.parse()?, external.parse()?))
+            }
+        }
 
         (Some(port), None, None) => {
             let common = port.parse::<u16>()?;
 
-            Ok(("127.0.0.1".to_string(), common, common))
+            Ok(([127, 0, 0, 1].into(), common, common))
         }
 
         _ => Err(anyhow!("Invalid port format.")),
@@ -291,4 +280,17 @@ pub async fn remove_entry_from_hosts(domain: &str) -> Result<()> {
     fs::remove_file(&temp_hosts).await?;
 
     Ok(())
+}
+
+pub fn get_id_with_prefix(id: Option<&str>) -> Option<(Prefix, String)> {
+    if let Some(id) = id {
+        let mut split = id.split('_');
+
+        Some((
+            split.next().map(|p| p.parse().unwrap()).unwrap_or_default(),
+            id.to_string(),
+        ))
+    } else {
+        None
+    }
 }

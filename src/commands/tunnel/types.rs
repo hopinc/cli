@@ -1,3 +1,6 @@
+use std::convert::Infallible;
+use std::str::FromStr;
+
 use serde::de::Error as SerdeDeError;
 use serde::ser::Error as SerdeSerError;
 use serde::{Deserialize, Serialize};
@@ -88,6 +91,26 @@ impl Serialize for TonneruPacket {
             }
 
             _ => Err(SerdeSerError::custom("invalid opcode sent"))?,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub enum Prefix {
+    Deployment,
+    Container,
+    #[default]
+    Unknown,
+}
+
+impl FromStr for Prefix {
+    type Err = Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "deployment" => Ok(Self::Deployment),
+            "container" => Ok(Self::Container),
+            _ => Ok(Self::Unknown),
         }
     }
 }

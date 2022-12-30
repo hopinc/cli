@@ -12,8 +12,12 @@ use tokio::sync::mpsc::unbounded_channel;
 
 use self::utils::{parse_publish, TonneruSocket};
 use super::ignite::utils::get_all_deployments;
-use crate::commands::ignite::utils::format_deployments;
-use crate::commands::tunnel::utils::{add_entry_to_hosts, remove_entry_from_hosts};
+use crate::commands::ignite::types::Deployment;
+use crate::commands::ignite::utils::{format_deployments, get_deployment};
+use crate::commands::tunnel::types::Prefix;
+use crate::commands::tunnel::utils::{
+    add_entry_to_hosts, get_id_with_prefix, remove_entry_from_hosts,
+};
 use crate::state::State;
 use crate::utils::urlify;
 
@@ -28,7 +32,7 @@ pub struct Options {
     #[clap(help = "Resource to tunnel to, can be a deployment name, ID")]
     pub deployment: Option<String>,
     #[clap(long, help = "Publish a container's port(s) to the host", value_parser = parse_publish)]
-    pub publish: Option<(String, u16, u16)>,
+    pub publish: Option<(IpAddr, u16, u16)>,
     #[clap(long, help = "Add an entry to your hosts file with the tunnel domain")]
     pub hosts: bool,
 }
@@ -36,25 +40,37 @@ pub struct Options {
 pub async fn handle(options: &Options, state: State) -> Result<()> {
     let project = state.ctx.clone().current_project_error();
 
-    let deployments = get_all_deployments(&state.http, &project.id).await?;
-    ensure!(!deployments.is_empty(), "No deployments found.");
+    let deployment = match get_id_with_prefix(options.deployment.as_deref()) {
+        Some((Prefix::Deployment, id)) => get_deployment(&state.http, &id).await?,
+        Some((Prefix::Container, id)) => Deployment {
+            id: id.clone(),
+            name: id,
+            container_count: 1,
+            ..Default::default()
+        },
+        unknown => {
+            let deployments = get_all_deployments(&state.http, &project.id).await?;
+            ensure!(!deployments.is_empty(), "No deployments found.");
 
-    let deployment = if let Some(ref id) = options.deployment {
-        deployments
-            .into_iter()
-            .find(|d| d.id == *id || d.name == *id)
-            .ok_or_else(|| anyhow!("Deployment not found."))?
-    } else {
-        let deployments_fmt = format_deployments(&deployments, false);
+            if let Some((_, name)) = unknown {
+                deployments
+                    .iter()
+                    .find(|d| d.name == name)
+                    .ok_or_else(|| anyhow!("Deployment not found."))?
+                    .clone()
+            } else {
+                let deployments_fmt = format_deployments(&deployments, false);
 
-        let idx = dialoguer::Select::new()
-            .with_prompt("Select a deployment")
-            .items(&deployments_fmt)
-            .default(0)
-            .interact_opt()?
-            .ok_or_else(|| anyhow!("No deployment selected."))?;
+                let idx = dialoguer::Select::new()
+                    .with_prompt("Select a deployment")
+                    .items(&deployments_fmt)
+                    .default(0)
+                    .interact_opt()?
+                    .ok_or_else(|| anyhow!("No deployment selected."))?;
 
-        deployments[idx].clone()
+                deployments[idx].clone()
+            }
+        }
     };
 
     ensure!(
@@ -62,12 +78,12 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
         "Deployment has no running containers."
     );
 
-    let (ip_address, local_port, remote_port) = if let Some(ref publish_values) = options.publish {
-        publish_values.clone()
+    let (ip_address, local_port, remote_port) = if let Some(publish_values) = options.publish {
+        publish_values
     } else {
-        let local_address = dialoguer::Input::<String>::new()
+        let local_address = dialoguer::Input::<IpAddr>::new()
             .with_prompt("Local IP address to bind to")
-            .default("127.0.0.1".to_string())
+            .default(IpAddr::from([127, 0, 0, 1]))
             .interact()?;
 
         let mut ports = HashSet::new();
@@ -75,13 +91,16 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
         // metadata is only available for running containers
         deployment
             .metadata
-            .unwrap()
+            .unwrap_or_default()
             .container_port_mappings
             .values()
             .for_each(|v| {
                 v.iter().for_each(|p| {
                     let port_split = p.split(':').collect::<Vec<_>>();
-                    ports.insert(port_split.last().unwrap().to_string());
+
+                    if let Some(port) = port_split.last() {
+                        ports.insert(port.to_string());
+                    }
                 });
             });
 
@@ -91,12 +110,16 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
         log::debug!("Ports set: {:?}", ports);
 
         let local_port = {
-            let idx = dialoguer::Select::new()
-                .with_prompt("Select a local port")
-                .items(&ports)
-                .default(0)
-                .interact_opt()?
-                .ok_or_else(|| anyhow!("No port selected."))?;
+            let idx = if ports.len() == 1 {
+                0
+            } else {
+                dialoguer::Select::new()
+                    .with_prompt("Select a local port")
+                    .items(&ports)
+                    .default(0)
+                    .interact_opt()?
+                    .ok_or_else(|| anyhow!("No port selected."))?
+            };
 
             if idx == ports.len() - 1 {
                 dialoguer::Input::<u16>::new()
@@ -108,12 +131,16 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
         };
 
         let remote_port = {
-            let idx = dialoguer::Select::new()
-                .with_prompt("Select the remote port")
-                .items(&ports)
-                .default(0)
-                .interact_opt()?
-                .ok_or_else(|| anyhow!("No port selected."))?;
+            let idx = if ports.len() == 1 {
+                0
+            } else {
+                dialoguer::Select::new()
+                    .with_prompt("Select the remote port")
+                    .items(&ports)
+                    .default(0)
+                    .interact_opt()?
+                    .ok_or_else(|| anyhow!("No port selected."))?
+            };
 
             if idx == ports.len() - 1 {
                 dialoguer::Input::<u16>::new()
@@ -131,25 +158,25 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
         .token()
         .ok_or_else(|| anyhow!("No auth token found."))?;
 
-    let listiner = TcpListener::bind(SocketAddr::new(IpAddr::V4(ip_address.parse()?), local_port))
+    let listiner = TcpListener::bind(SocketAddr::new(ip_address, local_port))
         .await
         .map_err(|e| anyhow!("Failed to bind to port {local_port}: {e}"))?;
 
     let domain = if !options.hosts {
-        ip_address.clone()
+        ip_address.to_string()
     } else {
         format!("{}.{DOMAIN_SUFFIX}", deployment.name)
     };
 
     if options.hosts {
-        let ip_to_add = match ip_address.as_str() {
-            // if users wants to listen on all interfaces lets use loopback for the domain
-            "0.0.0.0" => "127.0.0.1",
-            ip => ip,
+        let ip_to_add = if ip_address.is_unspecified() {
+            "127.0.0.1".to_string()
+        } else {
+            ip_address.to_string()
         };
 
         // edit /etc/hosts
-        add_entry_to_hosts(&domain, ip_to_add).await?;
+        add_entry_to_hosts(&domain, &ip_to_add).await?;
 
         let rm_domain = domain.clone();
 
@@ -182,10 +209,9 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
 
     loop {
         let (mut stream, local_socket) = listiner.accept().await?;
+        let tonneru = tonneru.clone();
 
         log::info!("New connection from {local_socket}");
-
-        let tonneru = tonneru.clone();
 
         tokio::spawn(async move {
             let mut socket = match tonneru.connect().await {

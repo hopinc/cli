@@ -57,11 +57,6 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         .await
         .map_err(|e| anyhow!("Failed to update deployment: {}", e))?;
 
-    if deployment.can_rollout() {
-        log::info!("Rolling out new containers");
-        rollout(&state.http, &deployment.id).await?;
-    }
-
     if deployment.can_scale() {
         if let Some(count) = container_options.containers {
             log::info!(
@@ -72,6 +67,11 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
             scale(&state.http, &deployment.id, count).await?;
         }
+    }
+
+    if deployment.can_rollout() {
+        log::info!("Rolling out new containers");
+        rollout(&state.http, &deployment.id).await?;
     }
 
     log::info!(

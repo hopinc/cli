@@ -29,42 +29,42 @@ default = []
 update = []
 
 [dependencies]
-ms = "0.1.1"
-log = "0.4.17"
-dirs = "4.0.0"
-regex = "1.6.0"
-runas = "0.2.1"
-anyhow = "1.0.59"
-ignore = "0.4.18"
-console = "0.15.1"
-sys-info = "0.9.1"
-tabwriter = "1.2.1"
-tokio-tar = "0.3.0"
-dialoguer = "0.10.2"
-webbrowser = "0.8.0"
-portpicker = "0.1.1"
-serde_yaml = "0.9.4"
-serde_json = "1.0.82"
-serde_repr = "0.1.8"
-futures-util = "0.3.21"
-clap_complete = "3.2.5"
-clap = { version = "3.2.22", features = ["derive"] }
-fern = { version = "0.6.1", features = ["colored"] }
-tokio = { version = "1.20.1", features = ["full"] }
-serde = { version = "1.0.141", features = ["derive"] }
-hyper = { version = "0.14.20", features = ["server"] }
-ctrlc = { version = "3.2.2", features = ["termination"] }
-chrono = { version = "0.4.21", features = ["serde"] }
-async-compression = { version = "0.3.14", features = ["tokio", "gzip"] }
+ms = "0.1"
+log = "0.4"
+dirs = "4.0"
+regex = "1.6"
+runas = "0.2"
+anyhow = "1.0"
+ignore = "0.4"
+console = "0.15"
+sys-info = "0.9"
+tabwriter = "1.2"
+tokio-tar = "0.3"
+dialoguer = "0.10"
+webbrowser = "0.8"
+portpicker = "0.1"
+serde_yaml = "0.9"
+serde_json = "1.0"
+serde_repr = "0.1"
+futures-util = "0.3"
+clap_complete = "3.2"
+clap = { version = "3.2", features = ["derive"] }
+fern = { version = "0.6", features = ["colored"] }
+tokio = { version = "1.20", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+hyper = { version = "0.14", features = ["server"] }
+ctrlc = { version = "3.2", features = ["termination"] }
+chrono = { version = "0.4", features = ["serde"] }
+async-compression = { version = "0.3", features = ["tokio", "gzip"] }
 
 
 # *nix only deps
 [target.'cfg(all(not(windows), not(macos)))'.dependencies]
-hop_leap = { version = "0.1.0", features = [
+hop_leap = { version = "0.1", features = [
     "zlib",
     "rustls-tls-webpki-roots",
 ], default-features = false }
-reqwest = { version = "0.11.11", features = [
+reqwest = { version = "0.11", features = [
     "json",
     "multipart",
     "rustls-tls-webpki-roots",
@@ -80,18 +80,18 @@ async-tungstenite = { version = "0.19", features = [
 
 # windows only deps
 [target.'cfg(any(windows, macos))'.dependencies]
-async_zip = "0.0.9"
-reqwest = { version = "0.11.11", features = [
+async_zip = "0.0"
+reqwest = { version = "0.11", features = [
     "json",
     "multipart",
     "native-tls",
 ], default-features = false }
-hop_leap = { version = "0.1.0", features = [
+hop_leap = { version = "0.1", features = [
     "zlib",
     "native-tls",
 ], default-features = false }
-native-tls = "0.2.10"
-tokio-native-tls = "0.3.0"
+native-tls = "0.2"
+tokio-native-tls = "0.3"
 async-tungstenite = { version = "0.19", features = [
     "tokio-runtime",
     "tokio-native-tls",
@@ -99,6 +99,6 @@ async-tungstenite = { version = "0.19", features = [
 
 
 [target.'cfg(windows)'.build-dependencies]
-winapi = { version = "0.3.9", features = ["winuser"] }
-static_vcruntime = "2.0.0"
-winres = "0.1.12"
+winapi = { version = "0.3", features = ["winuser"] }
+static_vcruntime = "2.0"
+winres = "0.1"
