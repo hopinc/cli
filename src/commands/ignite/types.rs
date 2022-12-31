@@ -374,17 +374,17 @@ pub struct Tiers {
 pub struct Premade {
     pub name: String,
     pub description: String,
-    #[serde(skip)]
-    pub icon: String,
+    // #[serde(skip)]
+    // pub icon: String,
     pub image: String,
     pub entrypoint: Option<Vec<String>>,
     pub mountpath: String,
-    pub fs: VolumeFs,
+    pub filesystem: Option<VolumeFs>,
     pub final_note: Option<String>,
-    pub environment: HashMap<String, String>,
+    pub environment: Option<HashMap<String, String>>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Premades {
-    pub premades: Vec<Premade>,
+    pub premade: Vec<Premade>,
 }

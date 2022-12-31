@@ -8,6 +8,7 @@ mod list;
 mod promote;
 pub mod rollout;
 mod scale;
+mod templates;
 pub mod types;
 mod update;
 pub mod utils;
@@ -38,6 +39,7 @@ pub enum Commands {
     Builds(builds::Options),
     #[clap(alias = "rollback")]
     Promote(promote::Options),
+    Templates(templates::Options),
     // alias for hop containers
     Containers(super::containers::Options),
     Gateways(super::gateways::Options),
@@ -67,5 +69,6 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Commands::Builds(options) => builds::handle(options, state).await,
         Commands::FromCompose(options) => from_compose::handle(options, state).await,
         Commands::Tunnel(options) => super::tunnel::handle(&options, state).await,
+        Commands::Templates(options) => templates::handle(options, state).await,
     }
 }

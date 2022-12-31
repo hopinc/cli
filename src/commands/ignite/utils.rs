@@ -158,7 +158,7 @@ pub async fn get_premade(http: &HttpClient) -> Result<Vec<Premade>> {
         .await?
         .ok_or_else(|| anyhow!("Failed to parse response"))?;
 
-    Ok(response.premades)
+    Ok(response.premade)
 }
 
 pub fn format_deployments(deployments: &Vec<Deployment>, title: bool) -> Vec<String> {
@@ -730,26 +730,6 @@ pub fn get_shell_array(entrypoint: &str) -> Vec<String> {
         .collect()
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_get_entrypoint_array() {
-        let entrypoint = r#"/bin/bash -c "echo hello world""#;
-
-        let mut entrypoint_array = get_shell_array(entrypoint).into_iter();
-
-        assert_eq!(entrypoint_array.next(), Some("/bin/bash".to_string()));
-        assert_eq!(entrypoint_array.next(), Some("-c".to_string()));
-        assert_eq!(
-            entrypoint_array.next(),
-            Some(r#""echo hello world""#.to_string())
-        );
-        assert_eq!(entrypoint_array.next(), None);
-    }
-}
-
 pub async fn env_file_to_map(path: PathBuf) -> HashMap<String, String> {
     let mut env = HashMap::new();
 
@@ -783,4 +763,45 @@ pub async fn env_file_to_map(path: PathBuf) -> HashMap<String, String> {
     }
 
     env
+}
+
+pub fn format_premade(premades: &[Premade], title: bool) -> Result<Vec<String>> {
+    let mut tw = TabWriter::new(vec![]);
+
+    if title {
+        writeln!(&mut tw, "NAME\tDESCRIPTION")?;
+    }
+
+    for premade in premades {
+        if title {
+            writeln!(&mut tw, "{}\t{}", premade.name, premade.description)?;
+        } else {
+            writeln!(&mut tw, "{} - {}", premade.name, premade.description)?;
+        }
+    }
+
+    Ok(String::from_utf8(tw.into_inner()?)?
+        .lines()
+        .map(std::string::ToString::to_string)
+        .collect())
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_get_entrypoint_array() {
+        let entrypoint = r#"/bin/bash -c "echo hello world""#;
+
+        let mut entrypoint_array = get_shell_array(entrypoint).into_iter();
+
+        assert_eq!(entrypoint_array.next(), Some("/bin/bash".to_string()));
+        assert_eq!(entrypoint_array.next(), Some("-c".to_string()));
+        assert_eq!(
+            entrypoint_array.next(),
+            Some(r#""echo hello world""#.to_string())
+        );
+        assert_eq!(entrypoint_array.next(), None);
+    }
 }
