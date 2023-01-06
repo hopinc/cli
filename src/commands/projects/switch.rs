@@ -12,7 +12,7 @@ pub struct Options {
 }
 
 pub async fn handle(options: Options, mut state: State) -> Result<()> {
-    let projects = state.ctx.current.clone().unwrap().projects;
+    let projects = state.ctx.current.take().unwrap().projects;
 
     let project = match options.project.clone() {
         Some(namespace) => projects

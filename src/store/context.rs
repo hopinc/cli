@@ -16,7 +16,8 @@ pub struct Context {
     pub default_project: Option<String>,
     /// stored in the context store file
     pub default_user: Option<String>,
-    /// api url override
+    /// api url override, only save if its not null
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub override_api_url: Option<String>,
     // latest version of the cli and time it was last checked
     pub last_version_check: Option<(String, String)>,
@@ -53,10 +54,7 @@ impl Context {
 
     pub fn current_project(&self) -> Option<Project> {
         match self.project_override.clone() {
-            Some(project) => Some(
-                self.find_project_by_id_or_namespace(project.clone())
-                    .unwrap_or_else(|| panic!("Could not find project `{}`", project)),
-            ),
+            Some(project) => self.find_project_by_id_or_namespace(project.clone()),
 
             None => self
                 .default_project
