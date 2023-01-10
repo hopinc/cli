@@ -15,7 +15,7 @@ use crate::commands::gateways::types::{GatewayConfig, GatewayType};
 use crate::commands::gateways::util::{create_gateway, update_gateway_config};
 use crate::commands::ignite::create::{DeploymentConfig, Options as CreateOptions};
 use crate::commands::ignite::types::{
-    CreateDeployment, Deployment, ScalingStrategy, SingleDeployment,
+    CreateDeployment, Deployment, Image, ScalingStrategy, SingleDeployment,
 };
 use crate::commands::ignite::utils::{
     create_deployment, env_file_to_map, rollout, update_deployment_config, WEB_IGNITE_URL,
@@ -161,12 +161,15 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .await?
             };
 
-            deployment_config.image.name = format!(
-                "{}/{}/{}",
-                HOP_REGISTRY_URL,
-                project.namespace,
-                deployment_config.name.clone().unwrap()
-            );
+            deployment_config.image = Some(Image {
+                name: format!(
+                    "{}/{}/{}",
+                    HOP_REGISTRY_URL,
+                    project.namespace,
+                    deployment_config.name.clone().unwrap()
+                ),
+                ..Default::default()
+            });
 
             if options.envfile {
                 deployment_config

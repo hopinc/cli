@@ -19,7 +19,7 @@ use crate::commands::ignite::create::Options as CreateOptions;
 use crate::commands::ignite::from_compose::types::ServiceBuildUnion;
 use crate::commands::ignite::health::types::CreateHealthCheck;
 use crate::commands::ignite::health::utils::create_health_check;
-use crate::commands::ignite::types::Deployment;
+use crate::commands::ignite::types::{Deployment, Image};
 use crate::commands::ignite::utils::{
     create_deployment, scale, update_deployment_config, WEB_IGNITE_URL,
 };
@@ -56,10 +56,11 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Err(error) => {
             log::debug!("Failed to parse compose file: {}", error);
 
-            // note from alistair — I am writing this file as I am learning rust. currently I have no idea
-            // how I can implement a custom Deserialize that will provide a better error message
-            // including the name of the field that failed to deserialize. So, the code below
-            // is just parsing the error string.
+            // note from alistair — I am writing this file as I am learning rust. currently
+            // I have no idea how I can implement a custom Deserialize that will
+            // provide a better error message including the name of the field
+            // that failed to deserialize. So, the code below is just parsing
+            // the error string.
 
             // Reading:
             // https://stackoverflow.com/questions/61107467/is-there-a-way-to-extract-the-missing-field-name-from-serde-jsonerror
@@ -141,8 +142,8 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             .clone()
             .unwrap_or_else(|| name.clone());
 
-        // looks so bad but basically it joins both `ports` and `expose` into a single list
-        // then parses the port if its port:port or port format
+        // looks so bad but basically it joins both `ports` and `expose` into a single
+        // list then parses the port if its port:port or port format
         let gateways = {
             let ports = HashSet::<_>::from_iter(
                 service
@@ -177,11 +178,20 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             gateways
         };
 
-        if deployment_config.0.image.name.is_empty() {
+        if deployment_config
+            .0
+            .image
+            .clone()
+            .unwrap_or_default()
+            .name
+            .is_empty()
+        {
             log::info!("The image for `{name}` will be built by the Hop CLI and pushed to the Hop registry");
 
-            deployment_config.0.image.name =
-                format!("{}/{}/{}", HOP_REGISTRY_URL, project.namespace, dep_name);
+            deployment_config.0.image = Some(Image {
+                name: format!("{}/{}/{}", HOP_REGISTRY_URL, project.namespace, dep_name),
+                ..Default::default()
+            });
         }
 
         deployments_with_extras.push((

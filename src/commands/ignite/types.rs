@@ -6,7 +6,8 @@ use std::vec;
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::{commands::containers::types::ContainerType, utils::parse_key_val};
+use crate::commands::containers::types::ContainerType;
+use crate::utils::parse_key_val;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct Vgpu {
@@ -203,7 +204,8 @@ pub struct CreateDeployment {
     pub restart_policy: Option<RestartPolicy>,
     pub container_strategy: ScalingStrategy,
     pub env: HashMap<String, String>,
-    pub image: Image,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image: Option<Image>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     pub resources: Resources,
@@ -223,7 +225,7 @@ impl From<Deployment> for CreateDeployment {
             restart_policy: deployment.config.restart_policy,
             container_strategy: deployment.config.container_strategy,
             env: deployment.config.env,
-            image: deployment.config.image,
+            image: Some(deployment.config.image),
             name: Some(deployment.name),
             resources: deployment.config.resources,
             type_: Some(deployment.config.type_),

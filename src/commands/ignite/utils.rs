@@ -16,7 +16,7 @@ use super::types::{
 use crate::commands::containers::types::{ContainerOptions, ContainerType};
 use crate::commands::ignite::create::Options;
 use crate::commands::ignite::types::{
-    RamSizes, Resources, RestartPolicy, ScalingStrategy, VolumeFs,
+    Image, RamSizes, Resources, RestartPolicy, ScalingStrategy, VolumeFs,
 };
 use crate::state::http::HttpClient;
 use crate::utils::size::parse_size;
@@ -267,16 +267,22 @@ async fn update_config_args(
         deployment_config.name = Some(name);
     }
 
-    deployment_config.image.name = options
-        .image
-        .or_else(|| {
-            if is_update {
-                Some(deployment_config.image.name.clone())
-            } else {
-                None
-            }
-        })
-        .expect("Please specify an image via the `--image` flag");
+    deployment_config.image = Some(
+        options
+            .image
+            .map(|i| Image {
+                name: i,
+                ..Default::default()
+            })
+            .or_else(|| {
+                if is_update {
+                    Some(deployment_config.image.clone().unwrap_or_default())
+                } else {
+                    None
+                }
+            })
+            .expect("Please specify an image via the `--image` flag"),
+    );
 
     let tiers = get_tiers(http).await?;
 
@@ -435,23 +441,36 @@ async fn update_config_visual(
         deployment_config.name = None;
     }
 
-    deployment_config.image.name =
+    deployment_config.image =
         // if name is "" it's using hopdeploy ie. image is created on the fly
         if options.image.is_some() && options.image.clone().unwrap() == ""  {
-            options.image.unwrap()
+            Some(Image {
+            ..Default::default()
+            })
         } else {
-            dialoguer::Input::<String>::new()
-                .with_prompt("Image name")
-                .default(deployment_config.image.name.clone())
-                .show_default(!deployment_config.image.name.is_empty())
-                .validate_with(|image: &String| -> Result<(), &str> {
-                    if image.is_empty() {
-                        Err("Please specify an image")
-                    } else {
-                        Ok(())
-                    }
+            let old_name = deployment_config.image.clone().unwrap_or_default().name;
+
+            let new_name = dialoguer::Input::<String>::new()
+            .with_prompt("Image name")
+            .default(old_name.clone())
+            .show_default(!old_name.is_empty())
+            .validate_with(|image: &String| -> Result<(), &str> {
+                if image.is_empty() {
+                    Err("Please specify an image")
+                } else {
+                    Ok(())
+                }
+            })
+            .interact_text()?;
+
+            if old_name != new_name {
+                Some(Image {
+                    name: new_name,
+                    ..Default::default()
                 })
-                .interact_text()?
+            } else {
+                None
+            }
         };
 
     let mut tiers = get_tiers(http).await?;
@@ -514,10 +533,10 @@ async fn update_config_visual(
 
     log::debug!("Deployment type: {:?}", deployment_config.volume);
 
-    if !is_update
-        // volume only will be some and is_update to false in the `from-compose` command
-        && (deployment_config.volume.is_some()
-            || dialoguer::Confirm::new()
+    // volume only will be some and is_update to false in the `from-compose` command
+    if (!is_update && deployment_config.volume.is_some())
+        || ((is_update && deployment_config.image.is_none() || !is_update)
+            && dialoguer::Confirm::new()
                 .with_prompt("Would you like to attach a volume?")
                 .default(false)
                 .interact()?)
@@ -574,13 +593,28 @@ async fn update_config_visual(
         .interact_opt()?
         .unwrap_or(false)
     {
-        if deployment_config.type_ != Some(ContainerType::Stateful)
-            && dialoguer::Confirm::new()
-                .with_prompt("Would you like your containers to be deleted when they exit?")
-                .default(false)
-                .interact()?
-        {
-            deployment_config.type_ = Some(ContainerType::Ephemeral);
+        match deployment_config.type_ {
+            Some(ContainerType::Persistent) => {
+                if dialoguer::Confirm::new()
+                    .with_prompt("Would you like your containers to be deleted when they exit?")
+                    .default(false)
+                    .interact()?
+                {
+                    deployment_config.type_ = Some(ContainerType::Ephemeral);
+                }
+            }
+
+            Some(ContainerType::Ephemeral) => {
+                if dialoguer::Confirm::new()
+                    .with_prompt("Would you like your containers to be persisted when they exit?")
+                    .default(false)
+                    .interact()?
+                {
+                    deployment_config.type_ = Some(ContainerType::Persistent);
+                }
+            }
+
+            _ => {}
         }
 
         if dialoguer::Confirm::new()
@@ -645,6 +679,10 @@ async fn update_config_visual(
         deployment_config.restart_policy = Some(RestartPolicy::OnFailure);
     }
 
+    if deployment_config.type_ == Some(ContainerType::Stateful) {
+        deployment_config.type_ = None;
+    }
+
     Ok((deployment_config.clone(), container_options.clone()))
 }
 
@@ -706,7 +744,7 @@ fn get_env_from_input() -> Option<(String, String)> {
 }
 
 fn validate_deployment_name(name: &str) -> bool {
-    let regex = Regex::new(r"(?i)^[a-z0-9-]{1,}$").unwrap();
+    let regex = Regex::new(r"(?i)^[a-z0-9-]{1,20}$").unwrap();
 
     regex.is_match(name)
 }

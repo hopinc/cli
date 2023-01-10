@@ -4,7 +4,7 @@ use clap::Parser;
 use super::create::DeploymentConfig;
 use crate::commands::containers::utils::create_containers;
 use crate::commands::ignite::create::Options as CreateOptions;
-use crate::commands::ignite::types::{Config, Deployment, Volume};
+use crate::commands::ignite::types::{Config, Deployment, Image, Volume};
 use crate::commands::ignite::utils::{
     create_deployment, format_premade, get_premade, update_deployment_config, WEB_IGNITE_URL,
 };
@@ -79,7 +79,10 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     .await?;
 
     // override the image with the premade image
-    deployment_config.image.name = premade.image.clone();
+    deployment_config.image = Some(Image {
+        name: premade.image.clone(),
+        ..Default::default()
+    });
 
     let deployment = create_deployment(&state.http, &project.id, &deployment_config).await?;
 

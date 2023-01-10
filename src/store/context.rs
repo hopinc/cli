@@ -49,7 +49,7 @@ impl Context {
 
     pub fn current_project(&self) -> Option<Project> {
         match self.project_override.clone() {
-            Some(project) => self.find_project_by_id_or_namespace(project.clone()),
+            Some(project) => self.find_project_by_id_or_namespace(project),
 
             None => self
                 .default_project
