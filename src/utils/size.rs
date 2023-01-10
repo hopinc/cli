@@ -46,9 +46,9 @@ pub fn parse_size(size: &str) -> Result<u64> {
     Ok(size * UnitMultiplier::from_str(unit)? as u64)
 }
 
-pub fn is_valid_mem_size(n: u64, min: u64, max: u64) -> bool {
-    n >= min && n <= max && n.is_power_of_two()
-}
+// pub fn is_valid_mem_size(n: u64, min: u64, max: u64) -> bool {
+//     n >= min && n <= max && n.is_power_of_two()
+// }
 
 #[cfg(test)]
 mod tests {

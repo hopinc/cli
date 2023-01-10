@@ -1,11 +1,16 @@
-pub mod commands;
-pub mod config;
-pub mod state;
-pub mod store;
-pub mod utils;
+pub(crate) mod commands;
+pub(crate) mod config;
+pub(crate) mod state;
+pub(crate) mod store;
+pub(crate) mod utils;
 
+use anyhow::Result;
 use clap::Parser;
-use commands::Commands;
+use commands::update::version_notice;
+#[cfg(feature = "update")]
+use commands::Commands::Update;
+use commands::{handle_command, Commands};
+use state::{State, StateOptions};
 
 #[derive(Debug, Parser)]
 #[clap(
@@ -28,6 +33,42 @@ pub struct CLI {
 
     #[clap(short = 'D', long, help = "Enable debug mode", global = true)]
     pub debug: bool,
+}
+
+pub async fn run() -> Result<()> {
+    // create a new CLI instance
+    let cli = CLI::parse();
+
+    // setup panic hook
+    utils::set_hook();
+
+    utils::logs(cli.debug);
+
+    utils::sudo::fix().await?;
+
+    let state = State::new(StateOptions {
+        override_project: cli.project,
+        override_token: std::env::var("HOP_TOKEN").ok(),
+    })
+    .await;
+
+    if !state.is_ci {
+        match cli.commands {
+            #[cfg(feature = "update")]
+            Update(_) => None,
+            // its okay for the notice to fail
+            _ => version_notice(state.ctx.clone()).await.ok(),
+        };
+    }
+
+    if let Err(error) = handle_command(cli.commands, state).await {
+        log::error!("{}", error);
+        std::process::exit(1);
+    }
+
+    utils::clean_term();
+
+    Ok(())
 }
 
 #[cfg(test)]

@@ -47,11 +47,6 @@ impl Context {
             .cloned()
     }
 
-    pub fn find_project_by_id_or_namespace_error(&self, id_or_namespace: String) -> Project {
-        self.find_project_by_id_or_namespace(id_or_namespace)
-            .expect("Project not found, please check your spelling or switch accounts")
-    }
-
     pub fn current_project(&self) -> Option<Project> {
         match self.project_override.clone() {
             Some(project) => self.find_project_by_id_or_namespace(project.clone()),
@@ -119,6 +114,7 @@ impl Context {
     }
 
     // for future use with external package managers
+    #[cfg(feature = "update")]
     pub fn update_command(&self) -> String {
         format!("{EXEC_NAME} update")
     }

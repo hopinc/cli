@@ -35,12 +35,6 @@ impl Display for ContainerType {
     }
 }
 
-impl ContainerType {
-    pub fn values() -> Vec<Self> {
-        vec![Self::Ephemeral, Self::Persistent, Self::Stateful]
-    }
-}
-
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum ContainerState {
