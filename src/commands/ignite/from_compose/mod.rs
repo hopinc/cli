@@ -190,7 +190,6 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
             deployment_config.0.image = Some(Image {
                 name: format!("{}/{}/{}", HOP_REGISTRY_URL, project.namespace, dep_name),
-                ..Default::default()
             });
         }
 

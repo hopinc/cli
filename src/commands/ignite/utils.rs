@@ -270,10 +270,7 @@ async fn update_config_args(
     deployment_config.image = Some(
         options
             .image
-            .map(|i| Image {
-                name: i,
-                ..Default::default()
-            })
+            .map(|i| Image { name: i })
             .or_else(|| {
                 if is_update {
                     Some(deployment_config.image.clone().unwrap_or_default())
@@ -466,7 +463,6 @@ async fn update_config_visual(
             if old_name != new_name {
                 Some(Image {
                     name: new_name,
-                    ..Default::default()
                 })
             } else {
                 None
@@ -535,7 +531,7 @@ async fn update_config_visual(
 
     // volume only will be some and is_update to false in the `from-compose` command
     if (!is_update && deployment_config.volume.is_some())
-        || ((is_update && deployment_config.image.is_none() || !is_update)
+        || (!(is_update && deployment_config.image.is_some())
             && dialoguer::Confirm::new()
                 .with_prompt("Would you like to attach a volume?")
                 .default(false)

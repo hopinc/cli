@@ -168,7 +168,6 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                     project.namespace,
                     deployment_config.name.clone().unwrap()
                 ),
-                ..Default::default()
             });
 
             if options.envfile {

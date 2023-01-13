@@ -81,7 +81,6 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     // override the image with the premade image
     deployment_config.image = Some(Image {
         name: premade.image.clone(),
-        ..Default::default()
     });
 
     let deployment = create_deployment(&state.http, &project.id, &deployment_config).await?;
