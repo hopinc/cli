@@ -258,10 +258,7 @@ async fn update_config_args(
         .expect("The argument '--name <NAME>' requires a value but none was supplied")
         .to_lowercase();
 
-    ensure!(
-        validate_deployment_name(&name),
-        "Invalid deployment name, must be alphanumeric and hyphens only"
-    );
+    validate_deployment_name(&name)?;
 
     if !is_update || deployment_config.name != Some(name.clone()) {
         deployment_config.name = Some(name);
@@ -420,13 +417,7 @@ async fn update_config_visual(
             .with_prompt("Deployment name")
             .default(back_name.clone())
             .show_default(!back_name.is_empty())
-            .validate_with(|name: &String| -> Result<(), &str> {
-                if validate_deployment_name(name) {
-                    Ok(())
-                } else {
-                    Err("Invalid deployment name, must be alphanumeric and hyphens only")
-                }
-            })
+            .validate_with(|name: &String| -> Result<()> { validate_deployment_name(name) })
             .interact_text()?
             .trim()
             .to_string()
@@ -739,10 +730,29 @@ fn get_env_from_input() -> Option<(String, String)> {
     Some((key, value))
 }
 
-fn validate_deployment_name(name: &str) -> bool {
+fn validate_deployment_name(name: &str) -> Result<()> {
+    const MAX_LENGTH: usize = 20;
+
+    ensure!(
+        name.len() <= MAX_LENGTH,
+        "Deployment name must be less than {MAX_LENGTH} characters"
+    );
+
+    const MIN_LENGTH: usize = 1;
+
+    ensure!(
+        name.len() >= MIN_LENGTH,
+        "Deployment name must be greater than {MIN_LENGTH} characters"
+    );
+
     let regex = Regex::new(r"(?i)^[a-z0-9-]{1,20}$").unwrap();
 
-    regex.is_match(name)
+    ensure!(
+        regex.is_match(name),
+        "Deployment name must be lowercase alphanumeric characters or hyphens"
+    );
+
+    Ok(())
 }
 
 fn validate_cpu_count(cpu: &f64) -> Result<(), &'static str> {
