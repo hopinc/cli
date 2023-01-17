@@ -52,7 +52,8 @@ pub async fn run() -> Result<()> {
     })
     .await;
 
-    if !state.is_ci {
+    // do not show notice in debug mode or CI
+    if !cfg!(not(debug_assertions)) || !state.is_ci {
         match cli.commands {
             #[cfg(feature = "update")]
             Update(_) => None,

@@ -50,6 +50,7 @@ pub async fn build(
         let command = Command::new("docker")
             // allows us to build a lot more stuff
             .env("DOCKER_BUILDKIT", "1")
+            .env("DOCKER_SCAN_SUGGEST", "false")
             .arg("build")
             .arg(dir)
             .arg("-t")
@@ -82,6 +83,7 @@ pub async fn build(
 
         let command = Command::new(nixpacks_path)
             .env("DOCKER_BUILDKIT", "1")
+            .env("DOCKER_SCAN_SUGGEST", "false")
             .arg("build")
             .arg("-n")
             .arg(image)
