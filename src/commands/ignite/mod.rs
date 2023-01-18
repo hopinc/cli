@@ -32,16 +32,20 @@ pub enum Commands {
     Scale(scale::Options),
     #[clap(name = "get-env")]
     GetEnv(get_env::Options),
-    #[clap(name = "from-compose")]
+    #[clap(alias = "compose")]
     FromCompose(from_compose::Options),
     #[clap(alias = "check")]
     Health(health::Options),
+    #[clap(alias = "build")]
     Builds(builds::Options),
     #[clap(alias = "rollback")]
     Promote(promote::Options),
+    #[clap(alias = "template")]
     Templates(templates::Options),
     // alias for hop containers
+    #[clap(alias = "container", alias = "cts")]
     Containers(super::containers::Options),
+    #[clap(alias = "gateway")]
     Gateways(super::gateways::Options),
     Tunnel(super::tunnel::Options),
 }

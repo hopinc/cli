@@ -20,10 +20,11 @@ pub enum Commands {
     List(list::Options),
     #[clap(name = "rm", alias = "delete")]
     Delete(delete::Options),
+    #[clap(alias = "token")]
     Tokens(tokens::Options),
-    #[clap(name = "messages", alias = "send", alias = "msg")]
+    #[clap(alias = "send", alias = "msg")]
     Messages(messages::Options),
-    #[clap(name = "subscribe", alias = "sub", alias = "ts")]
+    #[clap(alias = "sub", alias = "ts")]
     Subscribe(subscribe::Options),
 }
 

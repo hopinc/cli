@@ -2,7 +2,6 @@ pub mod docker;
 mod list;
 pub mod login;
 mod logout;
-pub mod payment;
 mod switch;
 pub mod types;
 mod utils;
@@ -21,7 +20,6 @@ pub enum Commands {
     Switch(switch::Options),
     #[clap(alias = "registry")]
     Docker(docker::Options),
-    Payment(payment::Options),
 }
 
 #[derive(Debug, Parser)]
@@ -41,6 +39,5 @@ pub async fn handle(options: Options, mut state: State) -> Result<()> {
             Ok(())
         }
         Commands::Docker(options) => docker::handle(&options, &mut state).await,
-        Commands::Payment(options) => payment::handle(options, state).await,
     }
 }

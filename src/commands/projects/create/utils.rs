@@ -6,7 +6,7 @@ use hyper::{Body, Request, Response};
 use tokio::sync::mpsc::Sender;
 
 use super::WEB_PAYMENTS_URL;
-use crate::commands::auth::payment::utils::{format_payment_methods, get_all_payment_methods};
+use crate::commands::payment::utils::{format_payment_methods, get_all_payment_methods};
 use crate::state::http::HttpClient;
 use crate::utils::browser::listen_for_callback;
 use crate::utils::urlify;
