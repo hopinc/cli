@@ -143,22 +143,27 @@ pub async fn create_completions_commands(
 
 #[cfg(windows)]
 pub async fn unpack(packed_temp: &PathBuf, filename: &str) -> Result<PathBuf> {
+    use std::vec;
+
     use async_zip::read::stream::ZipFileReader;
+    use tokio::io::AsyncReadExt;
 
     log::debug!("Unpacking: {packed_temp:?}");
 
     let stream = fs::File::open(packed_temp).await?;
     // seeking breaks the zips since its a single file
-    let mut zip = ZipFileReader::new(stream);
+    let zip = ZipFileReader::new(stream);
 
     let exe = temp_dir().join(&format!("{filename}.exe"));
 
+    let mut data = vec![];
+
     // unpack the only file
-    let data = zip
-        .entry_reader()
+    zip.next_entry()
         .await?
         .expect("brokey entry")
-        .read_to_end_crc()
+        .reader()
+        .read_to_end(&mut data)
         .await?;
 
     fs::write(&exe, &data).await?;
