@@ -3,17 +3,11 @@ name = "hop-cli"
 version = "0.2.20"
 edition = "2021"
 license = "MPL-2.0"
-authors = ["Hop Inc."]
+authors = ["Hop, Inc."]
 description = "Interact with Hop in your terminal"
 repository = "https://github.com/hopinc/hop_cli"
 homepage = "https://hop.io"
 build = "build.rs"
-
-[package.metadata.winres]
-ProductName = "Hop CLI"
-OriginalFilename = "hop.exe"
-LegalCopyright = "© 2022 Hop Inc."
-FileDescription = "Interact with Hop in your terminal"
 
 [profile.release]
 strip = true
@@ -102,3 +96,4 @@ async-tungstenite = { version = "0.19", features = [
 winapi = { version = "0.3", features = ["winuser"] }
 static_vcruntime = "2.0"
 winres = "0.1"
+chrono = "*"
