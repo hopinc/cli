@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::Parser;
 use serde_json::Value;
 
@@ -21,10 +21,10 @@ pub async fn handle(options: Options, mut state: State) -> Result<()> {
     let projects = state.ctx.current.clone().unwrap().projects;
 
     let project = match options.project.clone() {
-        Some(namespace) => projects
-            .iter()
-            .find(|p| p.namespace == namespace || p.id == namespace)
-            .expect("Project not found"),
+        Some(namespace) => state
+            .ctx
+            .find_project_by_id_or_namespace(&namespace)
+            .with_context(|| format!("Project `{}` not found", namespace))?,
 
         None => {
             let projects_fmt = format_projects(&projects, false);
@@ -44,7 +44,7 @@ pub async fn handle(options: Options, mut state: State) -> Result<()> {
                 .expect("Failed to select project")
                 .expect("No project selected");
 
-            &projects[idx]
+            projects[idx].clone()
         }
     };
 
@@ -76,7 +76,7 @@ pub async fn handle(options: Options, mut state: State) -> Result<()> {
         state.ctx.save().await?;
     }
 
-    log::info!("Project {} deleted", format_project(project));
+    log::info!("Project {} deleted", format_project(&project));
 
     Ok(())
 }

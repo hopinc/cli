@@ -7,13 +7,12 @@ use regex::Regex;
 use serde::Deserialize;
 use serde_yaml::Value;
 
+use super::utils::get_seconds_from_docker_duration;
 use crate::commands::containers::types::ContainerType;
 use crate::commands::ignite::health::types::CreateHealthCheck;
 use crate::commands::ignite::types::{Config, Deployment, Image, RestartPolicy, Volume};
 use crate::commands::ignite::utils::{env_file_to_map, get_shell_array};
 use crate::utils::parse_key_val;
-
-use super::utils::get_seconds_from_docker_duration;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -56,7 +55,9 @@ impl DockerCompose {
                     bail!("Volume `{name}` is already used by another service");
                 }
 
-                let find = cloned_volumes.keys().find(|v| *v == &vol_name);
+                let find = cloned_volumes
+                    .keys()
+                    .find(|v| v.to_lowercase() == vol_name.to_lowercase());
 
                 if find.is_none() && (!vol_name.starts_with('/') || vol_name != ".") {
                     bail!("Volume `{name}` not found in volumes section");

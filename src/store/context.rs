@@ -35,7 +35,7 @@ impl Context {
         home_path(".hop/context.json")
     }
 
-    pub fn find_project_by_id_or_namespace(&self, id_or_namespace: String) -> Option<Project> {
+    pub fn find_project_by_id_or_namespace(&self, id_or_namespace: &str) -> Option<Project> {
         self.current
             .as_ref()
             .and_then(|me| {
@@ -49,12 +49,12 @@ impl Context {
 
     pub fn current_project(&self) -> Option<Project> {
         match self.project_override.clone() {
-            Some(project) => self.find_project_by_id_or_namespace(project),
+            Some(project) => self.find_project_by_id_or_namespace(&project),
 
             None => self
                 .default_project
                 .clone()
-                .and_then(|id| self.find_project_by_id_or_namespace(id)),
+                .and_then(|id| self.find_project_by_id_or_namespace(&id)),
         }
     }
 

@@ -17,7 +17,7 @@ pub async fn handle(options: Options, mut state: State) -> Result<()> {
     let project = match options.project.clone() {
         Some(namespace) => projects
             .iter()
-            .find(|p| p.namespace == namespace || p.id == namespace)
+            .find(|p| p.namespace.to_lowercase() == namespace.to_lowercase() || p.id == namespace)
             .expect("Project not found"),
         None => {
             let projects_fmt = format_projects(&projects, false);

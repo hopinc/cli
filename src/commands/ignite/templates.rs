@@ -24,19 +24,12 @@ pub struct Options {
 pub async fn handle(options: Options, state: State) -> Result<()> {
     let project = state.ctx.current_project_error();
 
-    log::info!(
-        "Deploying to project {} /{} ({})",
-        project.name,
-        project.namespace,
-        project.id
-    );
-
     let premades = get_premade(&state.http).await?;
 
     let premade = if let Some(ref template) = options.template {
         premades
             .iter()
-            .find(|p| &p.name == template)
+            .find(|p| p.name.to_lowercase() == template.to_lowercase())
             .ok_or_else(|| anyhow!("Could not find template `{}`", template))?
     } else {
         let premade_fmt = format_premade(&premades, false)?;
@@ -49,8 +42,6 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
         &premades[selection]
     };
-
-    // log::info!("Using template `{}`", premade.name);
 
     let (mut deployment_config, container_options) = update_deployment_config(
         &state.http,

@@ -55,7 +55,7 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
             if let Some((_, name)) = unknown {
                 deployments
                     .iter()
-                    .find(|d| d.name == name)
+                    .find(|d| d.name.to_lowercase() == name.to_lowercase())
                     .ok_or_else(|| anyhow!("Deployment not found."))?
                     .clone()
             } else {

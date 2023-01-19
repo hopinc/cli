@@ -94,8 +94,13 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             // if deployment exists it's safe to unwrap
             let project = state
                 .ctx
-                .find_project_by_id_or_namespace(hopfile.config.project_id)
-                .unwrap();
+                .find_project_by_id_or_namespace(&hopfile.config.project_id)
+                .with_context(|| {
+                    format!(
+                        "Could not find project with id {}",
+                        hopfile.config.project_id
+                    )
+                })?;
 
             if is_visual {
                 log::warn!("Deployment exists, skipping arguments");

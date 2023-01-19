@@ -284,9 +284,12 @@ async fn update_config_args(
         let mut resources = Resources::default();
 
         if let Some(tier) = options.config.tier {
-            let tier = tiers.iter().find(|t| t.name == tier).with_context(|| {
-                anyhow!("Invalid tier, please use `ignite tiers` to see available tiers")
-            })?;
+            let tier = tiers
+                .iter()
+                .find(|t| t.name.to_lowercase() == tier.to_lowercase())
+                .with_context(|| {
+                    anyhow!("Invalid tier, please use `ignite tiers` to see available tiers")
+                })?;
 
             resources = tier.resources.clone().into();
         }
