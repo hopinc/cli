@@ -93,7 +93,7 @@ async-tungstenite = { version = "0.19", features = [
 
 
 [target.'cfg(windows)'.build-dependencies]
+chrono = "0.4"
 winapi = { version = "0.3", features = ["winuser"] }
 static_vcruntime = "2.0"
 winres = "0.1"
-chrono = "*"
