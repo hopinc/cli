@@ -22,13 +22,13 @@ pub struct Options {
         help = "Project Token or Personal Authorization Token, you can use `--token=` to take the token from stdin"
     )]
     token: Option<String>,
-    #[clap(long, help = "Email")]
+    /*     #[clap(long, help = "Email")]
     email: Option<String>,
     #[clap(
         long,
         help = "Password, you can use `--password=` to take the token from stdin"
     )]
-    password: Option<String>,
+    password: Option<String>, */
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {

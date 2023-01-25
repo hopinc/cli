@@ -1,12 +1,11 @@
-use super::types::{LoginRequest, LoginResponse};
 use super::Options;
 use crate::state::http::HttpClient;
 
-pub async fn flags_login(options: Options, http: HttpClient) -> String {
+pub async fn flags_login(options: Options, _http: HttpClient) -> String {
     match options {
         Options { token: Some(_), .. }
         | Options {
-            email: None,
+           /*  email: None, */
             token: None,
             ..
         } => {
@@ -20,7 +19,7 @@ pub async fn flags_login(options: Options, http: HttpClient) -> String {
             }
         }
 
-        Options {
+/*         Options {
             email: Some(username),
             password: None,
             ..
@@ -41,7 +40,7 @@ pub async fn flags_login(options: Options, http: HttpClient) -> String {
                 };
 
             login_with_credentials(http, username, password).await
-        }
+        } */
 
         // _ => panic!(
         //     "Invalid login options, run `{} auth login --help` for more info",
@@ -50,7 +49,7 @@ pub async fn flags_login(options: Options, http: HttpClient) -> String {
     }
 }
 
-async fn login_with_credentials(http: HttpClient, email: String, password: String) -> String {
+/* async fn login_with_credentials(http: HttpClient, email: String, password: String) -> String {
     http.request::<LoginResponse>(
         "POST",
         "/auth",
@@ -66,3 +65,4 @@ async fn login_with_credentials(http: HttpClient, email: String, password: Strin
     .expect("Error while parsing login response")
     .token
 }
+ */
