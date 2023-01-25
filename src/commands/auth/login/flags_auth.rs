@@ -1,8 +1,7 @@
-use super::types::{LoginRequest, LoginResponse};
 use super::Options;
 use crate::state::http::HttpClient;
 
-pub async fn flags_login(options: Options, http: HttpClient) -> String {
+pub async fn flags_login(options: Options, _http: HttpClient) -> String {
     match options {
         Options { token: Some(_), .. }
         | Options {
