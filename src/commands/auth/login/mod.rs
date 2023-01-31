@@ -34,7 +34,7 @@ pub struct Options {
 pub async fn handle(options: Options, state: State) -> Result<()> {
     let init_token = if Options::default() != options {
         flags_login(options, state.http.clone()).await
-    } else if let Ok(env_token) = std::env::var("HOP_TOKEN") {
+    } else if let Ok(env_token) = std::env::var("TOKEN") {
         env_token
     } else {
         browser_login().await?

@@ -14,7 +14,7 @@ use crate::state::State;
 use crate::store::utils::home_path;
 use crate::utils::in_path;
 
-const NIXPACKS_OVERRIDE: &str = "HOP_NIXPACKS_BIN";
+const NIXPACKS_OVERRIDE: &str = "NIXPACKS_BIN";
 
 #[cfg(not(windows))]
 const NIXPACKS_VENDORED_PATH: &str = ".hop/bin/nixpacks";

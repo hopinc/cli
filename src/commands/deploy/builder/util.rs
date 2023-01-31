@@ -23,11 +23,14 @@ pub async fn builder_post(http: &HttpClient, deployment_id: &str, bytes: Vec<u8>
             .mime_str("application/x-gzip")?,
     );
 
+    let builder_uri =
+        std::env::var("BUILDER_URL").unwrap_or_else(|_| HOP_BUILD_BASE_URL.to_string());
+
     let response = http
         .client
         .request(
             Method::POST,
-            format!("{HOP_BUILD_BASE_URL}/deployments/{deployment_id}/builds",).as_str(),
+            format!("{builder_uri}/deployments/{deployment_id}/builds",).as_str(),
         )
         .header("content_type", "multipart/form-data".to_string())
         .multipart(multipart)

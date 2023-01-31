@@ -47,7 +47,12 @@ impl State {
         let (token, token_type) = Self::handle_token(init_token);
 
         // preffer the override token over the auth token
-        let http = HttpClient::new(token.clone(), ctx.override_api_url.clone());
+        let http = HttpClient::new(
+            token.clone(),
+            std::env::var("API_URL")
+                .ok()
+                .or_else(|| ctx.override_api_url.clone()),
+        );
 
         State {
             is_ci: Self::check_if_ci(),

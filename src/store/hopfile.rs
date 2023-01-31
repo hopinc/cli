@@ -87,6 +87,19 @@ impl HopFile {
 
     // Find a hopfile in the current directory or any of its parents.
     pub async fn find(mut path: PathBuf) -> Option<Self> {
+        // if there are environment variables set, use them instead
+        if let (Ok(project_id), Ok(deployment_id)) =
+            (std::env::var("PROJECT_ID"), std::env::var("DEPLOYMENT_ID"))
+        {
+            log::info!("Using environment variables for project and deployment IDs");
+
+            return Some(HopFile::new(
+                path.join("hop.yml"),
+                &project_id,
+                &deployment_id,
+            ));
+        }
+
         loop {
             for filename in VALID_HOP_FILENAMES {
                 let file_path = path.join(filename);

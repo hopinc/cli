@@ -12,7 +12,7 @@ use tokio::{fs, spawn};
 use self::types::BuildEvents;
 use self::util::{builder_post, compress};
 use crate::commands::ignite::builds::utils::cancel_build;
-use crate::config::HOP_LEAP_PROJECT;
+use crate::config::LEAP_PROJECT;
 use crate::state::State;
 use crate::utils::urlify;
 
@@ -25,8 +25,9 @@ pub async fn build(
     // connect to leap here so no logs interfere with the deploy
     let mut leap = LeapEdge::new(LeapOptions {
         token: Some(&state.ctx.current.clone().unwrap().leap_token),
-        project: HOP_LEAP_PROJECT,
-        ..Default::default()
+        project: &std::env::var("LEAP_PROJECT").unwrap_or_else(|_| LEAP_PROJECT.to_string()),
+        ws_url: &std::env::var("LEAP_WS_URL")
+            .unwrap_or_else(|_| LeapOptions::default().ws_url.to_string()),
     })
     .await?;
 

@@ -47,8 +47,8 @@ pub async fn run() -> Result<()> {
     utils::sudo::fix().await?;
 
     let state = State::new(StateOptions {
-        override_project: cli.project,
-        override_token: std::env::var("HOP_TOKEN").ok(),
+        override_project: std::env::var("PROJECT_ID").ok().or(cli.project),
+        override_token: std::env::var("TOKEN").ok(),
     })
     .await;
 
