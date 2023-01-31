@@ -373,11 +373,17 @@ pub struct Tiers {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct Premades {
+    pub premade: Vec<Premade>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct Premade {
     pub name: String,
     pub description: String,
     // #[serde(skip)]
     // pub icon: String,
+    pub form: Option<PremadeForm>,
     pub image: String,
     pub entrypoint: Option<Vec<String>>,
     pub mountpath: String,
@@ -387,6 +393,41 @@ pub struct Premade {
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct Premades {
-    pub premade: Vec<Premade>,
+pub struct PremadeForm {
+    pub v: u64,
+    pub fields: Vec<PremadeField>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct PremadeField {
+    pub title: String,
+    pub description: Option<String>,
+    #[serde(default)]
+    pub required: bool,
+    pub input: PremadeInput,
+    pub map_to: Vec<MapTo>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum PremadeInput {
+    String {
+        default: Option<String>,
+        autogen: Option<Autogen>,
+        max_length: Option<usize>,
+        validator: Option<String>,
+    },
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum Autogen {
+    ProjectNamespace,
+    SecureToken,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum MapTo {
+    Env { key: String },
 }

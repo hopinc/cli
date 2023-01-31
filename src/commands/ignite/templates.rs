@@ -1,10 +1,11 @@
 use anyhow::{anyhow, Result};
 use clap::Parser;
+use regex::Regex;
 
 use super::create::DeploymentConfig;
 use crate::commands::containers::utils::create_containers;
 use crate::commands::ignite::create::Options as CreateOptions;
-use crate::commands::ignite::types::{Config, Deployment, Image, Volume};
+use crate::commands::ignite::types::{Config, Deployment, Image, MapTo, PremadeInput, Volume};
 use crate::commands::ignite::utils::{
     create_deployment, format_premade, get_premade, update_deployment_config, WEB_IGNITE_URL,
 };
@@ -68,6 +69,64 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         false,
     )
     .await?;
+
+    if let Some(form) = &premade.form {
+        log::info!("This template requires some additional information");
+
+        for field in &form.fields {
+            let value = match &field.input {
+                PremadeInput::String {
+                    default,
+                    autogen,
+                    max_length,
+                    validator,
+                } => {
+                    let mut input = dialoguer::Input::<String>::new();
+
+                    if let Some(default) = default {
+                        input.default(default.clone());
+                    }
+
+                    input.validate_with(|input: &String| -> Result<(), String> {
+                        if let Some(max_length) = *max_length {
+                            if input.len() > max_length {
+                                return Err(format!(
+                                    "Input must be less than {max_length} characters",
+                                ));
+                            }
+                        }
+
+                        if let Some(validator) = validator.clone() {
+                            if Regex::new(&validator)
+                                .map_err(|e| e.to_string())?
+                                .is_match(input)
+                            {
+                                return Err(format!("Input must match regex `{validator}`",));
+                            }
+                        }
+
+                        Ok(())
+                    });
+
+                    if let Some(description) = &field.description {
+                        input.with_prompt(format!("{} ({})", field.title, description));
+                    } else {
+                        input.with_prompt(&field.title);
+                    }
+
+                    input.interact()?
+                }
+            };
+
+            for place in &field.map_to {
+                match place {
+                    MapTo::Env { key } => {
+                        deployment_config.env.insert(key.clone(), value.clone());
+                    }
+                }
+            }
+        }
+    }
 
     // override the image with the premade image
     deployment_config.image = Some(Image {
