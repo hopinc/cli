@@ -54,7 +54,7 @@ async-compression = { version = "0.3", features = ["tokio", "gzip"] }
 
 # *nix only deps
 [target.'cfg(all(not(windows), not(macos)))'.dependencies]
-hop_leap = { version = "0.1", features = [
+leap_client_rs = { version = "0.1", features = [
     "zlib",
     "rustls-tls-webpki-roots",
 ], default-features = false }
@@ -80,7 +80,7 @@ reqwest = { version = "0.11", features = [
     "multipart",
     "native-tls",
 ], default-features = false }
-hop_leap = { version = "0.1", features = [
+leap_client_rs = { version = "0.1", features = [
     "zlib",
     "native-tls",
 ], default-features = false }

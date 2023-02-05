@@ -4,8 +4,8 @@ mod util;
 use std::path::PathBuf;
 
 use anyhow::{bail, Result};
-use hop_leap::leap::types::Event;
-use hop_leap::{LeapEdge, LeapOptions};
+use leap_client_rs::leap::types::Event;
+use leap_client_rs::{LeapEdge, LeapOptions};
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::{fs, spawn};
 
