@@ -522,7 +522,7 @@ impl<'de> Deserialize<'de> for DockerVolume {
             }
 
             unx => Err(serde::de::Error::invalid_type(
-                serde::de::Unexpected::Other(&format!("{:?}", unx)),
+                serde::de::Unexpected::Other(&format!("{unx:?}")),
                 &"Expected a sequence",
             )),
         }
@@ -558,7 +558,7 @@ impl<'de> Deserialize<'de> for DockerShellString {
             Value::String(string) => Ok(Self(get_shell_array(&string))),
 
             unx => Err(serde::de::Error::invalid_type(
-                serde::de::Unexpected::Other(&format!("{:?}", unx)),
+                serde::de::Unexpected::Other(&format!("{unx:?}")),
                 &"Expected a sequence",
             )),
         }
@@ -594,7 +594,7 @@ impl<'de> Deserialize<'de> for EnvFile {
             Value::String(string) => Ok(Self(vec![string])),
 
             unx => Err(serde::de::Error::invalid_type(
-                serde::de::Unexpected::Other(&format!("{:?}", unx)),
+                serde::de::Unexpected::Other(&format!("{unx:?}")),
                 &"Expected a sequence",
             )),
         }

@@ -21,7 +21,7 @@ pub async fn create_containers(
     let response = http
         .request::<MultipleContainersResponse>(
             "POST",
-            &format!("/ignite/deployments/{}/containers", deployment_id),
+            &format!("/ignite/deployments/{deployment_id}/containers"),
             Some((
                 serde_json::to_vec(&CreateContainers { count })
                     .unwrap()
@@ -38,7 +38,7 @@ pub async fn create_containers(
 pub async fn delete_container(http: &HttpClient, container_id: &str) -> Result<()> {
     http.request::<Value>(
         "DELETE",
-        &format!("/ignite/containers/{}", container_id),
+        &format!("/ignite/containers/{container_id}"),
         None,
     )
     .await?;

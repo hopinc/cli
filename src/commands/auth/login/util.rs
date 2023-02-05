@@ -41,7 +41,7 @@ pub async fn token_options(http: HttpClient, token_type: Option<TokenType>) -> A
         Some(TokenType::Ptk) => login_ptk(http.clone()).await,
         // should be impossible to get here
         token => {
-            panic!("Unsupported token type: {:?}", token);
+            panic!("Unsupported token type: {token:?}");
         }
     }
 }

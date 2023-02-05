@@ -2,7 +2,7 @@ use anyhow::{anyhow, ensure, Result};
 use clap::Parser;
 
 use super::create::Options as CreateOptions;
-use crate::commands::deploy;
+
 use crate::commands::ignite::utils::{
     format_deployments, get_all_deployments, get_deployment, rollout, scale, update_deployment,
     update_deployment_config,

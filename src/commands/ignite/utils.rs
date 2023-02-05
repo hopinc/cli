@@ -42,8 +42,7 @@ pub async fn get_deployment(http: &HttpClient, deployment_id: &str) -> Result<De
         .request::<SingleDeployment>(
             "GET",
             &format!(
-                "/ignite/deployments/{deployment_id}",
-                deployment_id = deployment_id
+                "/ignite/deployments/{deployment_id}"
             ),
             None,
         )

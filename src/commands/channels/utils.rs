@@ -17,7 +17,7 @@ pub async fn create_channel(
     cutsom_id: Option<&str>,
 ) -> Result<Channel> {
     let (method, path) = match cutsom_id {
-        Some(id) => ("PUT", format!("/channels/{}", id)),
+        Some(id) => ("PUT", format!("/channels/{id}")),
         None => ("POST", "/channels".to_string()),
     };
 
@@ -75,8 +75,7 @@ async fn get_channels_in_page(
         .request::<PaginatedChannels>(
             "GET",
             &format!(
-                "/channels?project={}&page={}&pageSize={PAGE_SIZE}",
-                project_id, page
+                "/channels?project={project_id}&page={page}&pageSize={PAGE_SIZE}"
             ),
             None,
         )

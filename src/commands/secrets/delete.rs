@@ -27,7 +27,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         None => {
             let secrets = state
                 .http
-                .request::<Secrets>("GET", &format!("/projects/{}/secrets", project_id), None)
+                .request::<Secrets>("GET", &format!("/projects/{project_id}/secrets"), None)
                 .await?
                 .unwrap()
                 .secrets;
@@ -66,7 +66,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         .http
         .request::<Value>(
             "DELETE",
-            &format!("/projects/{}/secrets/{}", project_id, secret_name),
+            &format!("/projects/{project_id}/secrets/{secret_name}"),
             None,
         )
         .await?;

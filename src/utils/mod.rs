@@ -26,7 +26,7 @@ pub fn set_hook() {
         } else if let Some(message) = panic_info.payload().downcast_ref::<&str>() {
             (*message).to_string()
         } else {
-            format!("{:?}", panic_info)
+            format!("{panic_info:?}")
         };
 
         // add some color
@@ -201,7 +201,7 @@ where
 {
     let pos = s
         .find('=')
-        .ok_or_else(|| format!("invalid KEY=value: no `=` found in `{}`", s))?;
+        .ok_or_else(|| format!("invalid KEY=value: no `=` found in `{s}`"))?;
 
     Ok((s[..pos].parse::<T>()?, s[pos + 1..].parse::<U>()?))
 }

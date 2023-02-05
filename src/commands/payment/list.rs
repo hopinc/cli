@@ -21,7 +21,7 @@ pub async fn handle(options: &Options, state: &State) -> Result<()> {
             .collect::<Vec<_>>()
             .join(" ");
 
-        println!("{}", ids);
+        println!("{ids}");
     } else {
         let payment_methods_fmt = format_payment_methods(&payment_methods, true)?;
 

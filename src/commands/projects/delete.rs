@@ -24,7 +24,7 @@ pub async fn handle(options: Options, mut state: State) -> Result<()> {
         Some(namespace) => state
             .ctx
             .find_project_by_id_or_namespace(&namespace)
-            .with_context(|| format!("Project `{}` not found", namespace))?,
+            .with_context(|| format!("Project `{namespace}` not found"))?,
 
         None => {
             let projects_fmt = format_projects(&projects, false);

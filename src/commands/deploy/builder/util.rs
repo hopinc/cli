@@ -59,7 +59,7 @@ static DEFAULT_IGNORE_LIST: &[&str] = &[
 // compress stuff
 pub async fn compress(id: &str, base_dir: PathBuf) -> Result<String> {
     let base_folder_name = Path::new(&id);
-    let archive_path = temp_dir().join(format!("hop_{}.tar.gz", id));
+    let archive_path = temp_dir().join(format!("hop_{id}.tar.gz"));
 
     // tarball gunzip stuff
     let writer = File::create(archive_path.clone()).await?;

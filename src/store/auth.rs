@@ -33,7 +33,7 @@ impl Auth {
                 }
 
                 Err(err) => {
-                    panic!("Error opening auth file: {}", err)
+                    panic!("Error opening auth file: {err}")
                 }
             },
             Err(_) => Self::default().save().await.unwrap(),

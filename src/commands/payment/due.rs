@@ -54,7 +54,7 @@ pub async fn handle(options: &Options, state: &State) -> Result<()> {
         .into_iter()
         .zip(payment_methods.into_iter())
     {
-        println!("{}", payment_method_fmt);
+        println!("{payment_method_fmt}");
 
         let balances = payment_method_balance.get(&payment_method.id).unwrap();
 
