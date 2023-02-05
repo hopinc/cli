@@ -84,15 +84,16 @@ jobs:
             platform: i686-Windows
             flags: --all-features
 
-          # ARM WINDOWS xD
+          # these targets currently fail for unknown reasons
+
           # - target: aarch64-pc-windows-msvc
           #   os: windows-latest
           #   platform: aarch64-windows
 
-          - target: x86_64-unknown-freebsd
-            os: ubuntu-latest
-            platform: x86_64-FreeBSD
-            flags: --all-features
+          # - target: x86_64-unknown-freebsd
+          #   os: ubuntu-latest
+          #   platform: x86_64-FreeBSD
+          #   flags: --all-features
 
     steps:
       - name: Checkout repository
