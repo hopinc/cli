@@ -55,6 +55,9 @@ pub struct Options {
         help = "Build the container locally using nixpacks or docker instead of using the builder"
     )]
     local: bool,
+
+    #[clap(long, help = "Do not roll out the changes, only build")]
+    no_rollout: bool,
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
@@ -231,7 +234,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     }
 
     if existing {
-        if deployment.container_count > 0 {
+        if deployment.can_rollout() && deployment.container_count > 0 && !options.no_rollout {
             log::info!("Rolling out new containers");
             rollout(&state.http, &deployment.id).await?;
         }

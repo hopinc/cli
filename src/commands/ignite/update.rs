@@ -2,6 +2,7 @@ use anyhow::{anyhow, ensure, Result};
 use clap::Parser;
 
 use super::create::Options as CreateOptions;
+use crate::commands::deploy;
 use crate::commands::ignite::utils::{
     format_deployments, get_all_deployments, get_deployment, rollout, scale, update_deployment,
     update_deployment_config,
@@ -16,6 +17,9 @@ pub struct Options {
 
     #[clap(flatten)]
     config: CreateOptions,
+
+    #[clap(long, help = "Do not roll out the changes, only build")]
+    no_rollout: bool,
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
@@ -53,7 +57,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     )
     .await?;
 
-    let deployment = update_deployment(&state.http, &old_deployment.id, &deployment_config)
+    let mut deployment = update_deployment(&state.http, &old_deployment.id, &deployment_config)
         .await
         .map_err(|e| anyhow!("Failed to update deployment: {}", e))?;
 
@@ -66,10 +70,12 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             );
 
             scale(&state.http, &deployment.id, count).await?;
+
+            deployment.container_count = count;
         }
     }
 
-    if deployment.can_rollout() {
+    if deployment.can_rollout() && deployment.container_count > 0 && !options.no_rollout {
         log::info!("Rolling out new containers");
         rollout(&state.http, &deployment.id).await?;
     }
