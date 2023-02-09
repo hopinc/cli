@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
 use clap::Parser;
+use leap_client_rs::{LeapEdge, LeapOptions};
 use regex::bytes::Regex;
 use tokio::fs;
 
@@ -23,6 +24,7 @@ use crate::commands::ignite::types::{Deployment, Image};
 use crate::commands::ignite::utils::{
     create_deployment, scale, update_deployment_config, WEB_IGNITE_URL,
 };
+use crate::config::LEAP_PROJECT;
 use crate::state::State;
 use crate::store::hopfile::HopFile;
 use crate::utils::urlify;
@@ -224,6 +226,18 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         false
     };
 
+    // connect to leap here so no logs interfere with the deploy
+    let mut leap = LeapEdge::new(LeapOptions {
+        token: Some(&state.ctx.current.clone().unwrap().leap_token),
+        project: &std::env::var("LEAP_PROJECT").unwrap_or_else(|_| LEAP_PROJECT.to_string()),
+        ws_url: &std::env::var("LEAP_WS_URL")
+            .unwrap_or_else(|_| LeapOptions::default().ws_url.to_string()),
+    })
+    .await?;
+
+    // all projects should already be subscribed but this is a precaution
+    leap.channel_subscribe(&project.id).await?;
+
     for (deployment, containers, builder, gateways, health_checks) in deployments_with_extras {
         let dep = create_deployment(&state.http, &project.id, &deployment).await?;
         log::info!("Created deployment `{}`", dep.name);
@@ -252,7 +266,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             if build_localy {
                 local::build(&state, &dep.config.image.name, path, &dep.config.env).await?;
             } else {
-                builder::build(&state, &project.id, &dep.id, path).await?;
+                builder::build(&state, &project.id, &dep.id, path, &mut leap).await?;
             }
         }
 

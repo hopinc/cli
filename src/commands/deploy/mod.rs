@@ -6,6 +6,7 @@ use std::path::PathBuf;
 
 use anyhow::{ensure, Context, Result};
 use clap::Parser;
+use leap_client_rs::{LeapEdge, LeapOptions};
 
 use crate::commands::auth::docker::HOP_REGISTRY_URL;
 use crate::commands::containers::types::{ContainerOptions, ContainerType};
@@ -21,6 +22,7 @@ use crate::commands::ignite::utils::{
     create_deployment, env_file_to_map, rollout, update_deployment_config, WEB_IGNITE_URL,
 };
 use crate::commands::projects::utils::format_project;
+use crate::config::LEAP_PROJECT;
 use crate::state::State;
 use crate::store::hopfile::HopFile;
 use crate::utils::urlify;
@@ -221,8 +223,20 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         }
     };
 
+    // connect to leap here so no logs interfere with the deploy
+    let mut leap = LeapEdge::new(LeapOptions {
+        token: Some(&state.ctx.current.clone().unwrap().leap_token),
+        project: &std::env::var("LEAP_PROJECT").unwrap_or_else(|_| LEAP_PROJECT.to_string()),
+        ws_url: &std::env::var("LEAP_WS_URL")
+            .unwrap_or_else(|_| LeapOptions::default().ws_url.to_string()),
+    })
+    .await?;
+
+    // all projects should already be subscribed but this is a precaution
+    leap.channel_subscribe(&project.id).await?;
+
     if !options.local {
-        builder::build(&state, &project.id, &deployment.id, dir.clone()).await?;
+        builder::build(&state, &project.id, &deployment.id, dir.clone(), &mut leap).await?;
     } else {
         local::build(
             &state,
@@ -234,16 +248,17 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     }
 
     if existing {
-        if deployment.can_rollout() && deployment.container_count > 0 && !options.no_rollout {
+        if deployment.can_rollout() && !options.no_rollout {
             log::info!("Rolling out new containers");
             rollout(&state.http, &deployment.id).await?;
         }
-    } else if let Some(containers) = container_options
-        .containers
-        .or(container_options.min_containers)
-    {
-        create_containers(&state.http, &deployment.id, containers).await?;
+    } else if let Some(containers) = container_options.containers {
+        if deployment.can_scale() && containers > 0 {
+            create_containers(&state.http, &deployment.id, containers).await?;
+        }
     }
+
+    leap.close().await;
 
     log::info!(
         "Deployed successfully, you can find it at: {}",

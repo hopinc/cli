@@ -8,14 +8,10 @@ use tokio::process::Command;
 
 use super::utils::{format_containers, format_logs, get_all_containers, get_container_logs};
 use crate::commands::ignite::utils::{format_deployments, get_all_deployments};
+use crate::config::DEFAULT_EDITOR;
 use crate::state::State;
 use crate::utils::arisu::{ArisuClient, ArisuMessage};
 use crate::utils::in_path;
-
-#[cfg(windows)]
-const DEFAULT_EDITOR: &str = "notepad.exe";
-#[cfg(not(windows))]
-const DEFAULT_EDITOR: &str = "vi";
 
 #[derive(Debug, Parser)]
 #[clap(about = "Get logs of a container")]

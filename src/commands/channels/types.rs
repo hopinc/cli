@@ -77,10 +77,12 @@ pub struct EventOptions {
     pub data: Option<String>,
 }
 
+pub type EventData = serde_json::Map<String, serde_json::Value>;
+
 #[derive(Debug, Serialize)]
 pub struct MessageEvent {
     #[serde(rename = "e")]
     pub event: String,
     #[serde(rename = "d")]
-    pub data: Value,
+    pub data: EventData,
 }

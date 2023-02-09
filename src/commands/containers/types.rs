@@ -1,6 +1,5 @@
 use std::fmt::Display;
 use std::str::FromStr;
-use std::vec;
 
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
@@ -56,48 +55,6 @@ impl Display for ContainerState {
     }
 }
 
-impl ContainerState {
-    pub fn from_changeable_state(state: &ChangeableContainerState) -> Self {
-        match state {
-            ChangeableContainerState::Start => Self::Running,
-            ChangeableContainerState::Stop => Self::Stopped,
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
-pub enum ChangeableContainerState {
-    #[serde(rename = "stop")]
-    Stop,
-
-    #[serde(rename = "start")]
-    Start,
-}
-
-impl Display for ChangeableContainerState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            serde_json::to_string(self).unwrap().replace('"', "")
-        )
-    }
-}
-
-impl FromStr for ChangeableContainerState {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        serde_json::from_str(&format!("\"{}\"", s.to_lowercase())).map_err(|e| anyhow!(e))
-    }
-}
-
-impl ChangeableContainerState {
-    pub fn values() -> Vec<Self> {
-        vec![Self::Stop, Self::Start]
-    }
-}
-
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Uptime {
     pub last_start: Option<DateTime<Utc>>,
@@ -143,11 +100,6 @@ impl ContainerOptions {
 #[derive(Debug, Serialize)]
 pub struct CreateContainers {
     pub count: u64,
-}
-
-#[derive(Debug, Serialize)]
-pub struct UpdateContainerState {
-    pub preferred_state: ContainerState,
 }
 
 #[derive(Debug, Deserialize, Clone)]

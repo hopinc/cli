@@ -5,14 +5,13 @@ use std::path::PathBuf;
 
 use anyhow::{bail, Result};
 use leap_client_rs::leap::types::Event;
-use leap_client_rs::{LeapEdge, LeapOptions};
+use leap_client_rs::LeapEdge;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::{fs, spawn};
 
 use self::types::BuildEvents;
 use self::util::{builder_post, compress};
 use crate::commands::ignite::builds::utils::cancel_build;
-use crate::config::LEAP_PROJECT;
 use crate::state::State;
 use crate::utils::urlify;
 
@@ -21,19 +20,8 @@ pub async fn build(
     project_id: &str,
     deployment_id: &str,
     dir: PathBuf,
+    leap: &mut LeapEdge,
 ) -> Result<()> {
-    // connect to leap here so no logs interfere with the deploy
-    let mut leap = LeapEdge::new(LeapOptions {
-        token: Some(&state.ctx.current.clone().unwrap().leap_token),
-        project: &std::env::var("LEAP_PROJECT").unwrap_or_else(|_| LEAP_PROJECT.to_string()),
-        ws_url: &std::env::var("LEAP_WS_URL")
-            .unwrap_or_else(|_| LeapOptions::default().ws_url.to_string()),
-    })
-    .await?;
-
-    // all projects should already be subscribed but this is a precaution
-    leap.channel_subscribe(project_id).await?;
-
     // deployment id is used not to colide if the user is deploying multiple items
     let packed = compress(deployment_id, dir).await?;
 
@@ -112,11 +100,12 @@ pub async fn build(
                 BuildEvents::PushSuccess(build_complete) => {
                     if build_complete.build_id == build.id {
                         tx.send("OK").ok();
-                        leap.close().await;
 
                         println!();
 
                         log::info!("Build complete");
+
+                        return Ok(());
                     }
                 }
 

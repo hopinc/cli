@@ -7,8 +7,7 @@ use serde_json::Value;
 use tabwriter::TabWriter;
 
 use super::types::{
-    ChangeableContainerState, Container, ContainerState, CreateContainers, Log, LogsResponse,
-    MultipleContainersResponse, UpdateContainerState,
+    Container, ContainerState, CreateContainers, Log, LogsResponse, MultipleContainersResponse,
 };
 use crate::state::http::HttpClient;
 use crate::utils::relative_time;
@@ -57,28 +56,6 @@ pub async fn get_all_containers(http: &HttpClient, deployment_id: &str) -> Resul
         .ok_or_else(|| anyhow!("Error while parsing response"))?;
 
     Ok(response.containers)
-}
-
-pub async fn update_container_state(
-    http: &HttpClient,
-    container_id: &str,
-    preferred_state: &ChangeableContainerState,
-) -> Result<()> {
-    http.request::<Value>(
-        "PUT",
-        &format!("/ignite/containers/{container_id}/state"),
-        Some((
-            serde_json::to_vec(&UpdateContainerState {
-                preferred_state: ContainerState::from_changeable_state(preferred_state),
-            })
-            .unwrap()
-            .into(),
-            "application/json",
-        )),
-    )
-    .await?;
-
-    Ok(())
 }
 
 pub async fn get_container_logs(

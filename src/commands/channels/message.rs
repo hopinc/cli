@@ -3,6 +3,7 @@ use clap::Parser;
 
 use super::types::EventOptions;
 use super::utils::{format_channels, get_all_channels, message_channel};
+use crate::commands::channels::utils::get_json_input;
 use crate::state::State;
 
 #[derive(Debug, Parser, Default, PartialEq, Eq)]
@@ -58,26 +59,12 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             .default(false)
             .interact()?
         {
-            let editor_cmd = std::env::var("EDITOR")
-                .or_else(|_| std::env::var("VISUAL"))
-                .unwrap_or_else(|_| "vim".to_string());
-
-            loop {
-                match serde_json::to_value(
-                    dialoguer::Editor::new()
-                        .executable(&editor_cmd)
-                        .require_save(true)
-                        .edit("")?,
-                ) {
-                    Ok(event_data) => break Some(event_data),
-                    Err(e) => {
-                        log::error!("Invalid JSON: {}", e);
-                    }
-                }
-            }
+            Some(get_json_input()?)
         } else {
             None
         };
+
+        log::debug!("Event: {} Data: {:?}", event_name, event_data);
 
         (event_name, event_data)
     };

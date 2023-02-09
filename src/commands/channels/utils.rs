@@ -1,12 +1,13 @@
 use std::io::Write;
 
 use anyhow::{anyhow, Result};
-use serde_json::{json, Value};
+use serde_json::Value;
 use tabwriter::TabWriter;
 
 use super::types::{
-    Channel, ChannelType, CreateChannel, MessageEvent, PaginatedChannels, SingleChannel,
+    Channel, ChannelType, CreateChannel, EventData, MessageEvent, PaginatedChannels, SingleChannel,
 };
+use crate::config::DEFAULT_EDITOR;
 use crate::state::http::HttpClient;
 
 pub async fn create_channel(
@@ -74,9 +75,7 @@ async fn get_channels_in_page(
     let response = http
         .request::<PaginatedChannels>(
             "GET",
-            &format!(
-                "/channels?project={project_id}&page={page}&pageSize={PAGE_SIZE}"
-            ),
+            &format!("/channels?project={project_id}&page={page}&pageSize={PAGE_SIZE}"),
             None,
         )
         .await?
@@ -101,7 +100,7 @@ pub async fn message_channel(
     project_id: &str,
     channel_id: &str,
     event: &str,
-    data: Option<Value>,
+    data: Option<EventData>,
 ) -> Result<()> {
     http.request::<Value>(
         "POST",
@@ -109,7 +108,7 @@ pub async fn message_channel(
         Some((
             serde_json::to_vec(&MessageEvent {
                 event: event.to_string(),
-                data: data.unwrap_or_else(|| json!({})),
+                data: data.unwrap_or_default(),
             })?
             .into(),
             "application/json",
@@ -157,4 +156,27 @@ pub fn format_channels(channels: &[Channel], title: bool) -> Vec<String> {
         .lines()
         .map(std::string::ToString::to_string)
         .collect()
+}
+
+pub fn get_json_input() -> Result<EventData> {
+    let editor_cmd = std::env::var("EDITOR")
+        .or_else(|_| std::env::var("VISUAL"))
+        .unwrap_or_else(|_| DEFAULT_EDITOR.to_string());
+
+    loop {
+        match dialoguer::Editor::new()
+            .executable(&editor_cmd)
+            .extension(".json")
+            .require_save(true)
+            .edit("")
+            .map(|d| serde_json::from_str::<EventData>(&d.unwrap_or_default()))?
+        {
+            Ok(data) => {
+                return Ok(data);
+            }
+            Err(why) => {
+                log::error!("Error editing data: {why}");
+            }
+        }
+    }
 }
