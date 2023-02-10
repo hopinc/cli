@@ -390,3 +390,29 @@ pub struct Premade {
 pub struct Premades {
     pub premade: Vec<Premade>,
 }
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct RolloutResponse {
+    pub rollout: RolloutEvent,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(tag = "e", content = "d", rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum RolloutEvents {
+    RolloutCreate(RolloutResponse),
+    RolloutUpdate(RolloutEvent),
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct RolloutEvent {
+    pub id: String,
+    pub state: RolloutState,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum RolloutState {
+    Pending,
+    Finished,
+    Failed,
+}

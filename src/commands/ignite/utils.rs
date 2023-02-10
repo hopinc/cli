@@ -10,13 +10,13 @@ use tabwriter::TabWriter;
 use tokio::fs;
 
 use super::types::{
-    CreateDeployment, Deployment, MultipleDeployments, Premade, Premades, ScaleRequest,
-    SingleDeployment, Tier, Tiers,
+    CreateDeployment, Deployment, MultipleDeployments, Premade, Premades, RolloutEvent,
+    ScaleRequest, SingleDeployment, Tier, Tiers,
 };
 use crate::commands::containers::types::{ContainerOptions, ContainerType};
 use crate::commands::ignite::create::Options;
 use crate::commands::ignite::types::{
-    Image, RamSizes, Resources, RestartPolicy, ScalingStrategy, VolumeFs,
+    Image, RamSizes, Resources, RestartPolicy, RolloutResponse, ScalingStrategy, VolumeFs,
 };
 use crate::state::http::HttpClient;
 use crate::utils::size::parse_size;
@@ -39,13 +39,7 @@ pub async fn get_all_deployments(http: &HttpClient, project_id: &str) -> Result<
 
 pub async fn get_deployment(http: &HttpClient, deployment_id: &str) -> Result<Deployment> {
     let response = http
-        .request::<SingleDeployment>(
-            "GET",
-            &format!(
-                "/ignite/deployments/{deployment_id}"
-            ),
-            None,
-        )
+        .request::<SingleDeployment>("GET", &format!("/ignite/deployments/{deployment_id}"), None)
         .await?
         .ok_or_else(|| anyhow!("Failed to parse response"))?;
 
@@ -103,16 +97,18 @@ pub async fn update_deployment(
     Ok(response.deployment)
 }
 
-pub async fn rollout(http: &HttpClient, deployment_id: &str) -> Result<()> {
-    http.request::<Value>(
-        "POST",
-        &format!("/ignite/deployments/{deployment_id}/rollouts"),
-        None,
-    )
-    .await?
-    .ok_or_else(|| anyhow!("Failed to parse response"))?;
+pub async fn rollout(http: &HttpClient, deployment_id: &str) -> Result<RolloutEvent> {
+    let response = http
+        .request::<RolloutResponse>(
+            "POST",
+            &format!("/ignite/deployments/{deployment_id}/rollouts"),
+            None,
+        )
+        .await?
+        .ok_or_else(|| anyhow!("Failed to parse response"))?
+        .rollout;
 
-    Ok(())
+    Ok(response)
 }
 
 pub async fn promote(http: &HttpClient, deployment_id: &str, build_id: &str) -> Result<()> {

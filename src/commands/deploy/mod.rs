@@ -4,8 +4,9 @@ pub mod local;
 use std::env::current_dir;
 use std::path::PathBuf;
 
-use anyhow::{ensure, Context, Result};
+use anyhow::{bail, ensure, Context, Result};
 use clap::Parser;
+use leap_client_rs::leap::types::Event;
 use leap_client_rs::{LeapEdge, LeapOptions};
 
 use crate::commands::auth::docker::HOP_REGISTRY_URL;
@@ -16,7 +17,8 @@ use crate::commands::gateways::types::{GatewayConfig, GatewayType};
 use crate::commands::gateways::util::{create_gateway, update_gateway_config};
 use crate::commands::ignite::create::{DeploymentConfig, Options as CreateOptions};
 use crate::commands::ignite::types::{
-    CreateDeployment, Deployment, Image, ScalingStrategy, SingleDeployment,
+    CreateDeployment, Deployment, Image, RolloutEvents, RolloutState, ScalingStrategy,
+    SingleDeployment,
 };
 use crate::commands::ignite::utils::{
     create_deployment, env_file_to_map, rollout, update_deployment_config, WEB_IGNITE_URL,
@@ -81,6 +83,12 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     let (project, deployment, container_options, existing) = match HopFile::find(dir.clone()).await
     {
         Some(hopfile) => {
+            dir = hopfile
+                .path
+                .parent()
+                .context("Could not get the parent dir from the hop file location")?
+                .to_path_buf();
+
             log::info!("Found hopfile: {}", hopfile.path.display());
 
             // TODO: possible update of deployment if it already exists?
@@ -249,8 +257,42 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     if existing {
         if deployment.can_rollout() && !options.no_rollout {
-            log::info!("Rolling out new containers");
-            rollout(&state.http, &deployment.id).await?;
+            let rollout = rollout(&state.http, &deployment.id).await?;
+
+            while let Some(event) = leap.listen().await {
+                if let Event::Message(capsuled) = event {
+                    if capsuled.channel.as_deref() != Some(&project.id) {
+                        continue;
+                    }
+
+                    let Ok(rollout_event) = serde_json::from_value(serde_json::to_value(capsuled.data)?) else {
+                        continue;
+                    };
+
+                    match rollout_event {
+                        RolloutEvents::RolloutCreate(event) => {
+                            if rollout.id == event.rollout.id {
+                                log::info!("Rolling out new containers");
+                            }
+                        }
+
+                        RolloutEvents::RolloutUpdate(event) => match event.state {
+                            // default state, when created
+                            RolloutState::Pending => {}
+
+                            RolloutState::Finished => {
+                                log::info!("Successfully rolled out new containers");
+
+                                break;
+                            }
+
+                            RolloutState::Failed => {
+                                bail!("Rollout failed");
+                            }
+                        },
+                    }
+                }
+            }
         }
     } else if let Some(containers) = container_options.containers {
         if deployment.can_scale() && containers > 0 {
