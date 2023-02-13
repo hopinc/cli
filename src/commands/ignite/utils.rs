@@ -729,14 +729,13 @@ fn get_env_from_input() -> Option<(String, String)> {
 }
 
 fn validate_deployment_name(name: &str) -> Result<()> {
+    const MIN_LENGTH: usize = 1;
     const MAX_LENGTH: usize = 20;
 
     ensure!(
         name.len() <= MAX_LENGTH,
         "Deployment name must be less than {MAX_LENGTH} characters"
     );
-
-    const MIN_LENGTH: usize = 1;
 
     ensure!(
         name.len() >= MIN_LENGTH,

@@ -45,7 +45,7 @@ impl HopFile {
     fn serialize(path: PathBuf, content: Self) -> Option<String> {
         match path.extension() {
             Some(ext) => match ext.to_str() {
-                Some("yml") | Some("yaml") => serde_yaml::to_string(&content).ok(),
+                Some("yml" | "yaml") => serde_yaml::to_string(&content).ok(),
                 Some("json") => serde_json::to_string(&content).ok(),
                 _ => None,
             },
@@ -64,7 +64,7 @@ impl HopFile {
     fn deserialize(path: PathBuf, content: &str) -> Option<Self> {
         let hopfile: Option<Self> = match path.extension() {
             Some(ext) => match ext.to_str() {
-                Some("yml") | Some("yaml") => serde_yaml::from_str(content).ok(),
+                Some("yml" | "yaml") => serde_yaml::from_str(content).ok(),
                 Some("json") => serde_json::from_str(content).ok(),
                 _ => None,
             },
