@@ -3,12 +3,7 @@ use crate::state::http::HttpClient;
 
 pub async fn flags_login(options: Options, _http: HttpClient) -> String {
     match options {
-        Options { token: Some(_), .. }
-        | Options {
-           /*  email: None, */
-            token: None,
-            ..
-        } => {
+        Options { token: Some(_) | None, .. } => {
             if options.token.is_none() || options.token.as_ref().unwrap().is_empty() {
                 dialoguer::Password::new()
                     .with_prompt("Token")

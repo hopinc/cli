@@ -74,7 +74,7 @@ pub fn validate_namespace(namespace: &str) -> Result<()> {
         bail!("Namespace must be less than 15 characters")
     } else if !regex.is_match(namespace) {
         bail!("Namespace must contain only letters, numbers and underscores")
-    } else {
-        Ok(())
     }
+    
+    Ok(())
 }

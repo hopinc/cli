@@ -39,9 +39,9 @@ pub async fn handle(options: Options, mut state: State) -> Result<()> {
             .validate_with(|input: &String| -> Result<()> {
                 if input.len() > 32 {
                     bail!("Project name must be less than 32 characters")
-                } else {
-                    Ok(())
                 }
+                
+                Ok(())
             })
             .interact_text()?
     };
