@@ -1,4 +1,4 @@
-#![warn(clippy::pedantic)]
+#![deny(clippy::pedantic, clippy::nursery, clippy::cargo)]
 
 use anyhow::Result;
 

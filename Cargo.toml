@@ -8,6 +8,8 @@ description = "Interact with Hop in your terminal"
 repository = "https://github.com/hopinc/hop_cli"
 homepage = "https://hop.io"
 build = "build.rs"
+keywords = ["hop", "cli", "terminal", "console", "rust"]
+categories = ["command-line-utilities"]
 
 [profile.release]
 strip = true
