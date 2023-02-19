@@ -283,7 +283,7 @@ jobs:
 
           CHECKSUM=$(sha256sum hop-cli-archive.tar.gz | awk '{ print $1 }')
 
-          sed -i "s/v.*.tar.gz/v${{ needs.draft-release.outputs.tag_name }}.tar.gz/" hop.rb
+          sed -i "s/\/v.*.tar.gz/\/${{ needs.draft-release.outputs.tag_name }}.tar.gz/" hop.rb
           sed -i "s/sha256 .*/sha256 \"$CHECKSUM\"/" hop.rb
 
       - name: Push to Homebrew
