@@ -279,13 +279,11 @@ jobs:
         run: |
           cd homebrew-tap
 
-          URL="https://github.com/${{ github.repository }}/archive/${{ needs.draft-release.outputs.tag_name }}.tar.gz"
-
-          curl -fsSL $URL -o hop-cli-archive.tar.gz
+          curl -fsSL https://github.com/${{ github.repository }}/archive/${{ needs.draft-release.outputs.tag_name }}.tar.gz -o hop-cli-archive.tar.gz
 
           CHECKSUM=$(sha256sum hop-cli-archive.tar.gz | awk '{ print $1 }')
 
-          sed -i "s/url .*/url \"$URL\"/" hop.rb
+          sed -i "s/v.*.tar.gz/v${{ needs.draft-release.outputs.tag_name }}.tar.gz/" hop.rb
           sed -i "s/sha256 .*/sha256 \"$CHECKSUM\"/" hop.rb
 
       - name: Push to Homebrew
