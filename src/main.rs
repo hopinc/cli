@@ -1,9 +1,7 @@
 #![deny(clippy::pedantic, clippy::nursery, clippy::cargo)]
 
-use anyhow::Result;
-
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> anyhow::Result<()> {
     #[cfg(debug_assertions)]
     let now = tokio::time::Instant::now();
 
