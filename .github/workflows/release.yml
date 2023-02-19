@@ -234,7 +234,7 @@ jobs:
         run: |
           git config --global user.name "${{ secrets.AUR_GIT_USER }}"
           git config --global user.email "${{ secrets.AUR_GIT_EMAIL }}"
-          git clone ssh://aur@aur.archlinux.org:/hop-cli.git
+          git clone ssh://aur@aur.archlinux.org:/hop-cli.git --depth 1
 
       - name: Update PKGBUILD
         run: |
@@ -273,7 +273,7 @@ jobs:
         run: |
           git config --global user.name "hopdeployer"
           git config --global user.email "phin+hopdeployer@hop.io"
-          git clone https://github.com/hopinc/homebrew-tap.git --fetch-depth 1
+          git clone https://github.com/hopinc/homebrew-tap.git --depth 1
       
       - name: Update Formula
         run: |
