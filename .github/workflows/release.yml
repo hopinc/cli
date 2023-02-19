@@ -173,7 +173,7 @@ jobs:
         run: for file in hop-*/hop-*; do openssl dgst -sha256 -r "$file" | awk '{print $1}' > "${file}.sha256"; done
 
       - name: Update Release
-        run: gh release edit ${{ needs.draft-release.outputs.tag_name }} --draft=false --repo=hopinc/hop_cli
+        run: gh release edit ${{ needs.draft-release.outputs.tag_name }} --draft=false --repo=${{ github.repository }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -240,7 +240,7 @@ jobs:
         run: |
           cd hop-cli
 
-          curl -fsSL https://github.com/hopinc/hop_cli/archive/refs/tags/${{ needs.draft-release.outputs.tag_name }}.tar.gz -o hop-cli-archive.tar.gz
+          curl -fsSL https://github.com/${{ github.repository }}/archive/refs/tags/${{ needs.draft-release.outputs.tag_name }}.tar.gz -o hop-cli-archive.tar.gz
 
           VERSION=$(echo ${{ needs.draft-release.outputs.tag_name }} | sed 's/v//')
           OLD_VERSION=$(cat .SRCINFO | awk '/pkgver = (.*)/{ print $3 }')
@@ -261,3 +261,37 @@ jobs:
           git add PKGBUILD .SRCINFO
           git commit -m "Update PKGBUILD for ${{ needs.draft-release.outputs.tag_name }}"
           git push origin master
+
+  publish-homebrew:
+    name: Update Homebrew Formula
+    needs: ["draft-release", "build-release"]
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    environment: prod
+    steps:      
+      - name: Clone Homebrew repo
+        run: |
+          git config user.name "hopdeployer"
+          git config user.email "phin+hopdeployer@hop.io"
+          git clone https://github.com/hopinc/homebrew-tap.git --fetch-depth 1
+      
+      - name: Update Formula
+        run: |
+          cd homebrew-tap
+
+          URL="https://github.com/${{ github.repository }}/archive/${{ needs.draft-release.outputs.tag_name }}.tar.gz"
+
+          curl -fsSL $URL -o hop-cli-archive.tar.gz
+
+          CHECKSUM=$(sha256sum hop-cli-archive.tar.gz | awk '{ print $1 }')
+
+          sed -i "s/url .*/url \"$URL\"/" hop.rb
+          sed -i "s/sha256 .*/sha256 \"$CHECKSUM\"/" hop.rb
+
+      - name: Push to Homebrew
+        run: |
+          cd homebrew-tap
+
+          git add hop.rb
+          git commit -m "Update hop.rb for ${{ needs.draft-release.outputs.tag_name }}"
+          git push https://${{ secrets.GHCR_TOKEN }}@github.com/hopinc/homebrew-tap.git main
