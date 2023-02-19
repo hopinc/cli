@@ -271,8 +271,8 @@ jobs:
     steps:      
       - name: Clone Homebrew repo
         run: |
-          git config user.name "hopdeployer"
-          git config user.email "phin+hopdeployer@hop.io"
+          git config --global user.name "hopdeployer"
+          git config --global user.email "phin+hopdeployer@hop.io"
           git clone https://github.com/hopinc/homebrew-tap.git --fetch-depth 1
       
       - name: Update Formula
