@@ -39,7 +39,8 @@ impl ArisuShard {
     pub async fn new(info: ArisuShardInfo) -> Result<Self> {
         let (heartbeat_tx, heartbeat_rx) = unbounded_channel::<()>();
 
-        let client = connect(ARISU_URL).await?;
+        let client =
+            connect(&std::env::var("ARISU_URL").unwrap_or_else(|_| ARISU_URL.to_string())).await?;
 
         Ok(Self {
             stage: ConnectionStage::Handshake,
@@ -211,6 +212,8 @@ impl ArisuShard {
 
 async fn connect(base_url: &str) -> Result<WsStream> {
     let url = format!("{base_url}?encoding=json&compression=none");
+
+    log::debug!("{url}");
 
     let config = WebSocketConfig {
         max_message_size: None,

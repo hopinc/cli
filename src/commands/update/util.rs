@@ -154,7 +154,7 @@ pub async fn unpack(packed_temp: &PathBuf, filename: &str) -> Result<PathBuf> {
     // seeking breaks the zips since its a single file
     let zip = ZipFileReader::new(stream);
 
-    let exe = temp_dir().join(&format!("{filename}.exe"));
+    let exe = temp_dir().join(format!("{filename}.exe"));
 
     let mut data = vec![];
 
