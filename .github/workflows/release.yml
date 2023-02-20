@@ -116,6 +116,9 @@ jobs:
           command: install
           args: cargo-wix
 
+      - name: Cache
+        uses: Swatinem/rust-cache@v2
+
       - name: Build release binary
         uses: actions-rs/cargo@v1
         with:
