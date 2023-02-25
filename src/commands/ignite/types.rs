@@ -171,7 +171,7 @@ pub struct Deployment {
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, Default)]
 pub struct Metadata {
-    pub container_port_mappings: HashMap<String, Vec<String>>,
+    pub container_port_mappings: Option<HashMap<String, Vec<String>>>,
 }
 
 impl Deployment {

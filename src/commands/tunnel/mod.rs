@@ -92,6 +92,7 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
             .metadata
             .unwrap_or_default()
             .container_port_mappings
+            .unwrap_or_default()
             .values()
             .for_each(|v| {
                 v.iter().for_each(|p| {
