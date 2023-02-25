@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use tokio::fs::{self, File};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -9,6 +9,7 @@ use super::utils::home_path;
 use super::Storable;
 use crate::commands::auth::types::AuthorizedClient;
 use crate::commands::projects::types::Project;
+use crate::config::EXEC_NAME;
 use crate::impl_store;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
@@ -65,7 +66,7 @@ impl Context {
 
     #[inline]
     pub fn current_project_error(self) -> Result<Project> {
-        self.current_project().context("No project specified, run `{EXEC_NAME} projects switch` or use --project to specify a project")
+        self.current_project().with_context(|| anyhow!("No project specified, run `{EXEC_NAME} projects switch` or use --project to specify a project"))
     }
 
     // for future use with external package managers

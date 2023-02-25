@@ -14,6 +14,7 @@ use super::util::{
 use crate::config::{ARCH, VERSION};
 use crate::state::http::HttpClient;
 use crate::state::State;
+use crate::store::Store;
 use crate::utils::capitalize;
 
 #[derive(Debug, Parser)]
