@@ -271,13 +271,13 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     environment: prod
-    steps:      
+    steps:
       - name: Clone Homebrew repo
         run: |
           git config --global user.name "hopdeployer"
           git config --global user.email "phin+hopdeployer@hop.io"
           git clone https://github.com/hopinc/homebrew-tap.git --depth 1
-      
+
       - name: Update Formula
         run: |
           cd homebrew-tap
