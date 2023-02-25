@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::{bail, ensure, Result};
 use clap::Parser;
 use serde_json::Value;
 
@@ -20,7 +20,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         validate_name(name).unwrap();
     }
 
-    let project_id = state.ctx.current_project_error().id;
+    let project_id = state.ctx.current_project_error()?.id;
 
     let secret_name = match options.name {
         Some(name) => name,
@@ -32,7 +32,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .unwrap()
                 .secrets;
 
-            assert!(!secrets.is_empty(), "No secrets found");
+            ensure!(!secrets.is_empty(), "No secrets found");
 
             let secrets_fmt = secrets
                 .iter()
@@ -43,9 +43,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .with_prompt("Select a secret")
                 .items(&secrets_fmt)
                 .default(0)
-                .interact_opt()
-                .expect("Failed to select secret")
-                .expect("No secret selected");
+                .interact()?;
 
             secrets[idx].name.clone()
         }

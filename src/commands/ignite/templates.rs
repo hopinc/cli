@@ -8,6 +8,7 @@ use crate::commands::ignite::types::{Config, Deployment, Image, Volume};
 use crate::commands::ignite::utils::{
     create_deployment, format_premade, get_premade, update_deployment_config, WEB_IGNITE_URL,
 };
+use crate::commands::projects::utils::format_project;
 use crate::state::State;
 use crate::utils::urlify;
 
@@ -22,7 +23,9 @@ pub struct Options {
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
-    let project = state.ctx.current_project_error();
+    let project = state.ctx.current_project_error()?;
+
+    log::info!("Deploying to project {}", format_project(&project));
 
     let premades = get_premade(&state.http).await?;
 

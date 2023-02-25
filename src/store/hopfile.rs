@@ -1,7 +1,7 @@
 use std::env::current_dir;
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
@@ -128,7 +128,7 @@ impl HopFile {
         let path = self.path.clone();
 
         let content =
-            Self::serialize(path.clone(), self.clone()).expect("Failed to serialize hop file");
+            Self::serialize(path.clone(), self.clone()).context("Failed to serialize hop file")?;
 
         let mut file = File::create(&path).await?;
 

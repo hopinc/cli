@@ -78,7 +78,7 @@ impl DockerCompose {
                         );
                     }
 
-                    let env_file = env_file_to_map(env_file_path.clone()).await;
+                    let env_file = env_file_to_map(env_file_path.clone()).await?;
 
                     let mut env = service.environment.unwrap_or_default();
                     env.0.extend(env_file);

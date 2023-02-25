@@ -21,7 +21,7 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
     } else if let Some(hopfile) = HopFile::find_current().await {
         hopfile.config.deployment_id
     } else {
-        let project = state.ctx.current_project_error();
+        let project = state.ctx.current_project_error()?;
 
         log::info!("Using project: {}", format_project(&project));
 
@@ -33,8 +33,7 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
             .with_prompt("Select a deployment")
             .items(&deployments_fmt)
             .default(0)
-            .interact_opt()?
-            .ok_or_else(|| anyhow!("No deployment selected."))?;
+            .interact()?;
 
         deployments[idx].id.clone()
     };

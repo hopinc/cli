@@ -3,7 +3,7 @@ use std::ffi::OsString;
 use std::path::PathBuf;
 use std::process::Command as Cmd;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, ensure, Context, Result};
 use runas::Command as SudoCmd;
 use tokio::fs;
 
@@ -34,9 +34,9 @@ pub async fn download(
         ))
         .send()
         .await
-        .expect("Failed to get latest release");
+        .context("Failed to get latest release")?;
 
-    assert!(
+    ensure!(
         response.status().is_success(),
         "Failed to get latest release: {}",
         response.status()
@@ -45,7 +45,7 @@ pub async fn download(
     let data = response
         .bytes()
         .await
-        .expect("Failed to get latest release");
+        .context("Failed to get latest release")?;
 
     let packed_temp = temp_dir().join(filename);
 
@@ -161,7 +161,7 @@ pub async fn unpack(packed_temp: &PathBuf, filename: &str) -> Result<PathBuf> {
     // unpack the only file
     zip.next_entry()
         .await?
-        .expect("brokey entry")
+        .context("brokey entry")?
         .reader()
         .read_to_end(&mut data)
         .await?;

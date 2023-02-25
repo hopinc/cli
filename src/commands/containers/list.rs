@@ -20,7 +20,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Some(id) => get_deployment(&state.http, &id).await?,
 
         None => {
-            let project_id = state.ctx.current_project_error().id;
+            let project_id = state.ctx.current_project_error()?.id;
 
             let deployments = get_all_deployments(&state.http, &project_id).await?;
             ensure!(!deployments.is_empty(), "No deployments found");

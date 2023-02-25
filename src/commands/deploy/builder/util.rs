@@ -1,7 +1,7 @@
 use std::env::temp_dir;
 use std::path::{Path, PathBuf};
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use async_compression::tokio::write::GzipEncoder;
 use hyper::Method;
 use ignore::WalkBuilder;
@@ -70,7 +70,7 @@ pub async fn compress(id: &str, base_dir: PathBuf) -> Result<String> {
     log::info!("Finding files to compress...");
 
     let mut walker = WalkBuilder::new(base_dir.clone());
-    walker.add_ignore(create_global_ignore_file().await);
+    walker.add_ignore(create_global_ignore_file().await?);
     walker.add_custom_ignore_filename(".hopignore");
     walker.hidden(false).follow_links(true);
 
@@ -106,19 +106,16 @@ pub async fn compress(id: &str, base_dir: PathBuf) -> Result<String> {
     Ok(archive_path.to_str().unwrap().into())
 }
 
-async fn create_global_ignore_file() -> PathBuf {
+async fn create_global_ignore_file() -> Result<PathBuf> {
     let path = temp_dir().join(".hopignore");
     let mut file = File::create(path.clone())
         .await
-        .expect("Could not create global ignore file");
+        .context("Could not create global ignore file")?;
 
     file.write_all(DEFAULT_IGNORE_LIST.join("\n").as_bytes())
-        .await
-        .expect("Could not write to global ignore file");
+        .await?;
 
-    file.shutdown()
-        .await
-        .expect("Could not close global ignore file");
+    file.shutdown().await?;
 
-    path
+    Ok(path)
 }

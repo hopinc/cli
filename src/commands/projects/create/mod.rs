@@ -6,6 +6,7 @@ use clap::Parser;
 use crate::commands::projects::create::utils::get_payment_method_from_user;
 use crate::commands::projects::utils::{create_project, format_project, validate_namespace};
 use crate::state::State;
+use crate::store::Store;
 
 // TODO: replace when ../new path is implemented
 const WEB_PAYMENTS_URL: &str = "https://console.hop.io/settings/cards";
@@ -40,7 +41,7 @@ pub async fn handle(options: Options, mut state: State) -> Result<()> {
                 if input.len() > 32 {
                     bail!("Project name must be less than 32 characters")
                 }
-                
+
                 Ok(())
             })
             .interact_text()?

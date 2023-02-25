@@ -18,10 +18,10 @@ use crate::commands::gateways::util::{create_gateway, update_gateway_config};
 use crate::commands::ignite::create::{DeploymentConfig, Options as CreateOptions};
 use crate::commands::ignite::types::{
     CreateDeployment, Deployment, Image, RolloutEvents, RolloutState, ScalingStrategy,
-    SingleDeployment,
 };
 use crate::commands::ignite::utils::{
-    create_deployment, env_file_to_map, rollout, update_deployment_config, WEB_IGNITE_URL,
+    create_deployment, env_file_to_map, get_deployment, rollout, update_deployment_config,
+    WEB_IGNITE_URL,
 };
 use crate::commands::projects::utils::format_project;
 use crate::config::LEAP_PROJECT;
@@ -65,7 +65,7 @@ pub struct Options {
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
-    let mut dir = current_dir().expect("Could not get current directory");
+    let mut dir = current_dir().context("Could not get current directory")?;
 
     if let Some(path) = options.path {
         dir = dir
@@ -92,17 +92,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             log::info!("Found hopfile: {}", hopfile.path.display());
 
             // TODO: possible update of deployment if it already exists?
-            let deployment = state
-                .http
-                .request::<SingleDeployment>(
-                    "GET",
-                    &format!("/ignite/deployments/{}", hopfile.config.deployment_id),
-                    None,
-                )
-                .await
-                .expect("Failed to get deployment")
-                .unwrap()
-                .deployment;
+            let deployment = get_deployment(&state.http, &hopfile.config.deployment_id).await?;
 
             // if deployment exists it's safe to unwrap
             let project = state
@@ -134,7 +124,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         None => {
             log::info!("No hopfile found, creating one");
 
-            let project = state.ctx.clone().current_project_error();
+            let project = state.ctx.clone().current_project_error()?;
 
             log::info!("Deploying to project {}", format_project(&project));
 
@@ -191,7 +181,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             if options.envfile {
                 deployment_config
                     .env
-                    .extend(env_file_to_map(dir.join(".env")).await);
+                    .extend(env_file_to_map(dir.join(".env")).await?);
             }
 
             let deployment =

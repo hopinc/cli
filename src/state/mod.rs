@@ -1,11 +1,12 @@
 pub mod http;
-use anyhow::{ensure, Result};
+use anyhow::{ensure, Context as AnyhyowContext, Result};
 
 use self::http::HttpClient;
 use crate::commands::auth::login::util::{token_options, TokenType};
 use crate::config::EXEC_NAME;
 use crate::store::auth::Auth;
 use crate::store::context::Context;
+use crate::store::Store;
 
 #[derive(Debug)]
 pub struct State {
@@ -23,10 +24,10 @@ pub struct StateOptions {
 }
 
 impl State {
-    pub async fn new(options: StateOptions) -> Self {
+    pub async fn new(options: StateOptions) -> Result<Self> {
         // do some logic to get current signed in user
-        let auth = Auth::new().await;
-        let mut ctx = Context::new().await;
+        let auth = Auth::new().await?;
+        let mut ctx = Context::new().await?;
 
         // override the project id if provided
         ctx.project_override = options
@@ -44,7 +45,7 @@ impl State {
             None
         };
 
-        let (token, token_type) = Self::handle_token(init_token);
+        let (token, token_type) = Self::handle_token(init_token)?;
 
         // preffer the override token over the auth token
         let http = HttpClient::new(
@@ -54,23 +55,23 @@ impl State {
                 .or_else(|| ctx.override_api_url.clone()),
         );
 
-        State {
+        Ok(State {
             is_ci: Self::check_if_ci(),
             token_type,
             token,
             http,
             auth,
             ctx,
-        }
+        })
     }
 
-    /// Rebuilds the http client with the current auth token.
-    fn handle_token(token: Option<String>) -> (Option<String>, Option<TokenType>) {
+    fn handle_token(token: Option<String>) -> Result<(Option<String>, Option<TokenType>)> {
         let token_type = token
             .as_ref()
-            .map(|token| TokenType::from_token(token).expect("Invalid token type"));
+            .map(|token| TokenType::from_token(token).context("Invalid token type"))
+            .transpose()?;
 
-        (token, token_type)
+        Ok((token, token_type))
     }
 
     /// Checks if the current environment is a CI environment.
@@ -98,14 +99,14 @@ impl State {
         );
 
         if let Some(token) = token {
-            let (token, token_type) = Self::handle_token(Some(token));
+            let (token, token_type) = Self::handle_token(Some(token))?;
 
             self.token = token.clone();
             self.token_type = token_type;
             self.http = HttpClient::new(token, self.ctx.override_api_url.clone());
         }
 
-        let response = token_options(self.http.clone(), self.token_type.clone()).await;
+        let response = token_options(self.http.clone(), self.token_type.clone()).await?;
 
         if !response.email_verified {
             log::warn!("You need to verify your email address before you can use Hop.")

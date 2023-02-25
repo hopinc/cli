@@ -86,7 +86,7 @@ pub struct Options {
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
-    let project = state.ctx.current_project_error();
+    let project = state.ctx.current_project_error()?;
 
     log::info!(
         "Deploying to project {} /{} ({})",

@@ -21,7 +21,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Some(id) => id,
 
         None => {
-            let project_id = state.ctx.current_project_error().id;
+            let project_id = state.ctx.current_project_error()?.id;
 
             let deployments = get_all_deployments(&state.http, &project_id).await?;
             ensure!(!deployments.is_empty(), "No deployments found");
@@ -31,9 +31,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .with_prompt("Select a deployment")
                 .items(&deployments_fmt)
                 .default(0)
-                .interact_opt()
-                .expect("Failed to select deployment")
-                .expect("No deployment selected");
+                .interact()?;
 
             let gateways = get_all_gateways(&state.http, &deployments[idx].id).await?;
             ensure!(!gateways.is_empty(), "No Gateways found");
@@ -43,8 +41,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .with_prompt("Select a Gateway")
                 .default(0)
                 .items(&gateways_fmt)
-                .interact_opt()?
-                .expect("No Gateways selected");
+                .interact()?;
 
             gateways[idx].id.clone()
         }

@@ -1,10 +1,11 @@
-use anyhow::{Context, Result};
+use anyhow::{ensure, Context, Result};
 use clap::Parser;
 use serde_json::Value;
 
 use super::utils::format_projects;
 use crate::commands::projects::utils::format_project;
 use crate::state::State;
+use crate::store::Store;
 
 static CONFIRM_DELETE_PROJECT_MESSAGE: &str = "I am sure I want to delete the project named ";
 
@@ -40,9 +41,7 @@ pub async fn handle(options: Options, mut state: State) -> Result<()> {
                 } else {
                     0
                 })
-                .interact_opt()
-                .expect("Failed to select project")
-                .expect("No project selected");
+                .interact()?;
 
             projects[idx].clone()
         }
@@ -57,9 +56,9 @@ pub async fn handle(options: Options, mut state: State) -> Result<()> {
         let output = dialoguer::Input::<String>::new()
             .with_prompt("Message")
             .interact_text()
-            .expect("Failed to confirm deletion");
+            .context("Failed to confirm deletion")?;
 
-        assert!(
+        ensure!(
             output == CONFIRM_DELETE_PROJECT_MESSAGE.to_string() + &project.name,
             "Aborted deletion of `{}`",
             project.name

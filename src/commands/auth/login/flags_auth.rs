@@ -37,8 +37,7 @@ pub async fn flags_login(options: Options, http: HttpClient) -> Result<String> {
                 if options.password.is_none() || options.password.as_ref().unwrap().is_empty() {
                     dialoguer::Password::new()
                         .with_prompt("Password")
-                        .interact()
-                        .expect("Error getting password")
+                        .interact()?
                 } else {
                     options.password.unwrap()
                 };
@@ -46,7 +45,7 @@ pub async fn flags_login(options: Options, http: HttpClient) -> Result<String> {
             login_with_credentials(http, username, password).await
         }
 
-        _ => panic!("Invalid login options, run `{EXEC_NAME} auth login --help` for more info",),
+        _ => bail!("Invalid login options, run `{EXEC_NAME} auth login --help` for more info",),
     }
 }
 

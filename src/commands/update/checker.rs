@@ -6,6 +6,7 @@ use super::types::{GithubRelease, Version};
 use crate::config::VERSION;
 use crate::state::http::HttpClient;
 use crate::store::context::Context;
+use crate::store::Store;
 
 pub const RELEASE_HOP_CLI_URL: &str = "https://api.github.com/repos/hopinc/hop_cli/releases";
 

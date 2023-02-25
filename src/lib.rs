@@ -50,7 +50,7 @@ pub async fn run() -> Result<()> {
         override_project: std::env::var("PROJECT_ID").ok().or(cli.project),
         override_token: std::env::var("TOKEN").ok(),
     })
-    .await;
+    .await?;
 
     // do not show notice in debug mode or CI
     if !cfg!(not(debug_assertions)) || !state.is_ci {

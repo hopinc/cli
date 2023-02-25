@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use clap::Parser;
 
 use super::utils::format_projects;
@@ -10,8 +11,8 @@ pub struct Options {
     pub quiet: bool,
 }
 
-pub fn handle(options: Options, state: State) {
-    let projects = state.ctx.current.unwrap().projects;
+pub fn handle(options: Options, state: State) -> Result<()> {
+    let projects = state.ctx.current.context("You are not logged in")?.projects;
 
     if options.quiet {
         let ids = projects
@@ -26,4 +27,6 @@ pub fn handle(options: Options, state: State) {
 
         println!("{}", projects_fmt.join("\n"));
     }
+
+    Ok(())
 }

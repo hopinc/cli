@@ -12,7 +12,7 @@ pub struct Options {
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
-    let project_id = state.ctx.current_project_error().id;
+    let project_id = state.ctx.current_project_error()?.id;
     let tokens = get_all_tokens(&state.http, &project_id).await?;
 
     if options.quiet {

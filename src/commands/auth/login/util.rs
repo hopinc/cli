@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use serde::Deserialize;
 
 use crate::commands::auth::types::{AuthorizedClient, UserMe};
@@ -32,7 +32,10 @@ impl TokenType {
     }
 }
 
-pub async fn token_options(http: HttpClient, token_type: Option<TokenType>) -> AuthorizedClient {
+pub async fn token_options(
+    http: HttpClient,
+    token_type: Option<TokenType>,
+) -> Result<AuthorizedClient> {
     match token_type {
         // bearer token works the same as pat
         Some(TokenType::Pat | TokenType::Bearer) => login_pat(http.clone()).await,
@@ -41,44 +44,42 @@ pub async fn token_options(http: HttpClient, token_type: Option<TokenType>) -> A
         Some(TokenType::Ptk) => login_ptk(http.clone()).await,
         // should be impossible to get here
         token => {
-            panic!("Unsupported token type: {token:?}");
+            bail!("Unsupported token type: {token:?}");
         }
     }
 }
 
-async fn login_pat(http: HttpClient) -> AuthorizedClient {
+async fn login_pat(http: HttpClient) -> Result<AuthorizedClient> {
     let response = http
         .request::<UserMe>("GET", "/users/@me", None)
-        .await
-        .expect("Error logging in")
-        .expect("Error while parsing response");
+        .await?
+        .context("Error while parsing response")?;
 
-    AuthorizedClient {
+    Ok(AuthorizedClient {
         id: response.user.id,
         name: response.user.name,
         projects: response.projects,
         leap_token: response.leap_token,
         email: response.user.email,
         email_verified: response.user.email_verified,
-    }
+    })
 }
 
-async fn login_ptk(http: HttpClient) -> AuthorizedClient {
+async fn login_ptk(http: HttpClient) -> Result<AuthorizedClient> {
     let ThisProjectResponse {
         leap_token,
         project,
     } = http
         .request::<ThisProjectResponse>("GET", "/projects/@this", None)
-        .await
-        .expect("Error logging in")
-        .expect("Error while parsing response");
+        .await?
+        .context("Error while parsing response")?;
 
-    AuthorizedClient {
+    Ok(AuthorizedClient {
         projects: vec![project.clone()],
         name: project.name,
         id: project.id,
         leap_token,
         email: "user@hop.io".to_string(),
         email_verified: true,
-    }
+    })
 }

@@ -72,7 +72,7 @@ pub async fn build(
         let nixpacks_path = if let Ok(path) = std::env::var(NIXPACKS_OVERRIDE) {
             PathBuf::from(path)
         } else {
-            home_path(NIXPACKS_VENDORED_PATH)
+            home_path(NIXPACKS_VENDORED_PATH)?
         };
 
         if fs::metadata(&nixpacks_path).await.is_err() {

@@ -1,4 +1,4 @@
-use anyhow::{anyhow, bail, ensure, Result};
+use anyhow::{bail, ensure, Result};
 use clap::Parser;
 
 use super::utils::delete_channel;
@@ -16,7 +16,7 @@ pub struct Options {
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
-    let project_id = state.ctx.current_project_error().id;
+    let project_id = state.ctx.current_project_error()?.id;
 
     let channels = if !options.channels.is_empty() {
         options.channels
@@ -28,8 +28,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         let idxs = dialoguer::MultiSelect::new()
             .with_prompt("Select a Channel")
             .items(&channels_fmt)
-            .interact_opt()?
-            .ok_or_else(|| anyhow!("No channel selected"))?;
+            .interact()?;
 
         channels
             .iter()

@@ -17,7 +17,7 @@ pub struct Options {
 pub async fn handle(options: Options, state: State) -> Result<()> {
     validate_name(&options.name)?;
 
-    let project_id = state.ctx.current_project().expect("Project not found").id;
+    let project_id = state.ctx.current_project_error()?.id;
 
     let secret = state
         .http

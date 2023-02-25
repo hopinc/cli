@@ -2,7 +2,6 @@ use anyhow::{anyhow, Result};
 use clap::Parser;
 
 use crate::commands::projects::info;
-use crate::config::EXEC_NAME;
 use crate::state::State;
 
 #[derive(Debug, Parser)]
@@ -22,16 +21,5 @@ pub fn handle(_options: &Options, state: State) -> Result<()> {
         authorized.email
     );
 
-    let project = state.ctx.current_project();
-
-    match project {
-        Some(_) => info::handle(&info::Options {}, state),
-        None => {
-            log::warn!(
-                "No project is currently selected. Please run `{EXEC_NAME} projects switch` first."
-            );
-        }
-    }
-
-    Ok(())
+    info::handle(&info::Options {}, state)
 }

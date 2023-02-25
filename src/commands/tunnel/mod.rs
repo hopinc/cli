@@ -38,7 +38,7 @@ pub struct Options {
 }
 
 pub async fn handle(options: &Options, state: State) -> Result<()> {
-    let project = state.ctx.clone().current_project_error();
+    let project = state.ctx.clone().current_project_error()?;
 
     let deployment = match get_id_with_prefix(options.deployment.as_deref()) {
         Some((Prefix::Deployment, id)) => get_deployment(&state.http, &id).await?,
@@ -65,8 +65,7 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
                     .with_prompt("Select a deployment")
                     .items(&deployments_fmt)
                     .default(0)
-                    .interact_opt()?
-                    .ok_or_else(|| anyhow!("No deployment selected."))?;
+                    .interact()?;
 
                 deployments[idx].clone()
             }
@@ -117,8 +116,7 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
                     .with_prompt("Select a local port")
                     .items(&ports)
                     .default(0)
-                    .interact_opt()?
-                    .ok_or_else(|| anyhow!("No port selected."))?
+                    .interact()?
             };
 
             if idx == ports.len() - 1 {
@@ -138,8 +136,7 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
                     .with_prompt("Select the remote port")
                     .items(&ports)
                     .default(0)
-                    .interact_opt()?
-                    .ok_or_else(|| anyhow!("No port selected."))?
+                    .interact()?
             };
 
             if idx == ports.len() - 1 {

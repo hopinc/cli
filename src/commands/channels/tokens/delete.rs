@@ -1,4 +1,4 @@
-use anyhow::{anyhow, bail, ensure, Result};
+use anyhow::{bail, ensure, Result};
 use clap::Parser;
 
 use super::utils::{delete_token, format_tokens, get_all_tokens};
@@ -15,7 +15,7 @@ pub struct Options {
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
-    let project_id = state.ctx.current_project_error().id;
+    let project_id = state.ctx.current_project_error()?.id;
 
     let tokens = if !options.tokens.is_empty() {
         options.tokens
@@ -27,8 +27,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         let idxs = dialoguer::MultiSelect::new()
             .with_prompt("Select a Leap Token")
             .items(&tokens_fmt)
-            .interact_opt()?
-            .ok_or_else(|| anyhow!("No token selected"))?;
+            .interact()?;
 
         tokens
             .iter()

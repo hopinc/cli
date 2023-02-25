@@ -97,7 +97,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
     compose.validate_and_update(&parent_dir).await?;
 
-    let project = state.ctx.clone().current_project_error();
+    let project = state.ctx.clone().current_project_error()?;
 
     // let deployments = get_all_deployments(&state.http, &project.id).await?;
 

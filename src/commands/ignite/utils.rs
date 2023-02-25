@@ -250,7 +250,7 @@ async fn update_config_args(
                 None
             }
         })
-        .expect("The argument '--name <NAME>' requires a value but none was supplied")
+        .context("The argument '--name <NAME>' requires a value but none was supplied")?
         .to_lowercase();
 
     validate_deployment_name(&name)?;
@@ -270,7 +270,7 @@ async fn update_config_args(
                     None
                 }
             })
-            .expect("Please specify an image via the `--image` flag"),
+            .context("Please specify an image via the `--image` flag")?,
     );
 
     let tiers = get_tiers(http).await?;
@@ -664,7 +664,7 @@ async fn update_config_visual(
         deployment_config.restart_policy = Some(RestartPolicy::OnFailure);
     }
 
-    if deployment_config.type_ == Some(ContainerType::Stateful) {
+    if is_update && deployment_config.type_ == Some(ContainerType::Stateful) {
         deployment_config.type_ = None;
     }
 
@@ -771,16 +771,16 @@ pub fn get_shell_array(entrypoint: &str) -> Vec<String> {
         .collect()
 }
 
-pub async fn env_file_to_map(path: PathBuf) -> HashMap<String, String> {
+pub async fn env_file_to_map(path: PathBuf) -> Result<HashMap<String, String>> {
     let mut env = HashMap::new();
 
-    assert!(
+    ensure!(
         path.exists(),
         "Could not find .env file at {}",
         path.display()
     );
 
-    let file = fs::read_to_string(path).await.unwrap();
+    let file = fs::read_to_string(path).await?;
     let lines = file.lines();
 
     for line in lines {
@@ -803,7 +803,7 @@ pub async fn env_file_to_map(path: PathBuf) -> HashMap<String, String> {
         }
     }
 
-    env
+    Ok(env)
 }
 
 pub fn format_premade(premades: &[Premade], title: bool) -> Result<Vec<String>> {
