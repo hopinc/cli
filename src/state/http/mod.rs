@@ -29,8 +29,7 @@ impl HttpClient {
         }
 
         let ua = format!(
-            "hop_cli/{} on {}",
-            VERSION,
+            "hop_cli/{VERSION} on {}",
             sys_info::os_type().unwrap_or_else(|_| "unknown".to_string())
         );
 

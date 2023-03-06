@@ -6,10 +6,12 @@ pub(crate) mod utils;
 
 use anyhow::Result;
 use clap::Parser;
+
 use commands::update::version_notice;
 #[cfg(feature = "update")]
 use commands::Commands::Update;
 use commands::{handle_command, Commands};
+use config::{ARCH, PLATFORM, VERSION};
 use state::{State, StateOptions};
 
 #[derive(Debug, Parser)]
@@ -44,6 +46,9 @@ pub async fn run() -> Result<()> {
 
     utils::logs(cli.debug);
 
+    // in the debug mode, print the version and arch for easier debugging
+    log::debug!("Hop-CLI v{VERSION} build for {ARCH}-{PLATFORM}");
+
     utils::sudo::fix().await?;
 
     let state = State::new(StateOptions {
@@ -52,18 +57,19 @@ pub async fn run() -> Result<()> {
     })
     .await?;
 
-    // do not show notice in debug mode or CI
-    if !cfg!(not(debug_assertions)) || !state.is_ci {
-        match cli.commands {
-            #[cfg(feature = "update")]
-            Update(_) => None,
-            // its okay for the notice to fail
-            _ => version_notice(state.ctx.clone()).await.ok(),
-        };
-    }
+    match cli.commands {
+        #[cfg(feature = "update")]
+        Update(_) => None,
+
+        // only show the notice if we are not in debug mode or in CI
+        _ if cfg!(debug_assertions) || state.is_ci => None,
+
+        // its okay for the notice to fail
+        _ => version_notice(state.ctx.clone()).await.ok(),
+    };
 
     if let Err(error) = handle_command(cli.commands, state).await {
-        log::error!("{}", error);
+        log::error!("{error}");
         std::process::exit(1);
     }
 

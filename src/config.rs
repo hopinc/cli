@@ -1,4 +1,5 @@
 pub const ARCH: &str = std::env::consts::ARCH;
+pub const PLATFORM: &str = std::env::consts::OS;
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg(not(windows))]
