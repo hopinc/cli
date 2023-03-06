@@ -69,7 +69,7 @@ reqwest = { version = "0.11", features = [
 tokio-rustls = { version = "0.23", default-features = false }
 webpki = "0.22"
 webpki-roots = "0.22"
-async-tungstenite = { version = "0.19", features = [
+async-tungstenite = { version = "0.20", features = [
     "tokio-runtime",
     "tokio-rustls-webpki-roots",
 ] }
@@ -89,7 +89,7 @@ leap_client_rs = { version = "0.1", features = [
 ], default-features = false }
 native-tls = "0.2"
 tokio-native-tls = "0.3"
-async-tungstenite = { version = "0.19", features = [
+async-tungstenite = { version = "0.20", features = [
     "tokio-runtime",
     "tokio-native-tls",
 ] }
