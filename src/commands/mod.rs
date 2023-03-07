@@ -13,12 +13,14 @@ pub mod projects;
 mod secrets;
 mod tunnel;
 pub mod update;
+mod volumes;
 mod whoami;
 
 use anyhow::Result;
 use clap::Subcommand;
 
 use crate::state::State;
+use ignite::from_compose;
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {
@@ -54,8 +56,10 @@ pub enum Commands {
     Payment(payment::Options),
     #[clap(alias = "fwd", alias = "forward")]
     Tunnel(tunnel::Options),
+    #[clap(alias = "volume")]
+    Volumes(volumes::Options),
     #[clap(alias = "compose")]
-    FromCompose(ignite::from_compose::Options),
+    FromCompose(from_compose::Options),
 }
 
 pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
@@ -92,10 +96,9 @@ pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
                 Commands::Domains(options) => domains::handle(options, state).await,
                 Commands::Oops(options) => oops::handle(&options, state).await,
                 Commands::Tunnel(options) => tunnel::handle(&options, state).await,
-                Commands::FromCompose(options) => {
-                    ignite::from_compose::handle(options, state).await
-                }
+                Commands::FromCompose(options) => from_compose::handle(options, state).await,
                 Commands::Payment(options) => payment::handle(options, state).await,
+                Commands::Volumes(options) => volumes::handle(options, state).await,
             }
         }
     }

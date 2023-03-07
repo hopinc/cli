@@ -1,14 +1,11 @@
 #[macro_export]
 macro_rules! impl_store {
     ($($name:ty),+ $(,)?) => ($(
-        use async_trait::async_trait;
-        use anyhow::{Context as AnyhyowContext};
-
-        use $crate::store::Store;
-
-        #[async_trait]
-        impl Store for $name {
+        #[async_trait::async_trait]
+        impl $crate::store::Store for $name {
             async fn new() -> Result<Self> {
+                use anyhow::{Context as _};
+
                 let path = Self::path()?;
 
                 if fs::metadata(path.clone()).await.is_err() {
@@ -26,6 +23,8 @@ macro_rules! impl_store {
             }
 
             async fn save(&self) -> Result<Self> {
+                use anyhow::{Context as _};
+
                 let path = Self::path()?;
 
                 fs::create_dir_all(path.parent().context("Failed to get store directory")?)
