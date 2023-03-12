@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 use std::io::Write;
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use clap::Parser;
 use tabwriter::TabWriter;
 
-use crate::{commands::volumes::utils::permission_to_string, state::State};
-
-use super::{types::Files, utils::get_files_for_path};
+use super::types::Files;
+use super::utils::{format_file, get_files_for_path};
+use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "List information about the FILEs (the current directory by default).")]
@@ -23,29 +23,35 @@ pub struct Options {
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
+    let deployment = state
+        .get_deployment_by_name_or_id(&options.deployment)
+        .await?;
+
+    if !deployment.is_stateful() {
+        bail!("Deployment is not stateful");
+    }
+
     let mut files_map = HashMap::new();
 
     let volume = format!(
         "volume_{}",
-        options
-            .deployment
+        deployment
+            .id
             .split('_')
             .nth(1)
             .context("Failed to get volume from deployment")?
     );
 
     let files_to_get = if options.files.is_empty() {
-        vec![String::new()]
+        vec![String::from("/")]
     } else {
-        options.files.clone()
+        options.files
     };
 
     for file in files_to_get {
-        let path = file.strip_prefix('/').unwrap_or(&file);
-
         files_map.insert(
-            path.to_string(),
-            get_files_for_path(&state.http, &options.deployment, &volume, path).await?,
+            file.clone(),
+            get_files_for_path(&state.http, &deployment.id, &volume, &file).await?,
         );
     }
 
@@ -62,14 +68,11 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         }
 
         match files {
-            Files::Single { file } => {
+            Files::Single { mut file } => {
                 if options.long {
-                    writeln!(
-                        tw,
-                        "{}\t{}\t{path}",
-                        permission_to_string(file.permissions)?,
-                        file.size,
-                    )?;
+                    file.name = path;
+
+                    writeln!(tw, "{}", format_file(&file)?)?;
                 } else {
                     writeln!(tw, "{path}")?;
                 }
@@ -85,13 +88,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
                 for file in file {
                     if options.long {
-                        writeln!(
-                            tw,
-                            "{}\t{}\t{}",
-                            permission_to_string(file.permissions)?,
-                            file.size,
-                            file.name
-                        )?;
+                        writeln!(tw, "{}", format_file(&file)?)?;
                     } else {
                         write!(tw, "{}\t", file.name)?;
                     }

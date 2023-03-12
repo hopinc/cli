@@ -11,13 +11,8 @@ use tokio::net::TcpListener;
 use tokio::sync::mpsc::unbounded_channel;
 
 use self::utils::{parse_publish, TonneruSocket};
-use super::ignite::utils::get_all_deployments;
 use crate::commands::ignite::types::Deployment;
-use crate::commands::ignite::utils::{format_deployments, get_deployment};
-use crate::commands::tunnel::types::Prefix;
-use crate::commands::tunnel::utils::{
-    add_entry_to_hosts, get_id_with_prefix, remove_entry_from_hosts,
-};
+use crate::commands::tunnel::utils::{add_entry_to_hosts, remove_entry_from_hosts};
 use crate::state::State;
 use crate::utils::urlify;
 
@@ -38,42 +33,29 @@ pub struct Options {
 }
 
 pub async fn handle(options: &Options, state: State) -> Result<()> {
-    let project = state.ctx.clone().current_project_error()?;
+    // check if the options.deployment starts with container_ else use the state.get_deployment_by_opt_id_or_name
+    let resource = if options
+        .deployment
+        .clone()
+        .map(|d| d.starts_with("container_"))
+        .unwrap_or(false)
+    {
+        let container = options.deployment.clone().unwrap();
 
-    let deployment = match get_id_with_prefix(options.deployment.as_deref()) {
-        Some((Prefix::Deployment, id)) => get_deployment(&state.http, &id).await?,
-        Some((Prefix::Container, id)) => Deployment {
-            id: id.clone(),
-            name: id,
+        Deployment {
+            name: container.clone(),
+            id: container,
             container_count: 1,
             ..Default::default()
-        },
-        unknown => {
-            let deployments = get_all_deployments(&state.http, &project.id).await?;
-            ensure!(!deployments.is_empty(), "No deployments found.");
-
-            if let Some((_, name)) = unknown {
-                deployments
-                    .iter()
-                    .find(|d| d.name.to_lowercase() == name.to_lowercase())
-                    .ok_or_else(|| anyhow!("Deployment not found."))?
-                    .clone()
-            } else {
-                let deployments_fmt = format_deployments(&deployments, false);
-
-                let idx = dialoguer::Select::new()
-                    .with_prompt("Select a deployment")
-                    .items(&deployments_fmt)
-                    .default(0)
-                    .interact()?;
-
-                deployments[idx].clone()
-            }
         }
+    } else {
+        state
+            .get_deployment_by_opt_name_or_id(options.deployment.as_deref())
+            .await?
     };
 
     ensure!(
-        deployment.container_count > 0,
+        resource.container_count > 0,
         "Deployment has no running containers."
     );
 
@@ -88,7 +70,7 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
         let mut ports = HashSet::new();
 
         // metadata is only available for running containers
-        deployment
+        resource
             .metadata
             .unwrap_or_default()
             .container_port_mappings
@@ -163,7 +145,7 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
     let domain = if !options.hosts {
         ip_address.to_string()
     } else {
-        format!("{}.{DOMAIN_SUFFIX}", deployment.name)
+        format!("{}.{DOMAIN_SUFFIX}", resource.name)
     };
 
     if options.hosts {
@@ -199,11 +181,11 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
 
     log::info!(
         "Forwarding to `{}` on {}",
-        deployment.name,
+        resource.name,
         urlify(&format!("{domain}:{local_port}"))
     );
 
-    let tonneru = TonneruSocket::new(&token, &deployment.id, remote_port)?;
+    let tonneru = TonneruSocket::new(&token, &resource.id, remote_port)?;
 
     loop {
         let (mut stream, local_socket) = listiner.accept().await?;

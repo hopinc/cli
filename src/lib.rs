@@ -51,7 +51,7 @@ pub async fn run() -> Result<()> {
 
     utils::sudo::fix().await?;
 
-    let state = State::new(StateOptions {
+    let mut state = State::new(StateOptions {
         override_project: std::env::var("PROJECT_ID").ok().or(cli.project),
         override_token: std::env::var("TOKEN").ok(),
     })
@@ -65,7 +65,7 @@ pub async fn run() -> Result<()> {
         _ if cfg!(debug_assertions) || state.is_ci => None,
 
         // its okay for the notice to fail
-        _ => version_notice(state.ctx.clone()).await.ok(),
+        _ => version_notice(&mut state.ctx).await.ok(),
     };
 
     if let Err(error) = handle_command(cli.commands, state).await {
@@ -79,7 +79,7 @@ pub async fn run() -> Result<()> {
 }
 
 #[cfg(test)]
-mod tests {
+mod test {
     #[test]
     fn test_cli() {
         use clap::CommandFactory;

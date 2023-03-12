@@ -1,6 +1,7 @@
 use anyhow::{bail, Context, Result};
+use chrono::Datelike;
 
-use super::types::Files;
+use super::types::{File, Files};
 use crate::state::http::HttpClient;
 
 pub async fn get_files_for_path(
@@ -23,11 +24,15 @@ pub async fn get_files_for_path(
     Ok(files)
 }
 
+/// Convert a path into a URI safe(ish) string
 pub fn path_into_uri_safe(path: &str) -> String {
     path.replace('/', "%2F")
 }
 
-pub fn permission_to_string(permission: u64) -> Result<String> {
+/// Convert a permission number into a string
+/// 40755 -> drwxr-xr-x
+/// 100644 -> -rw-r--r--
+fn permission_to_string(permission: u64) -> Result<String> {
     let permission = u32::from_str_radix(&permission.to_string(), 8)?;
 
     let mut perms = String::new();
@@ -76,4 +81,50 @@ pub fn permission_to_string(permission: u64) -> Result<String> {
     }
 
     Ok(perms)
+}
+
+pub fn format_file(file: &File) -> Result<String> {
+    let date =
+        chrono::DateTime::parse_from_rfc3339(&file.updated_at).context("Failed to parse date")?;
+
+    let date = if date.year() == chrono::Local::now().year() {
+        date.format("%b %d %H:%M")
+    } else {
+        date.format("%b %d %Y")
+    };
+
+    let res = format!(
+        "{}\t{}\t{}\t{}",
+        permission_to_string(file.permissions)?,
+        file.size,
+        date,
+        file.name
+    );
+
+    Ok(res)
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_path_into_uri_safe() {
+        assert_eq!(path_into_uri_safe("/"), "%2F");
+        assert_eq!(path_into_uri_safe("/home"), "%2Fhome");
+        assert_eq!(path_into_uri_safe("/home/"), "%2Fhome%2F");
+        assert_eq!(path_into_uri_safe("/home/user"), "%2Fhome%2Fuser");
+        assert_eq!(path_into_uri_safe("/home/user/"), "%2Fhome%2Fuser%2F");
+        assert_eq!(
+            path_into_uri_safe("/home/user/file"),
+            "%2Fhome%2Fuser%2Ffile"
+        );
+    }
+
+    #[test]
+    fn test_permission_to_string() {
+        assert_eq!(permission_to_string(40755).unwrap(), "drwxr-xr-x");
+        assert_eq!(permission_to_string(100644).unwrap(), "-rw-r--r--");
+        assert_eq!(permission_to_string(100777).unwrap(), "-rwxrwxrwx");
+    }
 }

@@ -124,7 +124,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         None => {
             log::info!("No hopfile found, creating one");
 
-            let project = state.ctx.clone().current_project_error()?;
+            let project = state.ctx.current_project_error()?;
 
             log::info!("Deploying to project {}", format_project(&project));
 

@@ -187,6 +187,10 @@ impl Deployment {
         self.config.container_strategy == ScalingStrategy::Manual
             && self.config.type_ != ContainerType::Stateful
     }
+
+    pub fn is_stateful(&self) -> bool {
+        self.config.type_ == ContainerType::Stateful
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

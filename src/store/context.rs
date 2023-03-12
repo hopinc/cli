@@ -65,7 +65,7 @@ impl Context {
     }
 
     #[inline]
-    pub fn current_project_error(self) -> Result<Project> {
+    pub fn current_project_error(&self) -> Result<Project> {
         self.current_project().with_context(|| anyhow!("No project specified, run `{EXEC_NAME} projects switch` or use --project to specify a project"))
     }
 

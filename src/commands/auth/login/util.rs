@@ -70,7 +70,7 @@ async fn login_ptk(http: HttpClient) -> Result<AuthorizedClient> {
         leap_token,
         project,
     } = http
-        .request::<ThisProjectResponse>("GET", "/projects/@this", None)
+        .request("GET", "/projects/@this", None)
         .await?
         .context("Error while parsing response")?;
 

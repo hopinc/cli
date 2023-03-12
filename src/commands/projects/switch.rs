@@ -13,7 +13,7 @@ pub struct Options {
 }
 
 pub async fn handle(options: Options, mut state: State) -> Result<()> {
-    let projects = state.ctx.current.take().unwrap().projects;
+    let projects = state.ctx.current.clone().unwrap().projects;
 
     let project = match options.project.clone() {
         Some(namespace) => state
@@ -26,7 +26,7 @@ pub async fn handle(options: Options, mut state: State) -> Result<()> {
             let idx = dialoguer::Select::new()
                 .with_prompt("Select a project")
                 .items(&projects_fmt)
-                .default(if let Some(current) = state.ctx.clone().current_project() {
+                .default(if let Some(current) = state.ctx.current_project() {
                     projects
                         .iter()
                         .position(|p| p.id == current.id)

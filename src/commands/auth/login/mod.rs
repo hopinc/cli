@@ -12,7 +12,7 @@ use crate::state::State;
 use crate::store::Store;
 use crate::utils::in_path;
 
-const WEB_AUTH_URL: &str = "https://console.hop.io/cli-auth";
+const WEB_AUTH_URL: &str = "https://console.hop.io/auth/callback/cli";
 const PAT_FALLBACK_URL: &str = "https://console.hop.io/settings/pats";
 
 #[derive(Debug, Parser, Default, PartialEq, Eq)]

@@ -51,7 +51,7 @@ pub fn parse_size(size: &str) -> Result<u64> {
 // }
 
 #[cfg(test)]
-mod tests {
+mod test {
     use super::*;
 
     #[test]
