@@ -104,6 +104,15 @@ pub fn format_file(file: &File) -> Result<String> {
     Ok(res)
 }
 
+pub fn get_volume_from_deployment(deployment: &str) -> Result<String> {
+    let tail = deployment
+        .split('_')
+        .nth(1)
+        .context("Failed to get volume from deployment")?;
+
+    return Ok(format!("volume_{tail}"));
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
