@@ -8,8 +8,6 @@ use anyhow::Result;
 use clap::Parser;
 
 use commands::update::version_notice;
-#[cfg(feature = "update")]
-use commands::Commands::Update;
 use commands::{handle_command, Commands};
 use config::{ARCH, PLATFORM, VERSION};
 use state::{State, StateOptions};
@@ -59,7 +57,11 @@ pub async fn run() -> Result<()> {
 
     match cli.commands {
         #[cfg(feature = "update")]
-        Update(_) => None,
+        Commands::Update(_) => None,
+
+        // do not show the notice if we are in completions mode
+        // since it could break the shell
+        Commands::Completions(_) => None,
 
         // only show the notice if we are not in debug mode or in CI
         _ if cfg!(debug_assertions) || state.is_ci => None,
