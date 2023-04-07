@@ -17,7 +17,8 @@ use crate::commands::gateways::types::{GatewayConfig, GatewayType};
 use crate::commands::gateways::util::{create_gateway, update_gateway_config};
 use crate::commands::ignite::create::{DeploymentConfig, Options as CreateOptions};
 use crate::commands::ignite::types::{
-    CreateDeployment, Deployment, Image, RolloutEvents, RolloutState, ScalingStrategy,
+    CreateDeployment, Deployment, Image, RestartPolicy, RolloutEvents, RolloutState,
+    ScalingStrategy,
 };
 use crate::commands::ignite::utils::{
     create_deployment, env_file_to_map, get_deployment, rollout, update_deployment_config,
@@ -145,6 +146,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                         // TODO: remove after autoscaling is supported
                         container_strategy: ScalingStrategy::Manual,
                         type_: Some(ContainerType::Persistent),
+                        restart_policy: Some(RestartPolicy::OnFailure),
                         ..Default::default()
                     },
                     ContainerOptions {
