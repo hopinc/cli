@@ -2,21 +2,23 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
 use async_compression::tokio::bufread::GzipDecoder;
-use async_zip::{write::ZipFileWriter, ZipEntryBuilder};
+use async_zip::write::ZipFileWriter;
+use async_zip::ZipEntryBuilder;
 use ignore::WalkBuilder;
-use tokio::io::{AsyncWriteExt, BufReader};
-use tokio::{fs, io::AsyncReadExt};
+use tokio::fs;
+use tokio::io::{AsyncWriteExt, BufReader, BufWriter};
 use tokio_tar::Archive;
 
-use crate::commands::volumes::utils::get_volume_from_deployment;
-use crate::state::{http::HttpClient, State};
-
 use super::utils::{get_files_from_volume, send_zip_to_volume};
+use crate::commands::ignite::types::Deployment;
+use crate::commands::volumes::utils::parse_target_from_path_like;
+use crate::state::http::HttpClient;
+use crate::state::State;
 
 #[derive(Debug)]
 /// A file system like object that can be either local or remote
-/// This is used to abstract away the differences between local and remote file systems
-/// and allow for a single implementation of the copy command
+/// This is used to abstract away the differences between local and remote file
+/// systems and allow for a single implementation of the copy command
 pub enum FsLike<'a> {
     Local(LocalFs),
     Remote(RemoteFs<'a>),
@@ -56,27 +58,14 @@ impl<'a> FsLike<'a> {
 
     // Has to take `State` because it needs to get the deployment by name or id
     pub async fn from_str(state: &'a State, s: &str) -> Result<FsLike<'a>> {
-        let parts: Vec<&str> = s.split(':').collect();
+        let parsed = parse_target_from_path_like(state, s).await?;
 
-        if parts.len() > 2 {
-            bail!("Invalid source or target: {s}");
+        match parsed {
+            (Some((Deployment { id: deployment, .. }, volume)), path) => {
+                Ok(Self::new_remote(&state.http, &deployment, &volume, &path))
+            }
+            (None, path) => Ok(Self::new_local(&path)),
         }
-
-        if parts.len() == 1 {
-            return Ok(Self::new_local(parts[0]));
-        }
-
-        let (deployment, path) = (parts[0], parts[1]);
-
-        let deployment = state.get_deployment_by_name_or_id(deployment).await?;
-
-        if !deployment.is_stateful() {
-            bail!("Deployment {} is not stateful", deployment.id);
-        }
-
-        let volume = get_volume_from_deployment(&deployment.id)?;
-
-        return Ok(Self::new_remote(&state.http, &deployment.id, &volume, path));
     }
 
     pub fn is_local(&self) -> bool {
@@ -138,14 +127,8 @@ pub struct LocalFs {
 
 impl LocalFs {
     async fn read(&self) -> Result<Vec<u8>> {
-        let file = fs::OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create(true)
-            .open("/tmp/local.zip")
-            .await?;
-
-        let mut zip = ZipFileWriter::new(file);
+        let buff = BufWriter::new(vec![]);
+        let mut zip = ZipFileWriter::new(buff);
 
         let path = Path::new(&self.path).canonicalize()?;
 
@@ -191,17 +174,13 @@ impl LocalFs {
             }
         }
 
-        let mut file = zip.close().await?;
-        let mut buff = vec![];
-
-        file.read_to_end(&mut buff).await?;
-
-        // delete the file
-        fs::remove_file("/tmp/local.zip").await?;
+        let mut buff = zip.close().await?;
 
         log::debug!("Done writing zip");
 
-        Ok(buff)
+        buff.flush().await?;
+
+        Ok(buff.into_inner())
     }
 
     // Data should be a tarball
@@ -221,23 +200,13 @@ impl LocalFs {
 
             fs::create_dir_all(&self.path).await?;
 
-            // write a debug file
-            let debug = fs::OpenOptions::new()
-                .read(true)
-                .write(true)
-                .create(true)
-                .open("test/ball.tar.gz")
-                .await?;
-
-            // debug.write_all(data).await?;
-
-            let reader = BufReader::new(debug);
+            let reader = BufReader::new(data);
             let gunzip = GzipDecoder::new(reader);
             let mut tar = Archive::new(gunzip);
 
             tar.unpack(&self.path)
                 .await
-                /*.context("Could not unpack tarball")*/?;
+                .context("Could not unpack tarball")?;
 
             return Ok(());
         }

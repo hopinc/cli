@@ -2,7 +2,9 @@ use anyhow::{bail, Context, Result};
 use chrono::Datelike;
 
 use super::types::{File, Files};
+use crate::commands::ignite::types::Deployment;
 use crate::state::http::HttpClient;
+use crate::state::State;
 
 pub async fn get_files_for_path(
     http: &HttpClient,
@@ -22,6 +24,24 @@ pub async fn get_files_for_path(
         .context("Failed to get files for path")?;
 
     Ok(files)
+}
+
+pub async fn delete_files_for_path(
+    http: &HttpClient,
+    deployment: &str,
+    volume: &str,
+    path: &str,
+) -> Result<()> {
+    let path = path_into_uri_safe(path);
+
+    http.request::<()>(
+        "DELETE",
+        &format!("/ignite/deployments/{deployment}/volumes/{volume}/files/{path}"),
+        None,
+    )
+    .await?;
+
+    Ok(())
 }
 
 /// Convert a path into a URI safe(ish) string
@@ -104,13 +124,41 @@ pub fn format_file(file: &File) -> Result<String> {
     Ok(res)
 }
 
-pub fn get_volume_from_deployment(deployment: &str) -> Result<String> {
+fn get_volume_from_deployment(deployment: &str) -> Result<String> {
     let tail = deployment
         .split('_')
         .nth(1)
         .context("Failed to get volume from deployment")?;
 
-    return Ok(format!("volume_{tail}"));
+    Ok(format!("volume_{tail}"))
+}
+
+pub async fn parse_target_from_path_like(
+    state: &State,
+    path_like: &str,
+) -> Result<(Option<(Deployment, String)>, String)> {
+    let parts: Vec<&str> = path_like.split(':').collect();
+
+    if parts.len() > 2 {
+        bail!("Invalid source or target: {path_like}");
+    }
+
+    // if there is only one part, treat it as a path
+    if parts.len() == 1 {
+        return Ok((None, parts[0].to_string()));
+    }
+
+    let (deployment, path) = (parts[0], parts[1]);
+
+    let deployment = state.get_deployment_by_name_or_id(deployment).await?;
+
+    if !deployment.is_stateful() {
+        bail!("Deployment {} is not stateful", deployment.id);
+    }
+
+    let volume = get_volume_from_deployment(&deployment.id)?;
+
+    Ok((Some((deployment, volume)), path.to_string()))
 }
 
 #[cfg(test)]

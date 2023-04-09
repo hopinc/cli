@@ -18,9 +18,9 @@ mod whoami;
 
 use anyhow::Result;
 use clap::Subcommand;
+use ignite::from_compose;
 
 use crate::state::State;
-use ignite::from_compose;
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {
@@ -56,7 +56,7 @@ pub enum Commands {
     Payment(payment::Options),
     #[clap(alias = "fwd", alias = "forward")]
     Tunnel(tunnel::Options),
-    #[clap(alias = "volume")]
+    #[clap(alias = "volume", alias = "v")]
     Volumes(volumes::Options),
     #[clap(alias = "compose")]
     FromCompose(from_compose::Options),

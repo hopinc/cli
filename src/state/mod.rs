@@ -130,7 +130,8 @@ impl State {
     }
 
     pub async fn get_deployment_by_name_or_id(&self, name_or_id: &str) -> Result<Deployment> {
-        // deployments cannot contain underscores so we can use this to determine if it's an id
+        // deployments cannot contain underscores so we can use this to determine if
+        // it's an id
         if name_or_id.starts_with("deployment_") {
             return get_deployment(&self.http, name_or_id).await;
         }

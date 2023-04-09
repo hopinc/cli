@@ -1,20 +1,18 @@
 use std::collections::HashMap;
 use std::io::Write;
 
-use anyhow::{bail, Context, Result};
+use anyhow::Result;
 use clap::Parser;
 use tabwriter::TabWriter;
 
 use super::types::Files;
-use super::utils::{format_file, get_files_for_path};
+use super::utils::{format_file, get_files_for_path, parse_target_from_path_like};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "List information about the FILEs (the current directory by default).")]
 pub struct Options {
-    #[clap(help = "The deployment to list files from")]
-    pub deployment: String,
-    #[clap(help = "The path(s) to list files from")]
+    #[clap(help = "The path(s) to list files from, in the format <deployment>:/<path>")]
     pub files: Vec<String>,
     #[clap(short, long, help = "Use a long listing format")]
     pub long: bool,
@@ -23,24 +21,7 @@ pub struct Options {
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
-    let deployment = state
-        .get_deployment_by_name_or_id(&options.deployment)
-        .await?;
-
-    if !deployment.is_stateful() {
-        bail!("Deployment is not stateful");
-    }
-
     let mut files_map = HashMap::new();
-
-    let volume = format!(
-        "volume_{}",
-        deployment
-            .id
-            .split('_')
-            .nth(1)
-            .context("Failed to get volume from deployment")?
-    );
 
     let files_to_get = if options.files.is_empty() {
         vec![String::from("/")]
@@ -49,9 +30,20 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     };
 
     for file in files_to_get {
+        let target = parse_target_from_path_like(&state, &file).await?;
+
+        let (deployment, volume, path) = match target {
+            (Some((deployment, volume)), path) => (deployment, volume, path),
+            (None, _) => {
+                log::warn!("No deployment identifier found in `{file}`, skipping");
+
+                continue;
+            }
+        };
+
         files_map.insert(
             file.clone(),
-            get_files_for_path(&state.http, &deployment.id, &volume, &file).await?,
+            get_files_for_path(&state.http, &deployment.id, &volume, &path).await?,
         );
     }
 
