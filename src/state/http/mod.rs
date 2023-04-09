@@ -73,7 +73,7 @@ impl HttpClient {
             .map_err(|e| anyhow!(e))
     }
 
-    async fn handle_error<T>(
+    pub async fn handle_error<T>(
         &self,
         response: reqwest::Response,
         status: StatusCode,
@@ -99,12 +99,29 @@ impl HttpClient {
     where
         T: serde::de::DeserializeOwned,
     {
+        self.request_with_query(method, path, None, data).await
+    }
+
+    pub async fn request_with_query<T>(
+        &self,
+        method: &str,
+        path: &str,
+        query: Option<&[&[&str; 2]]>,
+        data: Option<(reqwest::Body, &str)>,
+    ) -> Result<Option<T>>
+    where
+        T: serde::de::DeserializeOwned,
+    {
         let mut request = self.client.request(
             method.parse().unwrap(),
             format!("{}{}", self.base_url, path),
         );
 
         log::debug!("request: {} {} {:?}", method, path, data);
+
+        if let Some(query) = query {
+            request = request.query(query);
+        }
 
         if let Some((body, content_type)) = data {
             request = request.header("content-type", content_type);
