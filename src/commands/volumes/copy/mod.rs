@@ -4,16 +4,15 @@ mod utils;
 use anyhow::{bail, Result};
 use clap::Parser;
 
-use crate::state::State;
-
 use self::fslike::FsLike;
+use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Copy files between volumes and local machine")]
 pub struct Options {
-    #[clap(help = "Source to copy from")]
+    #[clap(help = "Source, in the format <deployment name or id>:/<path> or <path> if local")]
     pub source: String,
-    #[clap(help = "Target to copy to")]
+    #[clap(help = "Target, in the format <deployment name or id>:/<path> or <path> if local")]
     pub target: String,
 }
 

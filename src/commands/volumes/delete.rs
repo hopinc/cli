@@ -5,14 +5,17 @@ use super::utils::{delete_files_for_path, parse_target_from_path_like, path_into
 use crate::state::State;
 
 #[derive(Debug, Parser)]
-#[clap(about = "Delete the FILEs.")]
+#[clap(about = "Delete files")]
 pub struct Options {
-    #[clap(help = "The path(s) to delete files from, in the format <deployment>:/<path>")]
-    pub files: Vec<String>,
+    #[clap(
+        help = "The path(s) to delete, in the format <deployment name or id>:<path>",
+        required = true
+    )]
+    pub paths: Vec<String>,
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
-    for file in options.files {
+    for file in options.paths {
         let target = parse_target_from_path_like(&state, &file).await?;
 
         match target {

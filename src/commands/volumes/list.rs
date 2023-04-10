@@ -10,10 +10,13 @@ use super::utils::{format_file, get_files_for_path, parse_target_from_path_like}
 use crate::state::State;
 
 #[derive(Debug, Parser)]
-#[clap(about = "List information about the FILEs (the current directory by default).")]
+#[clap(about = "List information about files")]
 pub struct Options {
-    #[clap(help = "The path(s) to list files from, in the format <deployment>:/<path>")]
-    pub files: Vec<String>,
+    #[clap(
+        help = "The path(s) to list, in the format <deployment name or id>:<path>",
+        required = true
+    )]
+    pub paths: Vec<String>,
     #[clap(short, long, help = "Use a long listing format")]
     pub long: bool,
     #[clap(short, long, help = "Do not ignore entries starting with .")]
@@ -23,13 +26,7 @@ pub struct Options {
 pub async fn handle(options: Options, state: State) -> Result<()> {
     let mut files_map = HashMap::new();
 
-    let files_to_get = if options.files.is_empty() {
-        vec![String::from("/")]
-    } else {
-        options.files
-    };
-
-    for file in files_to_get {
+    for file in options.paths {
         let target = parse_target_from_path_like(&state, &file).await?;
 
         let (deployment, volume, path) = match target {
