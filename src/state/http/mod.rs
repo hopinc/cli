@@ -1,6 +1,6 @@
 mod types;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use hyper::StatusCode;
 use reqwest::header::HeaderMap;
 use reqwest::Client as AsyncClient;
@@ -81,11 +81,15 @@ impl HttpClient {
         let body = response.json::<ErrorResponse>().await;
 
         match body {
-            Ok(body) => Err(anyhow!("{}", body.error.message)),
+            Ok(body) => bail!("{}", body.error.message),
             Err(err) => {
                 log::debug!("Error deserialize message: {:#?}", err);
 
-                Err(anyhow!("Error: HTTP {:#?}", status))
+                bail!(
+                    "HTTP {}: {}",
+                    status.as_u16(),
+                    status.canonical_reason().unwrap_or("Unknown")
+                )
             }
         }
     }

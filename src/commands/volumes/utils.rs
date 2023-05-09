@@ -1,3 +1,6 @@
+#[cfg(windows)]
+use std::path::PathBuf;
+
 use anyhow::{bail, Context, Result};
 use chrono::Datelike;
 
@@ -138,6 +141,13 @@ pub async fn parse_target_from_path_like(
     path_like: &str,
 ) -> Result<(Option<(Deployment, String)>, String)> {
     let parts: Vec<&str> = path_like.split(':').collect();
+
+    // windows paths contain colons, so check if the path is a windows path,
+    // the path can not exist on the system, but it must be a valid windows path
+    #[cfg(windows)]
+    if PathBuf::from(path_like).is_absolute() {
+        return Ok((None, path_like.to_string()));
+    }
 
     if parts.len() > 2 {
         bail!("Invalid source or target: {path_like}");

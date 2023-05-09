@@ -4,38 +4,44 @@ use anyhow::{bail, Context, Result};
 use reqwest::multipart::{Form, Part};
 use serde_json::Value;
 
-use crate::{commands::volumes::utils::path_into_uri_safe, state::http::HttpClient};
+use crate::commands::volumes::utils::path_into_uri_safe;
+use crate::state::http::HttpClient;
 
-pub async fn send_zip_to_volume(
+pub async fn send_files_to_volume<'l>(
     http: &HttpClient,
     deployment: &str,
     volume: &str,
     path: &str,
-    zip: &[u8],
+    data: Vec<u8>,
     packed: bool,
 ) -> Result<()> {
     let url = format!("/ignite/deployments/{deployment}/volumes/{volume}/files",);
 
-    let form = Form::new()
-        .part(
-            "file",
-            Part::bytes(zip.to_vec()).file_name(if packed {
-                "packed.zip".to_string()
-            } else {
-                let buf = PathBuf::from(path);
+    let (path, filename) = if packed {
+        (path, "archive.zip".to_string())
+    } else {
+        let buf = PathBuf::from(path);
 
-                buf.file_name()
-                    .context("No file name")?
-                    .to_str()
-                    .context("Invalid file name")?
-                    .to_string()
-            }),
+        (
+            path,
+            buf.file_name()
+                .context("No file name")?
+                .to_str()
+                .context("Invalid file name")?
+                .to_string(),
         )
+    };
+
+    let form = Form::new()
+        .part("file", Part::bytes(data).file_name(filename))
         .part("path", Part::text(path.to_string()));
+
+    log::debug!("Packed: {}", packed);
 
     let response = http
         .client
         .post(format!("{}{url}", http.base_url))
+        .header("X-No-Unpacking", (!packed).to_string())
         .multipart(form)
         .send()
         .await?;
@@ -63,14 +69,16 @@ pub async fn get_files_from_volume(
         .send()
         .await?;
 
-    // check header for content type
-    let content_type = response
-        .headers()
-        .get(reqwest::header::CONTENT_TYPE)
-        .context("No content type header")?
-        .to_str()?;
+    log::debug!("Response headers: {:#?}", response.headers());
 
-    let packed = content_type == "application/gzip";
+    // check header for content type
+    let packed = response
+        .headers()
+        .get("x-directory")
+        .context("No content type header")?
+        .to_str()?
+        .to_lowercase()
+        == "true";
 
     let data = match response.status() {
         reqwest::StatusCode::OK => response.bytes().await?,

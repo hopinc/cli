@@ -9,7 +9,7 @@ use tokio::fs;
 use tokio::io::{AsyncWriteExt, BufReader, BufWriter};
 use tokio_tar::Archive;
 
-use super::utils::{get_files_from_volume, send_zip_to_volume};
+use super::utils::{get_files_from_volume, send_files_to_volume};
 use crate::commands::ignite::types::Deployment;
 use crate::commands::volumes::utils::parse_target_from_path_like;
 use crate::state::http::HttpClient;
@@ -39,19 +39,19 @@ impl<'a> FsLike<'a> {
     }
 
     pub async fn read(&self) -> Result<(bool, Vec<u8>)> {
-        log::debug!("Reading from {}", self.target());
+        log::debug!("Reading from {}", self.point());
 
         match self {
-            Self::Local(fs) => Ok((true, fs.read().await?)),
+            Self::Local(fs) => fs.read().await,
             Self::Remote(fs) => fs.read().await,
         }
     }
 
-    pub async fn write(&self, data: &[u8], packed: bool) -> Result<()> {
-        log::debug!("Writing to {}", self.target());
+    pub async fn write(&self, data: Vec<u8>, packed: bool) -> Result<()> {
+        log::debug!("Writing to {}", self.point());
 
         match self {
-            Self::Local(fs) => fs.write(data, packed).await,
+            Self::Local(fs) => fs.write(data.as_slice(), packed).await,
             Self::Remote(fs) => fs.write(data, packed).await,
         }
     }
@@ -82,6 +82,20 @@ impl<'a> FsLike<'a> {
         }
     }
 
+    fn path(&self) -> String {
+        match self {
+            Self::Local(fs) => fs.path.clone(),
+            Self::Remote(fs) => fs.path.clone(),
+        }
+    }
+
+    fn point(&self) -> String {
+        match self {
+            Self::Local(fs) => format!("local:{}", fs.path),
+            Self::Remote(fs) => format!("{}:{}", fs.deployment, fs.path),
+        }
+    }
+
     /// Read the contents of the source and write them to the target
     /// Returns the number of bytes written (compressed)
     pub async fn to(self, mut target: Self) -> Result<usize> {
@@ -90,13 +104,13 @@ impl<'a> FsLike<'a> {
         // if not packed validate and update paths
         // so it behaves as close to mv/cp as possible
         if !packed {
-            let mut path = PathBuf::from(&target.target());
+            let mut path = PathBuf::from(&target.path());
 
             // check if the target is a directory
             let is_dir = if path.exists() { path.is_dir() } else { false };
 
             if is_dir {
-                let src_path = PathBuf::from(&self.target());
+                let src_path = PathBuf::from(&self.path());
 
                 path = path.join(src_path.file_name().context("No file name")?);
             }
@@ -107,16 +121,14 @@ impl<'a> FsLike<'a> {
 
         let size = bytes.len();
 
-        target.write(&bytes, packed).await?;
+        log::debug!(
+            "Writing {size} bytes to {}, packed: {packed}",
+            target.point()
+        );
+
+        target.write(bytes, packed).await?;
 
         Ok(size)
-    }
-
-    fn target(&self) -> String {
-        match self {
-            Self::Local(fs) => fs.path.clone(),
-            Self::Remote(fs) => format!("{}:{}", fs.deployment, fs.path),
-        }
     }
 }
 
@@ -126,11 +138,15 @@ pub struct LocalFs {
 }
 
 impl LocalFs {
-    async fn read(&self) -> Result<Vec<u8>> {
-        let buff = BufWriter::new(vec![]);
-        let mut zip = ZipFileWriter::new(buff);
-
+    async fn read(&self) -> Result<(bool, Vec<u8>)> {
         let path = Path::new(&self.path).canonicalize()?;
+
+        // return early if the path is a file
+        if !path.is_dir() {
+            return Ok((false, fs::read(&path).await?));
+        }
+
+        let mut zip = ZipFileWriter::new(BufWriter::new(vec![]));
 
         // walk the directory and add files to the zip
         let walker = WalkBuilder::new(&path)
@@ -180,7 +196,7 @@ impl LocalFs {
 
         buff.flush().await?;
 
-        Ok(buff.into_inner())
+        Ok((true, buff.into_inner()))
     }
 
     // Data should be a tarball
@@ -188,7 +204,12 @@ impl LocalFs {
         let path = Path::new(&self.path);
 
         if !path.exists() {
-            fs::create_dir_all(&path.parent().context("Could not get parent")?).await?;
+            fs::create_dir_all(if packed {
+                path
+            } else {
+                path.parent().context("Could not get parent")?
+            })
+            .await?;
         }
 
         if packed {
@@ -235,8 +256,8 @@ pub struct RemoteFs<'a> {
 
 impl<'a> RemoteFs<'a> {
     /// Data should be a zip file
-    pub async fn write(&self, data: &[u8], packed: bool) -> Result<()> {
-        send_zip_to_volume(
+    pub async fn write(&self, data: Vec<u8>, packed: bool) -> Result<()> {
+        send_files_to_volume(
             self.http,
             &self.deployment,
             &self.volume,
