@@ -20,6 +20,7 @@ pub struct State {
     token_type: Option<TokenType>,
 }
 
+#[derive(Debug, Default)]
 pub struct StateOptions {
     pub override_project: Option<String>,
     pub override_token: Option<String>,

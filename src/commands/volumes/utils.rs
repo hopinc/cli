@@ -194,4 +194,31 @@ mod test {
         assert_eq!(permission_to_string(100644).unwrap(), "-rw-r--r--");
         assert_eq!(permission_to_string(100777).unwrap(), "-rwxrwxrwx");
     }
+
+    #[tokio::test]
+    async fn test_parse_target_from_path_like() {
+        let state = State::new(Default::default()).await.unwrap();
+
+        let (deployment, path) = parse_target_from_path_like(&state, "/").await.unwrap();
+        assert_eq!(deployment, None);
+        assert_eq!(path, "/");
+
+        let (deployment, path) = parse_target_from_path_like(&state, "/home").await.unwrap();
+        assert_eq!(deployment, None);
+        assert_eq!(path, "/home");
+
+        // check if windows paths work
+        #[cfg(windows)]
+        {
+            let (deployment, path) = parse_target_from_path_like(&state, "C:\\").await.unwrap();
+            assert_eq!(deployment, None);
+            assert_eq!(path, "C:\\");
+
+            let (deployment, path) = parse_target_from_path_like(&state, "C:\\home")
+                .await
+                .unwrap();
+            assert_eq!(deployment, None);
+            assert_eq!(path, "C:\\user");
+        }
+    }
 }
