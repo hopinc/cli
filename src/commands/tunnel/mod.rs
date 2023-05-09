@@ -11,6 +11,7 @@ use tokio::net::TcpListener;
 use tokio::sync::mpsc::unbounded_channel;
 
 use self::utils::{parse_publish, TonneruSocket};
+use crate::commands::gateways::util::{format_gateways, get_all_gateways};
 use crate::commands::ignite::types::Deployment;
 use crate::commands::tunnel::utils::{add_entry_to_hosts, remove_entry_from_hosts};
 use crate::state::State;
@@ -20,6 +21,7 @@ use crate::utils::urlify;
 const TONNERU_URI: &str = "tonneru.hop.io";
 const TONNERU_PORT: u16 = 443;
 const DOMAIN_SUFFIX: &str = "hop";
+const CONTAINER_PREFIX: &str = "container_";
 
 #[derive(Debug, Parser)]
 #[clap(about = "Access your application via a tunnel")]
@@ -37,7 +39,7 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
     let resource = if options
         .deployment
         .clone()
-        .map(|d| d.starts_with("container_"))
+        .map(|d| d.starts_with(CONTAINER_PREFIX))
         .unwrap_or(false)
     {
         let container = options.deployment.clone().unwrap();
@@ -76,14 +78,13 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
             .container_port_mappings
             .unwrap_or_default()
             .values()
-            .for_each(|v| {
-                v.iter().for_each(|p| {
-                    let port_split = p.split(':').collect::<Vec<_>>();
+            .flat_map(|p| p.iter())
+            .for_each(|p| {
+                let port_split = p.split(':').collect::<Vec<_>>();
 
-                    if let Some(port) = port_split.last() {
-                        ports.insert(port.to_string());
-                    }
-                });
+                if let Some(port) = port_split.last() {
+                    ports.insert(port.to_string());
+                }
             });
 
         let mut ports = ports.into_iter().collect::<Vec<_>>();
@@ -145,7 +146,33 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
     let domain = if !options.hosts {
         ip_address.to_string()
     } else {
-        format!("{}.{DOMAIN_SUFFIX}", resource.name)
+        let mut gateways = if !resource.id.starts_with(CONTAINER_PREFIX) {
+            get_all_gateways(&state.http, &resource.id)
+                .await?
+                .into_iter()
+                .filter(|g| g.is_internal())
+                .collect::<Vec<_>>()
+        } else {
+            vec![]
+        };
+
+        match &mut gateways[..] {
+            [] => format!("{}.{DOMAIN_SUFFIX}", resource.name),
+
+            // safe to unwrap because we filter out non-internal gateways
+            [single] => single.internal_domain.take().unwrap(),
+            _ => {
+                let gateways_fmt = format_gateways(&gateways, false);
+
+                let gateway = dialoguer::Select::new()
+                    .with_prompt("Select an internal gateway that best suits your needs")
+                    .items(&gateways_fmt)
+                    .default(0)
+                    .interact()?;
+
+                gateways[gateway].internal_domain.take().unwrap()
+            }
+        }
     };
 
     if options.hosts {

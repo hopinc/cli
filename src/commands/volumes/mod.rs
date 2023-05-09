@@ -21,7 +21,7 @@ pub enum Commands {
 
 #[derive(Debug, Parser)]
 #[clap(
-    about = "Interact with Volumes\n\n    hop volumes ls <deployment name or id>:<path>\n    hop volumes cp <path> <deployment name or id>:<path>\n    hop volumes rm <deployment name or id>:<path>"
+    about = "Interact with Volumes\n    hop volumes ls <deployment name or id>:<path>\n    hop volumes cp <path> <deployment name or id>:<path>\n    hop volumes rm <deployment name or id>:<path>"
 )]
 pub struct Options {
     #[clap(subcommand)]
