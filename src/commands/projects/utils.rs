@@ -6,7 +6,7 @@ use tabwriter::TabWriter;
 
 use crate::state::http::HttpClient;
 
-use super::types::{CreateProject, Project, Quotas, SingleProjectResponse, Sku};
+use super::types::{CreateProject, Project, Quotas, SingleProjectResponse, Sku, SkuResponse};
 
 pub fn format_projects(projects: &Vec<Project>, title: bool) -> Vec<String> {
     let mut tw = TabWriter::new(vec![]);
@@ -80,13 +80,15 @@ pub fn validate_namespace(namespace: &str) -> Result<()> {
 }
 
 pub async fn get_quotas(http: &HttpClient, project_id: &str) -> Result<Quotas> {
-    http.request::<Quotas>("GET", &format!("quotas?project={project_id}"), None)
+    http.request::<Quotas>("GET", &format!("/quotas?project={project_id}"), None)
         .await?
         .context("Error while parsing response")
 }
 
 pub async fn get_skus(http: &HttpClient) -> Result<Vec<Sku>> {
-    http.request::<Vec<Sku>>("GET", "/skus", None)
+    Ok(http
+        .request::<SkuResponse>("GET", "/skus", None)
         .await?
-        .context("Error while parsing response")
+        .context("Error while parsing response")?
+        .skus)
 }

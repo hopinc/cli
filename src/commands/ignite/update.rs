@@ -4,7 +4,7 @@ use clap::Parser;
 use super::create::Options as CreateOptions;
 
 use crate::commands::ignite::utils::{
-    format_deployments, get_all_deployments, get_deployment, rollout, scale, update_deployment,
+    format_deployments, get_all_deployments, rollout, scale, update_deployment,
     update_deployment_config,
 };
 use crate::state::State;
@@ -23,13 +23,13 @@ pub struct Options {
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
-    let project_id = state.ctx.current_project_error()?.id;
+    let project = state.ctx.current_project_error()?;
 
     let old_deployment = match options.deployment {
-        Some(id) => get_deployment(&state.http, &id).await?,
+        Some(id) => state.get_deployment_by_name_or_id(&id).await?,
 
         None => {
-            let deployments = get_all_deployments(&state.http, &project_id).await?;
+            let deployments = get_all_deployments(&state.http, &project.id).await?;
             ensure!(!deployments.is_empty(), "No deployments found");
             let deployments_fmt = format_deployments(&deployments, false);
 
@@ -52,7 +52,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         &old_deployment,
         &None,
         true,
-        &project_id,
+        &project,
     )
     .await?;
 

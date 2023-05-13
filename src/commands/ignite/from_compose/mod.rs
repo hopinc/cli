@@ -135,7 +135,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             &deployment,
             &Some(name.clone()),
             false,
-            &project.id,
+            &project,
         )
         .await?;
 

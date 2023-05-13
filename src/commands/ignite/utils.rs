@@ -11,14 +11,14 @@ use tokio::fs;
 
 use super::types::{
     CreateDeployment, Deployment, MultipleDeployments, Premade, Premades, RolloutEvent,
-    ScaleRequest, SingleDeployment, Tier, Tiers, Volume,
+    ScaleRequest, SingleDeployment, Tier, Tiers,
 };
 use crate::commands::containers::types::{ContainerOptions, ContainerType};
 use crate::commands::ignite::create::Options;
 use crate::commands::ignite::types::{
     Image, RamSizes, Resources, RestartPolicy, RolloutResponse, ScalingStrategy, VolumeFs,
 };
-use crate::commands::projects::types::Sku;
+use crate::commands::projects::types::{Project, Sku};
 use crate::commands::projects::utils::{get_quotas, get_skus};
 use crate::state::http::HttpClient;
 use crate::utils::size::{parse_size, UnitMultiplier};
@@ -204,7 +204,7 @@ pub async fn update_deployment_config(
     deployment: &Deployment,
     fallback_name: &Option<String>,
     is_update: bool,
-    project_id: &str,
+    project: &Project,
 ) -> Result<(CreateDeployment, ContainerOptions)> {
     let mut config = CreateDeployment::from(deployment.clone());
     let mut container_options = ContainerOptions::from_deployment(deployment);
@@ -234,20 +234,34 @@ pub async fn update_deployment_config(
         .await
     }?;
 
-    let (skus, quota) = tokio::join!(get_skus(http), get_quotas(http, project_id));
+    let (skus, quota) = tokio::join!(get_skus(http), get_quotas(http, &project.id));
+    let (skus, quota) = (skus?, quota?);
 
-    quota?.can_deploy(&config.resources, &config.volume)?;
+    quota.can_deploy(&config.resources, &config.volume)?;
 
-    let price = get_price_estimate(&skus?, &config.resources, &config.volume)?;
+    let (resources, volume_size) = if !project.is_personal() {
+        (config.resources, config.volume.map(|v| v.size))
+    } else {
+        let (applied, billabe) = quota.get_free_tier_billable(&config.resources, &config.volume)?;
 
-    log::info!("Estimated monthly price: {price}$");
+        if !applied {
+            log::warn!("Free tier has been applied to some of the resources");
+        }
+
+        billabe
+    };
+
+    let price = get_price_estimate(&skus, &resources, &volume_size)?;
+
+    log::info!("Estimated monthly price per container: {price}$");
 
     if is_visual
         && !dialoguer::Confirm::new()
             .with_prompt("Do you want to continue?")
-            .interact()?
+            .interact_opt()?
+            .unwrap_or(false)
     {
-        bail!("Aborted")
+        bail!("User aborted");
     }
 
     Ok(configs)
@@ -853,7 +867,7 @@ const MONTH_IN_MINUTES: f64 = 43200.0;
 pub fn get_price_estimate(
     skus: &[Sku],
     resources: &Resources,
-    volume: &Option<Volume>,
+    volume: &Option<String>,
 ) -> Result<String> {
     let mut total = 0.0;
 
@@ -872,8 +886,8 @@ pub fn get_price_estimate(
 
             // per 100 MB
             "ignite_volume_per_min" => {
-                if let Some(volume) = &volume {
-                    price *= (parse_size(&volume.size)? / (100 * UnitMultiplier::MB as u64)) as f64;
+                if let Some(size) = &volume {
+                    price *= (parse_size(size)? / (100 * UnitMultiplier::MB as u64)) as f64;
                 }
             }
 
@@ -933,10 +947,7 @@ mod test {
             ..Default::default()
         };
 
-        let volume = Some(Volume {
-            size: "1GB".to_string(),
-            ..Default::default()
-        });
+        let volume = Some("1GB".to_string());
 
         let estimate = get_price_estimate(&skus, &resources, &volume).unwrap();
 

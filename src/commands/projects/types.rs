@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     commands::ignite::types::{Resources, Volume},
-    utils::size::parse_size,
+    utils::size::{parse_size, UnitMultiplier},
 };
 
 // types for the API response
@@ -28,6 +28,12 @@ pub struct Project {
     pub type_: String,
 }
 
+impl Project {
+    pub fn is_personal(&self) -> bool {
+        self.type_ == "personal"
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct ThisProjectResponse {
     pub leap_token: String,
@@ -42,6 +48,7 @@ pub struct CreateProject {
 }
 
 #[derive(Debug, Deserialize, Default)]
+#[serde(default)] // some quotas like volume can be missing in overrides, so it's better to default to 0
 pub struct Quota {
     pub vcpu: f64,
     pub ram: u64,
@@ -49,9 +56,8 @@ pub struct Quota {
 }
 
 #[derive(Debug, Deserialize, Default)]
-#[serde(default)] // some quotas like volume can be missing in overrides, so it's better to default to 0
 pub struct Quotas {
-    #[serde(rename = "default_quota")]
+    #[serde(rename = "default_quotas")]
     pub default: Quota,
     #[serde(rename = "quota_overrides")]
     pub overrides: Quota,
@@ -60,59 +66,110 @@ pub struct Quotas {
 }
 
 impl Quotas {
-    pub fn get_vcpu(&self) -> f64 {
-        if self.overrides.vcpu > 0f64 {
-            self.overrides.vcpu
-        } else {
-            self.default.vcpu
+    pub fn total_quota(&self) -> Quota {
+        Quota {
+            vcpu: if self.overrides.vcpu > 0f64 {
+                self.overrides.vcpu
+            } else {
+                self.default.vcpu
+            },
+            ram: (if self.overrides.ram > 0 {
+                self.overrides.ram
+            } else {
+                self.default.ram
+            }) * UnitMultiplier::MB as u64,
+            volume: (if self.overrides.volume > 0 {
+                self.overrides.volume
+            } else {
+                self.default.volume
+            }) * UnitMultiplier::MB as u64,
         }
     }
 
-    pub fn get_ram(&self) -> u64 {
-        if self.overrides.ram > 0 {
-            self.overrides.ram
-        } else {
-            self.default.ram
+    pub fn usage_quota(&self) -> Quota {
+        Quota {
+            vcpu: self.usage.vcpu,
+            ram: self.usage.ram * UnitMultiplier::MB as u64,
+            volume: self.usage.volume * UnitMultiplier::MB as u64,
         }
     }
 
-    pub fn get_volume(&self) -> u64 {
-        if self.overrides.volume > 0 {
-            self.overrides.volume
-        } else {
-            self.default.volume
+    pub fn free_quota(&self) -> Quota {
+        Quota {
+            vcpu: self.default.vcpu,
+            ram: self.default.ram * UnitMultiplier::MB as u64,
+            volume: self.default.volume * UnitMultiplier::MB as u64,
         }
     }
 
     pub fn can_deploy(&self, resources: &Resources, volume: &Option<Volume>) -> Result<()> {
-        if self.usage.vcpu + resources.vcpu > self.get_vcpu() {
+        let total = self.total_quota();
+        let usage = self.usage_quota();
+
+        if usage.vcpu + resources.vcpu > total.vcpu {
             bail!(
                 "Not enough vCPU quota, you need additional {} vCPU. Please contact support.",
-                self.usage.vcpu + resources.vcpu - self.get_vcpu()
+                usage.vcpu + resources.vcpu - total.vcpu
             );
         }
 
         let ram = parse_size(&resources.ram)?;
 
-        if self.usage.ram + ram > self.get_ram() {
+        if usage.ram + ram > total.ram {
             bail!(
                 "Not enough RAM quota, you need additional {}B RAM. Please contact support.",
-                self.usage.ram + ram - self.get_ram()
+                usage.ram + ram - total.ram
             );
         }
 
         if let Some(volume) = volume {
             let volume = parse_size(&volume.size)?;
 
-            if self.usage.volume + volume > self.get_volume() {
+            if usage.volume + volume > total.volume {
                 bail!(
                     "Not enough volume quota, you need additional {}B volume. Please contact support.",
-                    self.usage.volume + volume- self.get_volume()
+                    usage.volume + volume - total.volume
                 );
             }
         }
 
         Ok(())
+    }
+
+    pub fn get_free_tier_billable(
+        &self,
+        resources: &Resources,
+        volume: &Option<Volume>,
+    ) -> Result<(bool, (Resources, Option<String>))> {
+        let mut free_tier_applicable = false;
+        let mut billable_resources = Resources::default();
+        let mut billable_volume = None;
+
+        let free = self.free_quota();
+        let usage = self.usage_quota();
+
+        if usage.vcpu + resources.vcpu > free.vcpu {
+            billable_resources.vcpu = usage.vcpu + resources.vcpu - free.vcpu;
+            free_tier_applicable = true;
+        }
+
+        let ram = parse_size(&resources.ram)?;
+
+        if usage.ram + ram > free.ram {
+            billable_resources.ram = format!("{}B", usage.ram + ram - free.ram);
+            free_tier_applicable = true;
+        }
+
+        if let Some(volume) = volume {
+            let volume = parse_size(&volume.size)?;
+
+            if usage.volume + volume > free.volume {
+                billable_volume = Some(format!("{}B", usage.volume + volume - free.volume));
+                free_tier_applicable = true;
+            }
+        }
+
+        Ok((free_tier_applicable, (billable_resources, billable_volume)))
     }
 }
 
@@ -131,4 +188,9 @@ where
     String::deserialize(deserializer)?
         .parse::<f64>()
         .map_err(serde::de::Error::custom)
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SkuResponse {
+    pub skus: Vec<Sku>,
 }

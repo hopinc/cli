@@ -69,7 +69,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         },
         &Some(premade.name.clone()),
         false,
-        &project.id,
+        &project,
     )
     .await?;
 
