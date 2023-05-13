@@ -104,6 +104,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         &Deployment::default(),
         &None,
         false,
+        &project.id,
     )
     .await?;
 

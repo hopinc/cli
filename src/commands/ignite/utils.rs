@@ -11,15 +11,17 @@ use tokio::fs;
 
 use super::types::{
     CreateDeployment, Deployment, MultipleDeployments, Premade, Premades, RolloutEvent,
-    ScaleRequest, SingleDeployment, Tier, Tiers,
+    ScaleRequest, SingleDeployment, Tier, Tiers, Volume,
 };
 use crate::commands::containers::types::{ContainerOptions, ContainerType};
 use crate::commands::ignite::create::Options;
 use crate::commands::ignite::types::{
     Image, RamSizes, Resources, RestartPolicy, RolloutResponse, ScalingStrategy, VolumeFs,
 };
+use crate::commands::projects::types::Sku;
+use crate::commands::projects::utils::{get_quotas, get_skus};
 use crate::state::http::HttpClient;
-use crate::utils::size::parse_size;
+use crate::utils::size::{parse_size, UnitMultiplier};
 use crate::utils::{ask_question_iter, parse_key_val};
 
 pub const WEB_IGNITE_URL: &str = "https://console.hop.io/ignite";
@@ -202,6 +204,7 @@ pub async fn update_deployment_config(
     deployment: &Deployment,
     fallback_name: &Option<String>,
     is_update: bool,
+    project_id: &str,
 ) -> Result<(CreateDeployment, ContainerOptions)> {
     let mut config = CreateDeployment::from(deployment.clone());
     let mut container_options = ContainerOptions::from_deployment(deployment);
@@ -210,7 +213,7 @@ pub async fn update_deployment_config(
         .clone()
         .map(|s| s.replace(['_', ' ', '.'], "-").to_lowercase());
 
-    if is_visual {
+    let configs = if is_visual {
         update_config_visual(
             http,
             options,
@@ -229,7 +232,25 @@ pub async fn update_deployment_config(
             is_update,
         )
         .await
+    }?;
+
+    let (skus, quota) = tokio::join!(get_skus(http), get_quotas(http, project_id));
+
+    quota?.can_deploy(&config.resources, &config.volume)?;
+
+    let price = get_price_estimate(&skus?, &config.resources, &config.volume)?;
+
+    log::info!("Estimated monthly price: {price}$");
+
+    if is_visual
+        && !dialoguer::Confirm::new()
+            .with_prompt("Do you want to continue?")
+            .interact()?
+    {
+        bail!("Aborted")
     }
+
+    Ok(configs)
 }
 
 async fn update_config_args(
@@ -827,6 +848,46 @@ pub fn format_premade(premades: &[Premade], title: bool) -> Result<Vec<String>> 
         .collect())
 }
 
+const MONTH_IN_MINUTES: f64 = 43200.0;
+
+pub fn get_price_estimate(
+    skus: &[Sku],
+    resources: &Resources,
+    volume: &Option<Volume>,
+) -> Result<String> {
+    let mut total = 0.0;
+
+    for sku in skus.iter().filter(|sku| sku.id.starts_with("ignite_")) {
+        let mut price = sku.price;
+
+        match sku.id.as_str() {
+            "ignite_cpu_per_min" => {
+                price *= resources.vcpu;
+            }
+
+            // per 100 MB
+            "ignite_ram_per_min" => {
+                price *= (parse_size(&resources.ram)? / (100 * UnitMultiplier::MB as u64)) as f64;
+            }
+
+            // per 100 MB
+            "ignite_volume_per_min" => {
+                if let Some(volume) = &volume {
+                    price *= (parse_size(&volume.size)? / (100 * UnitMultiplier::MB as u64)) as f64;
+                }
+            }
+
+            _ => continue,
+        }
+
+        total += price;
+    }
+
+    total *= MONTH_IN_MINUTES;
+
+    Ok(format!("{total:.2}"))
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -844,5 +905,41 @@ mod test {
             Some(r#""echo hello world""#.to_string())
         );
         assert_eq!(entrypoint_array.next(), None);
+    }
+
+    #[test]
+    fn test_price_estimate() {
+        let skus = vec![
+            Sku {
+                id: "ignite_ram_per_min".to_string(),
+                product: "ignite".to_string(),
+                price: 0.0000060896,
+            },
+            Sku {
+                id: "ignite_cpu_per_min".to_string(),
+                product: "ignite".to_string(),
+                price: 0.0001,
+            },
+            Sku {
+                id: "ignite_volume_per_min".to_string(),
+                product: "ignite".to_string(),
+                price: 0.0000000035,
+            },
+        ];
+
+        let resources = Resources {
+            ram: "1GB".to_string(),
+            vcpu: 1.0,
+            ..Default::default()
+        };
+
+        let volume = Some(Volume {
+            size: "1GB".to_string(),
+            ..Default::default()
+        });
+
+        let estimate = get_price_estimate(&skus, &resources, &volume).unwrap();
+
+        assert_eq!(estimate, "6.57");
     }
 }

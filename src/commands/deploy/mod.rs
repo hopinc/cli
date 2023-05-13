@@ -167,6 +167,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                     &Deployment::default(),
                     &Some(default_name),
                     false,
+                    &project.id,
                 )
                 .await?
             };
