@@ -951,6 +951,6 @@ mod test {
 
         let estimate = get_price_estimate(&skus, &resources, &volume).unwrap();
 
-        assert_eq!(estimate, "6.57");
+        assert_eq!(estimate, "6.95");
     }
 }

@@ -30,10 +30,10 @@ pub fn set_hook() {
         };
 
         // add some color
-        log::error!("{}", message);
+        log::error!("{message}");
 
         #[cfg(debug_assertions)]
-        log::debug!("{}", panic_info);
+        log::debug!("{panic_info}");
 
         std::process::exit(1);
     }));

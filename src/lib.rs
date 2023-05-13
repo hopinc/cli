@@ -72,6 +72,7 @@ pub async fn run() -> Result<()> {
 
     if let Err(error) = handle_command(cli.commands, state).await {
         log::error!("{error}");
+        log::debug!("{error:#?}");
         std::process::exit(1);
     }
 
