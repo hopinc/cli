@@ -3,11 +3,11 @@ use std::io::Write;
 
 use anyhow::{anyhow, Result};
 use console::style;
-use serde_json::Value;
 use tabwriter::TabWriter;
 
 use super::types::{
     Container, ContainerState, CreateContainers, Log, LogsResponse, MultipleContainersResponse,
+    SingleContainer,
 };
 use crate::state::http::HttpClient;
 use crate::utils::relative_time;
@@ -34,15 +34,19 @@ pub async fn create_containers(
     Ok(response.containers)
 }
 
-pub async fn delete_container(http: &HttpClient, container_id: &str) -> Result<()> {
-    http.request::<Value>(
-        "DELETE",
-        &format!("/ignite/containers/{container_id}"),
-        None,
-    )
-    .await?;
-
-    Ok(())
+pub async fn delete_container(
+    http: &HttpClient,
+    container_id: &str,
+    recreate: bool,
+) -> Result<Option<Container>> {
+    Ok(http
+        .request::<SingleContainer>(
+            "DELETE",
+            &format!("/ignite/containers/{container_id}?recreate={recreate}"),
+            None,
+        )
+        .await?
+        .map(|response| response.container))
 }
 
 pub async fn get_all_containers(http: &HttpClient, deployment_id: &str) -> Result<Vec<Container>> {

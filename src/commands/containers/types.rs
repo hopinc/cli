@@ -113,3 +113,8 @@ pub struct Log {
 pub struct LogsResponse {
     pub logs: Vec<Log>,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct SingleContainer {
+    pub container: Container,
+}

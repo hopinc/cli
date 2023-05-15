@@ -2,12 +2,13 @@ use anyhow::{bail, ensure, Result};
 use clap::Parser;
 
 use super::utils::delete_container;
+use crate::commands::containers::types::Container;
 use crate::commands::containers::utils::{format_containers, get_all_containers};
 use crate::commands::ignite::utils::{format_deployments, get_all_deployments};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
-#[clap(about = "Delete containers")]
+#[clap(about = "Recreate containers")]
 pub struct Options {
     #[clap(help = "IDs of the containers")]
     containers: Vec<String>,
@@ -37,7 +38,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         let containers_fmt = format_containers(&containers, false);
 
         let idxs = dialoguer::MultiSelect::new()
-            .with_prompt("Select containers to delete")
+            .with_prompt("Select containers to recreate")
             .items(&containers_fmt)
             .interact()?;
 
@@ -52,7 +53,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     if !options.force
         && !dialoguer::Confirm::new()
             .with_prompt(format!(
-                "Are you sure you want to delete {} containers?",
+                "Are you sure you want to recreate {} containers?",
                 containers.len()
             ))
             .interact_opt()?
@@ -61,19 +62,25 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         bail!("Aborted");
     }
 
-    let mut delete_count = 0;
+    let mut recreated_count = 0;
 
     for container in &containers {
-        log::info!("Deleting container `{}`", container);
+        log::info!("Recreating container `{container}`");
 
-        if let Err(err) = delete_container(&state.http, container, false).await {
-            log::error!("Failed to delete container `{}`: {}", container, err);
-        } else {
-            delete_count += 1;
+        match delete_container(&state.http, container, true).await {
+            Ok(Some(Container { id, .. })) => {
+                log::info!("Recreated container `{container}`, new ID: `{id}`");
+                recreated_count += 1;
+            }
+            Ok(None) => log::error!("Failed to recreate container `{container}`"),
+            Err(err) => log::error!("Failed to recreate container `{container}`: {err}"),
         }
     }
 
-    log::info!("Deleted {delete_count}/{} containers", containers.len());
+    log::info!(
+        "Recreated {recreated_count}/{} containers",
+        containers.len()
+    );
 
     Ok(())
 }

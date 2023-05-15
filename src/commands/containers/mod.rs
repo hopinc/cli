@@ -2,6 +2,7 @@ mod create;
 mod delete;
 mod list;
 mod logs;
+mod recreate;
 pub mod types;
 pub mod utils;
 
@@ -16,6 +17,8 @@ pub enum Commands {
     Create(create::Options),
     #[clap(name = "rm", alias = "delete")]
     Delete(delete::Options),
+    #[clap(name = "recreate")]
+    Recreate(recreate::Options),
     #[clap(name = "ls", alias = "list")]
     List(list::Options),
 
@@ -36,5 +39,6 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Commands::Delete(options) => delete::handle(options, state).await,
         Commands::List(options) => list::handle(options, state).await,
         Commands::Log(options) => logs::handle(options, state).await,
+        Commands::Recreate(options) => recreate::handle(options, state).await,
     }
 }
