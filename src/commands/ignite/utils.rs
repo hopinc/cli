@@ -11,7 +11,7 @@ use tokio::fs;
 
 use super::types::{
     CreateDeployment, Deployment, MultipleDeployments, Premade, Premades, RolloutEvent,
-    ScaleRequest, SingleDeployment, Tier, Tiers,
+    ScaleRequest, SingleDeployment, Storage, Tier, Tiers,
 };
 use crate::commands::containers::types::{ContainerOptions, ContainerType};
 use crate::commands::ignite::create::Options;
@@ -21,7 +21,7 @@ use crate::commands::ignite::types::{
 use crate::commands::projects::types::{Project, Sku};
 use crate::commands::projects::utils::{get_quotas, get_skus};
 use crate::state::http::HttpClient;
-use crate::utils::size::{parse_size, UnitMultiplier};
+use crate::utils::size::{parse_size, unit_multiplier};
 use crate::utils::{ask_question_iter, parse_key_val};
 
 pub const WEB_IGNITE_URL: &str = "https://console.hop.io/ignite";
@@ -881,13 +881,13 @@ pub fn get_price_estimate(
 
             // per 100 MB
             "ignite_ram_per_min" => {
-                price *= (parse_size(&resources.ram)? / (100 * UnitMultiplier::MB as u64)) as f64;
+                price *= (parse_size(&resources.ram)? / (100 * unit_multiplier::MB)) as f64;
             }
 
             // per 100 MB
             "ignite_volume_per_min" => {
                 if let Some(size) = &volume {
-                    price *= (parse_size(size)? / (100 * UnitMultiplier::MB as u64)) as f64;
+                    price *= (parse_size(size)? / (100 * unit_multiplier::MB)) as f64;
                 }
             }
 
@@ -900,6 +900,19 @@ pub fn get_price_estimate(
     total *= MONTH_IN_MINUTES;
 
     Ok(format!("{total:.2}"))
+}
+
+pub async fn get_storage(http: &HttpClient, deployment_id: &str) -> Result<Storage> {
+    let data = http
+        .request::<Storage>(
+            "GET",
+            &format!("/ignite/deployments/{deployment_id}/storage",),
+            None,
+        )
+        .await?
+        .ok_or_else(|| anyhow!("Failed to parse response"))?;
+
+    Ok(data)
 }
 
 #[cfg(test)]

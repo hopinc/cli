@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::commands::containers::types::ContainerType;
 use crate::utils::parse_key_val;
+use crate::utils::size::{parse_size, unit_multiplier};
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct Vgpu {
@@ -80,6 +81,21 @@ pub struct Resources {
     pub ram: String,
     #[serde(skip)]
     pub vgpu: Vec<Vgpu>,
+}
+
+impl Resources {
+    pub fn get_tier_name(&self, tiers: &[Tier]) -> Result<String> {
+        for tier in tiers {
+            if tier.resources.cpu == self.vcpu && tier.resources.memory == parse_size(&self.ram)? {
+                return Ok(format!(
+                    "{} - {}vcpu {}B",
+                    tier.name, tier.resources.cpu, tier.resources.memory
+                ));
+            }
+        }
+
+        Ok(format!("{}vcpu {}", self.vcpu, self.ram))
+    }
 }
 
 impl Default for Resources {
@@ -419,4 +435,45 @@ pub enum RolloutState {
     Pending,
     Finished,
     Failed,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Storage {
+    pub volume: Option<StorageUsage>,
+    pub build_cache: Option<StorageUsage>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct StorageUsage {
+    pub provisioned_size: u64,
+    pub used_size: u64,
+}
+
+impl Display for StorageUsage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} / {}",
+            get_size(self.used_size),
+            get_size(self.provisioned_size)
+        )
+    }
+}
+
+/// Get the size in human readable format
+/// size is in megabytes
+/// e.g. 1024 -> 1GB
+///     512 -> 512MB
+///    1 -> 1MB
+fn get_size(size: u64) -> String {
+    // really silly but matches dont like simple expressions
+    const LESS_THAN_KB: u64 = unit_multiplier::KB - 1;
+
+    match size {
+        1..=LESS_THAN_KB => format!("{}MB", size),
+
+        _ => {
+            format!("{:.2}GB", size as f64 / unit_multiplier::KB as f64)
+        }
+    }
 }

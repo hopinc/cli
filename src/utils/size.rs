@@ -1,29 +1,23 @@
-use std::str::FromStr;
-
 use anyhow::{anyhow, Result};
 
 // bytes have to be last because all other end with it
 pub const BYTE_UNITS: [&str; 4] = ["GB", "MB", "KB", "B"];
 
-#[derive(Debug)]
-pub enum UnitMultiplier {
-    B = 1,
-    KB = 1024,
-    MB = 1024 * 1024,
-    GB = 1024 * 1024 * 1024,
-}
+pub mod unit_multiplier {
+    use anyhow::{bail, Result};
 
-impl FromStr for UnitMultiplier {
-    type Err = anyhow::Error;
+    pub const B: u64 = 1;
+    pub const KB: u64 = 1024;
+    pub const MB: u64 = 1024 * 1024;
+    pub const GB: u64 = 1024 * 1024 * 1024;
 
-    fn from_str(u: &str) -> Result<Self, Self::Err> {
-        match u.to_uppercase().as_str() {
-            "B" => Ok(UnitMultiplier::B),
-            "KB" => Ok(UnitMultiplier::KB),
-            "MB" => Ok(UnitMultiplier::MB),
-            "GB" => Ok(UnitMultiplier::GB),
-
-            _ => Err(anyhow!("Invalid unit: {u}")),
+    pub fn from_str(unit: &str) -> Result<u64> {
+        match unit {
+            "GB" => Ok(GB),
+            "MB" => Ok(MB),
+            "KB" => Ok(KB),
+            "B" => Ok(B),
+            _ => bail!("Invalid unit: {unit}"),
         }
     }
 }
@@ -43,7 +37,7 @@ pub fn parse_size(size: &str) -> Result<u64> {
         return Err(anyhow!("Invalid size: {size}"));
     };
 
-    Ok(size * UnitMultiplier::from_str(unit)? as u64)
+    Ok(size * unit_multiplier::from_str(unit)?)
 }
 
 // pub fn is_valid_mem_size(n: u64, min: u64, max: u64) -> bool {

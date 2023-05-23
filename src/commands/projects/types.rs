@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     commands::ignite::types::{Resources, Volume},
-    utils::size::{parse_size, UnitMultiplier},
+    utils::size::{parse_size, unit_multiplier},
 };
 
 // types for the API response
@@ -77,28 +77,28 @@ impl Quotas {
                 self.overrides.ram
             } else {
                 self.default.ram
-            }) * UnitMultiplier::MB as u64,
+            }) * unit_multiplier::MB,
             volume: (if self.overrides.volume > 0 {
                 self.overrides.volume
             } else {
                 self.default.volume
-            }) * UnitMultiplier::MB as u64,
+            }) * unit_multiplier::MB,
         }
     }
 
     pub fn usage_quota(&self) -> Quota {
         Quota {
             vcpu: self.usage.vcpu,
-            ram: self.usage.ram * UnitMultiplier::MB as u64,
-            volume: self.usage.volume * UnitMultiplier::MB as u64,
+            ram: self.usage.ram * unit_multiplier::MB,
+            volume: self.usage.volume * unit_multiplier::MB,
         }
     }
 
     pub fn free_quota(&self) -> Quota {
         Quota {
             vcpu: self.default.vcpu,
-            ram: self.default.ram * UnitMultiplier::MB as u64,
-            volume: self.default.volume * UnitMultiplier::MB as u64,
+            ram: self.default.ram * unit_multiplier::MB,
+            volume: self.default.volume * unit_multiplier::MB,
         }
     }
 
