@@ -952,7 +952,7 @@ mod test {
                 price: 0.0000060896,
             },
             Sku {
-                id: "ignite_cpu_per_min".to_string(),
+                id: "ignite_vcpu_per_min".to_string(),
                 product: "ignite".to_string(),
                 price: 0.0001,
             },
@@ -973,6 +973,6 @@ mod test {
 
         let estimate = get_price_estimate(&skus, &resources, &volume).unwrap();
 
-        assert_eq!(estimate, "6.95");
+        assert_eq!(estimate, "7.17");
     }
 }
