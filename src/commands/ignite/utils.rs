@@ -244,8 +244,8 @@ pub async fn update_deployment_config(
     } else {
         let (applied, billabe) = quota.get_free_tier_billable(&config.resources, &config.volume)?;
 
-        if !applied {
-            log::warn!("Free tier has been applied to some of the resources");
+        if applied {
+            log::warn!("Free tier has been applied to the resources");
         }
 
         billabe
@@ -253,7 +253,14 @@ pub async fn update_deployment_config(
 
     let price = get_price_estimate(&skus, &resources, &volume_size)?;
 
-    log::info!("Estimated monthly price per container: {price}$");
+    log::info!(
+        "Estimated monthly price{}: {price}$",
+        if config.type_ == Some(ContainerType::Stateful) {
+            ""
+        } else {
+            " per container"
+        }
+    );
 
     if is_visual
         && !dialoguer::Confirm::new()
@@ -871,23 +878,25 @@ pub fn get_price_estimate(
 ) -> Result<String> {
     let mut total = 0.0;
 
-    for sku in skus.iter().filter(|sku| sku.id.starts_with("ignite_")) {
+    for sku in skus.iter().filter(|sku| sku.product == "ignite") {
         let mut price = sku.price;
 
         match sku.id.as_str() {
-            "ignite_cpu_per_min" => {
+            "ignite_vcpu_per_min" => {
                 price *= resources.vcpu;
             }
 
             // per 100 MB
             "ignite_ram_per_min" => {
-                price *= (parse_size(&resources.ram)? / (100 * unit_multiplier::MB)) as f64;
+                price *= parse_size(&resources.ram)? as f64;
+                price /= (100 * unit_multiplier::MB) as f64;
             }
 
-            // per 100 MB
+            // per 1MB
             "ignite_volume_per_min" => {
                 if let Some(size) = &volume {
-                    price *= (parse_size(size)? / (100 * unit_multiplier::MB)) as f64;
+                    price *= parse_size(size)? as f64;
+                    price /= unit_multiplier::MB as f64;
                 }
             }
 

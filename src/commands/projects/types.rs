@@ -65,6 +65,18 @@ pub struct Quotas {
     pub usage: Quota,
 }
 
+impl std::ops::Sub for Quota {
+    type Output = Quota;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Quota {
+            vcpu: self.vcpu - rhs.vcpu,
+            ram: self.ram - rhs.ram,
+            volume: self.volume - rhs.volume,
+        }
+    }
+}
+
 impl Quotas {
     pub fn total_quota(&self) -> Quota {
         Quota {
@@ -145,29 +157,61 @@ impl Quotas {
         let mut billable_resources = Resources::default();
         let mut billable_volume = None;
 
-        let free = self.free_quota();
-        let usage = self.usage_quota();
+        let left_free = self.free_quota() - self.usage_quota();
 
-        if usage.vcpu + resources.vcpu > free.vcpu {
-            billable_resources.vcpu = usage.vcpu + resources.vcpu - free.vcpu;
+        if left_free.vcpu > 0f64 {
             free_tier_applicable = true;
+            billable_resources.vcpu = if resources.vcpu > left_free.vcpu {
+                resources.vcpu - left_free.vcpu
+            } else {
+                0f64
+            };
+        } else {
+            billable_resources.vcpu = resources.vcpu;
         }
 
-        let ram = parse_size(&resources.ram)?;
+        if left_free.ram > 0 {
+            let ram = parse_size(&resources.ram)?;
 
-        if usage.ram + ram > free.ram {
-            billable_resources.ram = format!("{}B", usage.ram + ram - free.ram);
             free_tier_applicable = true;
+            billable_resources.ram = format!(
+                "{}B",
+                if ram > left_free.ram {
+                    ram - left_free.ram
+                } else {
+                    0
+                }
+            );
+
+            log::debug!("{} {}", left_free.ram, ram);
+        } else {
+            billable_resources.ram = resources.ram.clone();
         }
 
         if let Some(volume) = volume {
-            let volume = parse_size(&volume.size)?;
+            if left_free.volume > 0 {
+                let volume = parse_size(&volume.size)?;
 
-            if usage.volume + volume > free.volume {
-                billable_volume = Some(format!("{}B", usage.volume + volume - free.volume));
                 free_tier_applicable = true;
+                billable_volume = Some(format!(
+                    "{}B",
+                    if volume > left_free.volume {
+                        volume - left_free.volume
+                    } else {
+                        0
+                    }
+                ));
+            } else {
+                billable_volume = Some(volume.size.clone());
             }
         }
+
+        log::debug!(
+            "free_tier_applicable: {}, billable_resources: {:?}, billable_volume: {:?}",
+            free_tier_applicable,
+            billable_resources,
+            billable_volume
+        );
 
         Ok((free_tier_applicable, (billable_resources, billable_volume)))
     }

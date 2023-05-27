@@ -466,11 +466,8 @@ impl Display for StorageUsage {
 ///     512 -> 512MB
 ///    1 -> 1MB
 fn get_size(size: u64) -> String {
-    // really silly but matches dont like simple expressions
-    const LESS_THAN_KB: u64 = unit_multiplier::KB - 1;
-
     match size {
-        1..=LESS_THAN_KB => format!("{}MB", size),
+        1..=unit_multiplier::KB => format!("{}MB", size),
 
         _ => {
             format!("{:.2}GB", size as f64 / unit_multiplier::KB as f64)
