@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     commands::ignite::types::{Resources, Volume},
-    utils::size::{parse_size, unit_multiplier},
+    utils::size::{parse_size, unit_multiplier, user_friendly_size},
 };
 
 // types for the API response
@@ -26,11 +26,16 @@ pub struct Project {
     pub namespace: String,
     #[serde(rename = "type")]
     pub type_: String,
+    pub tier: String,
 }
 
 impl Project {
     pub fn is_personal(&self) -> bool {
         self.type_ == "personal"
+    }
+
+    pub fn is_paid(&self) -> bool {
+        self.tier == "paid"
     }
 }
 
@@ -114,14 +119,25 @@ impl Quotas {
         }
     }
 
-    pub fn can_deploy(&self, resources: &Resources, volume: &Option<Volume>) -> Result<()> {
+    pub fn can_deploy(
+        &self,
+        resources: &Resources,
+        volume: &Option<Volume>,
+        project: &Project,
+    ) -> Result<()> {
         let total = self.total_quota();
         let usage = self.usage_quota();
 
+        let error = if project.is_paid() {
+            "Please contact us to increase your quota."
+        } else {
+            "Please attach a payment method to your project."
+        };
+
         if usage.vcpu + resources.vcpu > total.vcpu {
             bail!(
-                "Not enough vCPU quota, you need additional {} vCPU. Please contact support.",
-                usage.vcpu + resources.vcpu - total.vcpu
+                "Not enough vCPU quota, you need additional {} vCPU. {error}",
+                usage.vcpu + resources.vcpu - total.vcpu,
             );
         }
 
@@ -129,8 +145,8 @@ impl Quotas {
 
         if usage.ram + ram > total.ram {
             bail!(
-                "Not enough RAM quota, you need additional {}B RAM. Please contact support.",
-                usage.ram + ram - total.ram
+                "Not enough Memory quota, you need additional {}'s of RAM. {error}",
+                user_friendly_size(usage.ram + ram - total.ram)?
             );
         }
 
@@ -139,8 +155,8 @@ impl Quotas {
 
             if usage.volume + volume > total.volume {
                 bail!(
-                    "Not enough volume quota, you need additional {}B volume. Please contact support.",
-                    usage.volume + volume - total.volume
+                    "Not enough Volume quota, you need additional {}'s of storage. {error}",
+                    user_friendly_size(usage.volume + volume - total.volume)?
                 );
             }
         }

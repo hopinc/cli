@@ -237,7 +237,7 @@ pub async fn update_deployment_config(
     let (skus, quota) = tokio::join!(get_skus(http), get_quotas(http, &project.id));
     let (skus, quota) = (skus?, quota?);
 
-    quota.can_deploy(&config.resources, &config.volume)?;
+    quota.can_deploy(&config.resources, &config.volume, project)?;
 
     let (resources, volume_size) = if !project.is_personal() {
         (config.resources, config.volume.map(|v| v.size))
