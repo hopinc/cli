@@ -1,5 +1,6 @@
 pub mod arisu;
 pub mod browser;
+pub mod deser;
 pub mod size;
 pub mod sudo;
 

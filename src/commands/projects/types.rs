@@ -1,10 +1,9 @@
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    commands::ignite::types::{Resources, Volume},
-    utils::size::{parse_size, unit_multiplier, user_friendly_size},
-};
+use crate::commands::ignite::types::{Resources, Volume};
+use crate::utils::deser::{deserialize_null_default, deserialize_string_to_f64};
+use crate::utils::size::{parse_size, unit_multiplier, user_friendly_size};
 
 // types for the API response
 #[derive(Debug, Deserialize)]
@@ -17,6 +16,15 @@ pub struct SingleProjectResponse {
     pub project: Project,
 }
 
+#[derive(Debug, Deserialize, Clone, Default)]
+pub enum ProjectTier {
+    #[default]
+    #[serde(rename = "free")]
+    Free,
+    #[serde(rename = "paid")]
+    Paid,
+}
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct Project {
     pub id: String,
@@ -26,7 +34,8 @@ pub struct Project {
     pub namespace: String,
     #[serde(rename = "type")]
     pub type_: String,
-    pub tier: String,
+    #[serde(deserialize_with = "deserialize_null_default")]
+    pub tier: ProjectTier,
 }
 
 impl Project {
@@ -35,7 +44,7 @@ impl Project {
     }
 
     pub fn is_paid(&self) -> bool {
-        self.tier == "paid"
+        matches!(self.tier, ProjectTier::Paid)
     }
 }
 
@@ -237,17 +246,8 @@ impl Quotas {
 pub struct Sku {
     pub id: String,
     pub product: String,
-    #[serde(deserialize_with = "de_string_to_f64")]
+    #[serde(deserialize_with = "deserialize_string_to_f64")]
     pub price: f64,
-}
-
-fn de_string_to_f64<'de, D>(deserializer: D) -> Result<f64, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    String::deserialize(deserializer)?
-        .parse::<f64>()
-        .map_err(serde::de::Error::custom)
 }
 
 #[derive(Debug, Deserialize)]
