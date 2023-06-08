@@ -55,15 +55,16 @@ impl Display for ContainerState {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Uptime {
     pub last_start: Option<DateTime<Utc>>,
 }
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Container {
     pub id: String,
-    pub created_at: String,
+    pub created_at: DateTime<Utc>,
     pub state: ContainerState,
+    pub metrics: Option<Metrics>,
     pub deployment_id: String,
     pub internal_ip: Option<String>,
     pub region: String,
@@ -117,4 +118,24 @@ pub struct LogsResponse {
 #[derive(Debug, Deserialize)]
 pub struct SingleContainer {
     pub container: Container,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct Metrics {
+    pub cpu_usage_percent: f64,
+    pub memory_usage_bytes: u64,
+}
+
+/// Reusable metrics functions
+impl Metrics {
+    /// Normalize the metrics to the number of vcpus
+    pub fn cpu_usage_percent(&self, cpu_count: f64) -> f64 {
+        // 100% = 4vcpu
+        self.cpu_usage_percent * (cpu_count / 4.0)
+    }
+
+    /// Normalize the metrics to the amount of memory
+    pub fn memory_usage_percent(&self, memory: u64) -> f64 {
+        self.memory_usage_bytes as f64 / (memory as f64) * 100.0
+    }
 }

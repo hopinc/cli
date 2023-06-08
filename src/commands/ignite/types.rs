@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::commands::containers::types::ContainerType;
 use crate::utils::parse_key_val;
-use crate::utils::size::{parse_size, unit_multiplier};
+use crate::utils::size::{parse_size, unit_multiplier, user_friendly_size};
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct Vgpu {
@@ -88,13 +88,15 @@ impl Resources {
         for tier in tiers {
             if tier.resources.cpu == self.vcpu && tier.resources.memory == parse_size(&self.ram)? {
                 return Ok(format!(
-                    "{} - {}vcpu {}B",
-                    tier.name, tier.resources.cpu, tier.resources.memory
+                    "{} - {} vcpu {}",
+                    tier.name,
+                    tier.resources.cpu,
+                    user_friendly_size(tier.resources.memory)?
                 ));
             }
         }
 
-        Ok(format!("{}vcpu {}", self.vcpu, self.ram))
+        Ok(format!("{} vcpu {}", self.vcpu, self.ram))
     }
 }
 

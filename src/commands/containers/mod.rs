@@ -1,5 +1,6 @@
 mod create;
 mod delete;
+mod inspect;
 mod list;
 mod logs;
 mod recreate;
@@ -21,6 +22,8 @@ pub enum Commands {
     Recreate(recreate::Options),
     #[clap(name = "ls", alias = "list")]
     List(list::Options),
+    #[clap(alias = "info")]
+    Inspect(inspect::Options),
 
     #[clap(name = "logs", alias = "log")]
     Log(logs::Options),
@@ -40,5 +43,6 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Commands::List(options) => list::handle(options, state).await,
         Commands::Log(options) => logs::handle(options, state).await,
         Commands::Recreate(options) => recreate::handle(options, state).await,
+        Commands::Inspect(options) => inspect::handle(options, state).await,
     }
 }

@@ -5,8 +5,7 @@ where
     T: Default + Deserialize<'de>,
     D: Deserializer<'de>,
 {
-    let opt = Option::deserialize(deserializer)?;
-    Ok(opt.unwrap_or_default())
+    Option::deserialize(deserializer).map(|opt| opt.unwrap_or_default())
 }
 
 pub fn deserialize_string_to_f64<'de, D>(deserializer: D) -> Result<f64, D::Error>

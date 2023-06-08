@@ -49,6 +49,14 @@ pub async fn delete_container(
         .map(|response| response.container))
 }
 
+pub async fn get_container(http: &HttpClient, container_id: &str) -> Result<Container> {
+    Ok(http
+        .request::<SingleContainer>("GET", &format!("/ignite/containers/{container_id}"), None)
+        .await?
+        .ok_or_else(|| anyhow!("Error while parsing response"))?
+        .container)
+}
+
 pub async fn get_all_containers(http: &HttpClient, deployment_id: &str) -> Result<Vec<Container>> {
     let response = http
         .request::<MultipleContainersResponse>(
@@ -82,7 +90,7 @@ pub async fn get_container_logs(
     Ok(response.logs)
 }
 
-const UNAVAILABLE_ELEMENT: &str = "-";
+pub const UNAVAILABLE_ELEMENT: &str = "-";
 
 pub fn format_containers(containers: &Vec<Container>, title: bool) -> Vec<String> {
     let mut tw = TabWriter::new(vec![]);

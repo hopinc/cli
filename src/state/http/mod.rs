@@ -116,10 +116,9 @@ impl HttpClient {
     where
         T: serde::de::DeserializeOwned,
     {
-        let mut request = self.client.request(
-            method.parse().unwrap(),
-            format!("{}{}", self.base_url, path),
-        );
+        let mut request = self
+            .client
+            .request(method.parse()?, format!("{}{path}", self.base_url));
 
         log::debug!("request: {} {} {:?}", method, path, data);
 
