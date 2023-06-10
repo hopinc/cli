@@ -1,16 +1,19 @@
 use std::borrow::Borrow;
 use std::io::Write;
+use std::vec;
 
 use anyhow::{anyhow, Result};
 use console::style;
 use tabwriter::TabWriter;
 
 use super::types::{
-    Container, ContainerState, CreateContainers, Log, LogsResponse, MultipleContainersResponse,
-    SingleContainer,
+    Container, ContainerState, CreateContainers, Log, LogsResponse, Metrics,
+    MultipleContainersResponse, SingleContainer,
 };
+use crate::commands::ignite::types::Deployment;
 use crate::state::http::HttpClient;
 use crate::utils::relative_time;
+use crate::utils::size::{parse_size, user_friendly_size};
 
 pub async fn create_containers(
     http: &HttpClient,
@@ -170,4 +173,43 @@ fn format_log(log: &Log, colors: bool, timestamps: bool, details: bool) -> Strin
     };
 
     format!("{timestamp}{log_level}{}", log.message)
+}
+
+pub fn format_single_metrics(
+    metrics: &Option<Metrics>,
+    deployment: &Deployment,
+) -> Result<Vec<String>> {
+    let mut buff = vec![];
+
+    buff.push(format!(
+        "CPU: {}",
+        metrics
+            .clone()
+            .map(|m| format!(
+                "{:.2}%/{} vcpu",
+                m.cpu_usage_percent(deployment.config.resources.vcpu),
+                deployment.config.resources.vcpu
+            ))
+            .unwrap_or_else(|| UNAVAILABLE_ELEMENT.to_string())
+    ));
+
+    buff.push(format!(
+        "Memory: {}",
+        metrics
+            .clone()
+            .map(|m| -> Result<String> {
+                let ram = parse_size(&deployment.config.resources.ram)?;
+
+                Ok(format!(
+                    "{:.2}% {}/{}",
+                    m.memory_usage_percent(ram),
+                    user_friendly_size(m.memory_usage_bytes)?,
+                    user_friendly_size(ram)?
+                ))
+            })
+            .transpose()?
+            .unwrap_or_else(|| UNAVAILABLE_ELEMENT.to_string())
+    ));
+
+    Ok(buff)
 }

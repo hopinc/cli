@@ -131,11 +131,20 @@ impl Metrics {
     /// Normalize the metrics to the number of vcpus
     pub fn cpu_usage_percent(&self, cpu_count: f64) -> f64 {
         // 100% = 4vcpu
-        self.cpu_usage_percent * (cpu_count / 4.0)
+        self.cpu_usage_percent / cpu_count / 4.0
     }
 
     /// Normalize the metrics to the amount of memory
     pub fn memory_usage_percent(&self, memory: u64) -> f64 {
         self.memory_usage_bytes as f64 / (memory as f64) * 100.0
     }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "e", content = "d", rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum ContainerEvents {
+    ContainerMetricsUpdate {
+        container_id: String,
+        metrics: Metrics,
+    },
 }

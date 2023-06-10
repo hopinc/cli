@@ -2,19 +2,25 @@ use std::io::Write;
 
 use anyhow::{ensure, Result};
 use clap::Parser;
-use tabwriter::TabWriter;
+use console::Term;
+use leap_client_rs::leap::types::Event;
+use leap_client_rs::{LeapEdge, LeapOptions};
 
-use super::utils::{format_containers, get_all_containers, get_container, UNAVAILABLE_ELEMENT};
+use super::types::ContainerEvents;
+use super::utils::{format_containers, get_all_containers, get_container};
 use crate::commands::containers::utils::format_single_metrics;
 use crate::commands::ignite::utils::{format_deployments, get_all_deployments, get_deployment};
+use crate::config::LEAP_PROJECT;
 use crate::state::State;
-use crate::utils::relative_time;
 
 #[derive(Debug, Parser)]
-#[clap(about = "Inspect a container")]
+#[clap(about = "Get metrics for a container")]
 pub struct Options {
     #[clap(help = "ID of the container")]
     pub container: Option<String>,
+
+    #[clap(short, long, help = "Show metrics in real time")]
+    pub follow: bool,
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
@@ -51,44 +57,56 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         (containers[idx].to_owned(), deployment)
     };
 
-    let mut tw = TabWriter::new(vec![]);
+    let mut term = Term::stdout();
 
-    writeln!(tw, "{}", container.id)?;
-    writeln!(tw, "  Metadata")?;
-    writeln!(tw, "\tDeployment: {} ({})", deployment.name, deployment.id)?;
-    writeln!(tw, "\tCreated: {} ago", relative_time(container.created_at))?;
-    writeln!(tw, "\tState: {}", container.state)?;
     writeln!(
-        tw,
-        "\tUptime: {}",
-        container
-            .uptime
-            .as_ref()
-            .map(|u| {
-                u.last_start
-                    .map(relative_time)
-                    .unwrap_or_else(|| UNAVAILABLE_ELEMENT.to_string())
-            })
-            .unwrap_or_else(|| UNAVAILABLE_ELEMENT.to_string())
+        term,
+        "{}",
+        format_single_metrics(&container.metrics, &deployment)?.join("\n")
     )?;
-    writeln!(
-        tw,
-        "\tInternal IP: {}",
-        container
-            .internal_ip
-            .unwrap_or_else(|| UNAVAILABLE_ELEMENT.to_string())
-    )?;
-    writeln!(tw, "\tRegion: {}", container.region)?;
-    writeln!(tw, "\tType: {}", container.type_)?;
-    writeln!(tw, "  Metrics")?;
 
-    for metric in format_single_metrics(&container.metrics, &deployment)? {
-        writeln!(tw, "\t{}", metric)?;
+    if !options.follow {
+        return Ok(());
     }
 
-    tw.flush()?;
+    let mut leap = LeapEdge::new(LeapOptions {
+        token: Some(&state.ctx.current.clone().unwrap().leap_token),
+        project: &std::env::var("LEAP_PROJECT").unwrap_or_else(|_| LEAP_PROJECT.to_string()),
+        ws_url: &std::env::var("LEAP_WS_URL")
+            .unwrap_or_else(|_| LeapOptions::default().ws_url.to_string()),
+    })
+    .await?;
 
-    print!("{}", String::from_utf8(tw.into_inner()?)?);
+    while let Some(msg) = leap.listen().await {
+        let capsuled = match msg {
+            Event::Message(message) => message,
+
+            _ => continue,
+        };
+
+        let Ok(container_events) = serde_json::from_value(serde_json::to_value(capsuled.data)?) else {
+            continue;
+        };
+
+        let metrics = match container_events {
+            ContainerEvents::ContainerMetricsUpdate {
+                container_id,
+                metrics,
+            } => {
+                if container_id != container.id {
+                    continue;
+                }
+
+                metrics
+            }
+        };
+
+        let metrics = format_single_metrics(&Some(metrics), &deployment)?;
+
+        term.clear_last_lines(metrics.len())?;
+
+        writeln!(term, "{}", metrics.join("\n"))?
+    }
 
     Ok(())
 }
