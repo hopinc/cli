@@ -13,6 +13,7 @@ const WEB_PAYMENTS_URL: &str = "https://console.hop.io/settings/cards";
 
 #[derive(Debug, Parser)]
 #[clap(about = "Create a new project")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "Namespace of the project")]
     namespace: Option<String>,

@@ -7,6 +7,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Delete a Health Check")]
+#[group(skip)]
 pub struct Options {
     #[clap(name = "heath-checks", help = "IDs of the Health Check")]
     pub health_checks: Vec<String>,

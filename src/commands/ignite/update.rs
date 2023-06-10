@@ -10,6 +10,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Update a deployment")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "ID of the deployment to update")]
     deployment: Option<String>,

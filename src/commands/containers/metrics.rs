@@ -15,6 +15,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Get metrics for a container")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "ID of the container")]
     pub container: Option<String>,

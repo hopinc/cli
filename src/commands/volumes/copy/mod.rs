@@ -9,6 +9,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Copy files between volumes and local machine")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "Source, in the format <deployment name or id>:/<path> or <path> if local")]
     pub source: String,

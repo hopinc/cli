@@ -8,6 +8,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser, Default, PartialEq, Eq)]
 #[clap(about = "Send a message to a Channel")]
+#[group(skip)]
 pub struct Options {
     #[clap(short, long, help = "The ID of the Channel to send the message to")]
     channel: Option<String>,

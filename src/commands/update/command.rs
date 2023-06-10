@@ -19,6 +19,7 @@ use crate::utils::capitalize;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Update Hop to the latest version")]
+#[group(skip)]
 pub struct Options {
     #[clap(short, long, help = "Force update")]
     pub force: bool,

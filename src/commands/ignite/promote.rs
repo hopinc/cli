@@ -8,6 +8,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Rollback containers in a deployment")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "ID of the deployment")]
     pub deployment: Option<String>,

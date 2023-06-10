@@ -15,6 +15,7 @@ use crate::utils::in_path;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Get logs of a container")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "ID of the container")]
     container: Option<String>,

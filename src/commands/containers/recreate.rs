@@ -9,6 +9,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Recreate containers")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "IDs of the containers")]
     containers: Vec<String>,

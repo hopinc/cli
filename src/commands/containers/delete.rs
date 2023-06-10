@@ -8,6 +8,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Delete containers")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "IDs of the containers")]
     containers: Vec<String>,

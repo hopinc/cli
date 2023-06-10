@@ -8,6 +8,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser, Default, PartialEq, Eq)]
 #[clap(about = "Send a message to a Leap Token")]
+#[group(skip)]
 pub struct Options {
     #[clap(short, long, help = "The ID of the Token to send the message to")]
     token: Option<String>,

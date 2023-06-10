@@ -6,6 +6,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "List all projects")]
+#[group(skip)]
 pub struct Options {
     #[clap(short, long, help = "Only print the IDs of the projects")]
     pub quiet: bool,

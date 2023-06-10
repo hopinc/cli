@@ -9,6 +9,7 @@ use crate::utils::validate_json;
 
 #[derive(Debug, Parser, Default, PartialEq, Eq)]
 #[clap(about = "Create a new Leap Token")]
+#[group(skip)]
 pub struct Options {
     #[clap(
         short,

@@ -12,6 +12,7 @@ use crate::utils::relative_time;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Inspect a container")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "ID of the container")]
     pub container: Option<String>,

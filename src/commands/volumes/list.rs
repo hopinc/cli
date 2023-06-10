@@ -11,6 +11,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "List information about files")]
+#[group(skip)]
 pub struct Options {
     #[clap(
         help = "The path(s) to list, in the format <deployment name or id>:<path>",

@@ -17,6 +17,7 @@ const PAT_FALLBACK_URL: &str = "https://console.hop.io/settings/pats";
 
 #[derive(Debug, Parser, Default, PartialEq, Eq)]
 #[clap(about = "Login to Hop")]
+#[group(skip)]
 pub struct Options {
     #[clap(
         long,

@@ -25,6 +25,7 @@ const CONTAINER_PREFIX: &str = "container_";
 
 #[derive(Debug, Parser)]
 #[clap(about = "Access your application via a tunnel")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "Resource to tunnel to, can be a deployment name, ID")]
     pub deployment: Option<String>,

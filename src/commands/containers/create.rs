@@ -7,6 +7,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Create containers for a deployment")]
+#[group(skip)]
 pub struct Options {
     #[clap(short, long, help = "ID of the deployment")]
     deployment: Option<String>,

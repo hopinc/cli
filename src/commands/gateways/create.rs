@@ -28,6 +28,7 @@ pub struct GatewayOptions {
 
 #[derive(Debug, Parser)]
 #[clap(about = "Create a Gateway")]
+#[group(skip)]
 pub struct Options {
     #[clap(name = "deployment", help = "ID of the deployment")]
     pub deployment: Option<String>,

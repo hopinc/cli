@@ -7,6 +7,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser, Default, PartialEq, Eq)]
 #[clap(about = "Subscribe a Leap Token to a Channel")]
+#[group(skip)]
 pub struct Options {
     #[clap(short, long, help = "The ID of the Channel to subscribe to")]
     channel: Option<String>,

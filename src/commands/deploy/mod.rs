@@ -34,6 +34,7 @@ const HOP_BUILD_BASE_URL: &str = "https://builder.hop.io/v1";
 
 #[derive(Debug, Parser)]
 #[clap(about = "Deploy a new container")]
+#[group(skip)]
 pub struct Options {
     #[clap(
         name = "dir",

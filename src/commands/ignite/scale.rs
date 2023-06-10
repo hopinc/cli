@@ -7,6 +7,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Scale a deployment")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "ID of the deployment to scale")]
     pub deployment: Option<String>,

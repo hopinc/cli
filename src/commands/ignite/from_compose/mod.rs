@@ -31,6 +31,7 @@ use crate::utils::urlify;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Creates new Ignite deployments from a Docker compose file")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "The file to read from. Defaults to docker-compose.yml")]
     pub file: Option<PathBuf>,

@@ -6,6 +6,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser, Default, PartialEq, Eq)]
 #[clap(about = "List all Channel")]
+#[group(skip)]
 pub struct Options {
     #[clap(short, long, help = "Only print the IDs of the Channels")]
     pub quiet: bool,

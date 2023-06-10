@@ -8,6 +8,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Detach a domain from a Gateway")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "ID of the domain")]
     pub domain: Option<String>,

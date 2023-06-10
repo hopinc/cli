@@ -7,6 +7,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "List all Gateways")]
+#[group(skip)]
 pub struct Options {
     #[clap(name = "deployment", help = "ID of the deployment")]
     pub deployment: Option<String>,

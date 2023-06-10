@@ -6,6 +6,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Delete files")]
+#[group(skip)]
 pub struct Options {
     #[clap(
         help = "The path(s) to delete, in the format <deployment name or id>:<path>",

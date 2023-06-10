@@ -11,6 +11,7 @@ static CONFIRM_DELETE_PROJECT_MESSAGE: &str = "I am sure I want to delete the pr
 
 #[derive(Debug, Parser)]
 #[clap(about = "Delete a project")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "Namespace or ID of the project")]
     project: Option<String>,

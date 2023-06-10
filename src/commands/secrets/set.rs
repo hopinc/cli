@@ -7,6 +7,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Set a secret")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "Name of the secret")]
     name: String,

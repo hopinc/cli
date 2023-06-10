@@ -9,6 +9,7 @@ use crate::utils::validate_json_non_null;
 
 #[derive(Debug, Parser, Default, PartialEq, Eq)]
 #[clap(about = "Create a new Channel")]
+#[group(skip)]
 pub struct Options {
     #[clap(short = 'i', long = "id", help = "Custom ID for the channel")]
     custom_id: Option<String>,

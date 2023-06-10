@@ -23,6 +23,7 @@ pub enum Commands {
 #[clap(
     about = "Interact with Volumes\n    hop volumes ls <deployment name or id>:<path>\n    hop volumes cp <path> <deployment name or id>:<path>\n    hop volumes rm <deployment name or id>:<path>"
 )]
+#[group(skip)]
 pub struct Options {
     #[clap(subcommand)]
     pub commands: Commands,

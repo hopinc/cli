@@ -11,6 +11,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Update a Gateway")]
+#[group(skip)]
 pub struct Options {
     #[clap(name = "gateway", help = "ID of the Gateway")]
     pub gateway: Option<String>,

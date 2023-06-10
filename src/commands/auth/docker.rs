@@ -10,6 +10,7 @@ use crate::utils::in_path;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Authenticate the current user with Docker")]
+#[group(skip)]
 pub struct Options {}
 
 pub async fn handle(_options: &Options, state: &mut State) -> Result<()> {

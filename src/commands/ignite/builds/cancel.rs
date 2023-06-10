@@ -8,6 +8,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Cancel a running build")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "ID of the deployment")]
     pub build: Option<String>,

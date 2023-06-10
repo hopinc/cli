@@ -8,6 +8,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "List all domains attached to a Gateway")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "ID of the Gateway")]
     pub gateway: Option<String>,

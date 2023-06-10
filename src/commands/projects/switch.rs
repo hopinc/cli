@@ -7,6 +7,7 @@ use crate::store::Store;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Switch to a different project")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "Namespace or ID of the project to use")]
     pub project: Option<String>,

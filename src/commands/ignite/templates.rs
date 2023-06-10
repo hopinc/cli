@@ -14,6 +14,7 @@ use crate::utils::urlify;
 
 #[derive(Debug, Parser, Default, PartialEq, Clone)]
 #[clap(about = "Create a new deployment")]
+#[group(skip)]
 pub struct Options {
     #[clap(flatten)]
     pub config: DeploymentConfig,

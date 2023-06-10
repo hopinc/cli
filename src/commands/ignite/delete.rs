@@ -6,6 +6,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Delete a deployment")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "ID of the deployment to delete")]
     deployment: Option<String>,

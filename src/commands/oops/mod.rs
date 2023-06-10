@@ -10,6 +10,7 @@ use crate::store::hopfile::HopFile;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Instantly roll back your deployment to a previous build")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "ID of the deployment")]
     pub deployment: Option<String>,

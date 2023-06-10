@@ -6,6 +6,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Get information about the current user")]
+#[group(skip)]
 pub struct Options {}
 
 pub fn handle(_options: &Options, state: State) -> Result<()> {

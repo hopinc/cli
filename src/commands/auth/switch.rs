@@ -7,6 +7,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Switch to a different user")]
+#[group(skip)]
 pub struct Options {}
 
 pub async fn handle(_options: Options, state: State) -> Result<()> {

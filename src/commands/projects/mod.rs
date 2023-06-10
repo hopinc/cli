@@ -25,6 +25,7 @@ pub enum Commands {
 
 #[derive(Debug, Parser)]
 #[clap(about = "Interact with projects")]
+#[group(skip)]
 pub struct Options {
     #[clap(subcommand)]
     pub commands: Commands,

@@ -6,6 +6,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Delete Leap Tokens")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "IDs of the Leap Tokens")]
     tokens: Vec<String>,

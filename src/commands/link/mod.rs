@@ -12,6 +12,7 @@ use crate::store::hopfile::HopFile;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Link an existing deployment to a hopfile")]
+#[group(skip)]
 pub struct Options {
     #[clap(
         name = "dir",
