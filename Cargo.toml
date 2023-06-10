@@ -1,6 +1,6 @@
 [package]
 name = "hop-cli"
-version = "0.2.48"
+version = "0.2.49"
 edition = "2021"
 license = "MPL-2.0"
 authors = ["Hop, Inc."]
