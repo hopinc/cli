@@ -6,7 +6,6 @@ pub(crate) mod utils;
 
 use anyhow::Result;
 use clap::Parser;
-
 use commands::update::version_notice;
 use commands::{handle_command, Commands};
 use config::{ARCH, PLATFORM, VERSION};

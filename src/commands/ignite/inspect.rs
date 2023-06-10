@@ -4,10 +4,9 @@ use anyhow::{ensure, Result};
 use clap::Parser;
 use tabwriter::TabWriter;
 
+use super::utils::get_tiers;
 use crate::commands::ignite::utils::{format_deployments, get_all_deployments, get_storage};
 use crate::state::State;
-
-use super::utils::get_tiers;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Inspect a deployment")]

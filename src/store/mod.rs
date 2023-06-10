@@ -2,7 +2,8 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use serde::{de::DeserializeOwned, Serialize};
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 
 pub mod auth;
 pub mod context;

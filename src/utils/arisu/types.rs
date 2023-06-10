@@ -1,4 +1,5 @@
-use async_tungstenite::{tokio::ConnectStream, WebSocketStream};
+use async_tungstenite::tokio::ConnectStream;
+use async_tungstenite::WebSocketStream;
 use chrono::DateTime;
 use serde::de::Error as SerdeError;
 use serde::Deserialize;

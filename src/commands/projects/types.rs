@@ -62,7 +62,8 @@ pub struct CreateProject {
 }
 
 #[derive(Debug, Deserialize, Default)]
-#[serde(default)] // some quotas like volume can be missing in overrides, so it's better to default to 0
+#[serde(default)] // some quotas like volume can be missing in overrides, so it's better to
+                  // default to 0
 pub struct Quota {
     pub vcpu: f64,
     pub ram: u64,

@@ -35,7 +35,8 @@ pub struct Options {
 }
 
 pub async fn handle(options: &Options, state: State) -> Result<()> {
-    // check if the options.deployment starts with container_ else use the state.get_deployment_by_opt_id_or_name
+    // check if the options.deployment starts with container_ else use the
+    // state.get_deployment_by_opt_id_or_name
     let resource = if options
         .deployment
         .clone()

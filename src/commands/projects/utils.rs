@@ -4,9 +4,8 @@ use anyhow::{bail, Context, Result};
 use regex::Regex;
 use tabwriter::TabWriter;
 
-use crate::state::http::HttpClient;
-
 use super::types::{CreateProject, Project, Quotas, SingleProjectResponse, Sku, SkuResponse};
+use crate::state::http::HttpClient;
 
 pub fn format_projects(projects: &Vec<Project>, title: bool) -> Vec<String> {
     let mut tw = TabWriter::new(vec![]);

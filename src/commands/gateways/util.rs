@@ -35,9 +35,7 @@ pub async fn get_all_gateways(http: &HttpClient, deployment_id: &str) -> Result<
     let response = http
         .request::<MultipleGateways>(
             "GET",
-            &format!(
-                "/ignite/deployments/{deployment_id}/gateways"
-            ),
+            &format!("/ignite/deployments/{deployment_id}/gateways"),
             None,
         )
         .await?
