@@ -219,7 +219,6 @@ jobs:
         with:
           command: publish
           args: --no-verify
-          use-cross: ${{ matrix.os == 'ubuntu-latest' }}
 
   publish-aur:
     name: Publish to AUR

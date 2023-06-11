@@ -14,7 +14,13 @@ categories = ["command-line-utilities"]
 [profile.release]
 strip = true
 lto = true
+opt-level = 3
 panic = "abort"
+
+[profile.test]
+strip = true
+lto = true
+opt-level = 3
 
 [[bin]]
 name = "hop"
@@ -27,7 +33,7 @@ update = []
 [dependencies]
 ms = "0.1"
 log = "0.4"
-dirs = "4.0"
+dirs = "5.0"
 regex = "1.6"
 runas = "1.0"
 anyhow = "1.0"
@@ -53,7 +59,7 @@ hyper = { version = "0.14", features = ["server"] }
 ctrlc = { version = "3.2", features = ["termination"] }
 chrono = { version = "0.4", features = ["serde"] }
 async_zip = { version = "0.0", features = ["full"] }
-async-compression = { version = "0.3", features = ["tokio", "gzip"] }
+async-compression = { version = "0.4", features = ["tokio", "gzip"] }
 
 
 # *nix only deps
@@ -67,10 +73,10 @@ reqwest = { version = "0.11", features = [
     "multipart",
     "rustls-tls-webpki-roots",
 ], default-features = false }
-tokio-rustls = { version = "0.23", default-features = false }
+tokio-rustls = { version = "0.24", default-features = false }
 webpki = "0.22"
-webpki-roots = "0.22"
-async-tungstenite = { version = "0.20", features = [
+webpki-roots = "0.23"
+async-tungstenite = { version = "0.22", features = [
     "tokio-runtime",
     "tokio-rustls-webpki-roots",
 ] }
@@ -89,7 +95,7 @@ leap_client_rs = { version = "0.1", features = [
 ], default-features = false }
 native-tls = "0.2"
 tokio-native-tls = "0.3"
-async-tungstenite = { version = "0.20", features = [
+async-tungstenite = { version = "0.22", features = [
     "tokio-runtime",
     "tokio-native-tls",
 ] }
