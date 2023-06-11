@@ -2,11 +2,13 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
 use async_compression::tokio::bufread::GzipDecoder;
-use async_zip::write::ZipFileWriter;
+use async_zip::base::write::ZipFileWriter;
 use async_zip::ZipEntryBuilder;
+use futures_util::io::AsyncWriteExt as _;
 use ignore::WalkBuilder;
 use tokio::fs;
-use tokio::io::{AsyncWriteExt, BufReader, BufWriter};
+use tokio::io::AsyncWriteExt as _;
+use tokio::io::{BufReader, BufWriter};
 use tokio_tar::Archive;
 
 use super::utils::{get_files_from_volume, send_files_to_volume};
@@ -146,7 +148,7 @@ impl LocalFs {
             return Ok((false, fs::read(&path).await?));
         }
 
-        let mut zip = ZipFileWriter::new(BufWriter::new(vec![]));
+        let mut zip = ZipFileWriter::with_tokio(BufWriter::new(Vec::new()));
 
         // walk the directory and add files to the zip
         let walker = WalkBuilder::new(&path)
@@ -180,7 +182,8 @@ impl LocalFs {
                     log::debug!("Adding `{relative}` to zip");
 
                     let zip_entry =
-                        ZipEntryBuilder::new(relative, async_zip::Compression::Deflate).build();
+                        ZipEntryBuilder::new(relative.into(), async_zip::Compression::Deflate)
+                            .build();
 
                     let data = fs::read(entry.path()).await?;
 
@@ -196,7 +199,7 @@ impl LocalFs {
 
         buff.flush().await?;
 
-        Ok((true, buff.into_inner()))
+        Ok((true, buff.into_inner().into_inner()))
     }
 
     // Data should be a tarball
