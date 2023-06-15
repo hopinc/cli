@@ -58,6 +58,10 @@ impl Gateway {
             ),
         }
     }
+
+    pub fn is_internal(&self) -> bool {
+        self.type_ == GatewayType::Internal
+    }
 }
 
 #[derive(Debug, Deserialize)]

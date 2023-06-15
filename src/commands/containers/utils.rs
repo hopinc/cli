@@ -1,17 +1,19 @@
 use std::borrow::Borrow;
 use std::io::Write;
+use std::vec;
 
 use anyhow::{anyhow, Result};
 use console::style;
-use serde_json::Value;
 use tabwriter::TabWriter;
 
 use super::types::{
-    ChangeableContainerState, Container, ContainerState, CreateContainers, Log, LogsResponse,
-    MultipleContainersResponse, UpdateContainerState,
+    Container, ContainerState, CreateContainers, Log, LogsResponse, Metrics,
+    MultipleContainersResponse, SingleContainer,
 };
+use crate::commands::ignite::types::Deployment;
 use crate::state::http::HttpClient;
 use crate::utils::relative_time;
+use crate::utils::size::{parse_size, user_friendly_size};
 
 pub async fn create_containers(
     http: &HttpClient,
@@ -21,7 +23,7 @@ pub async fn create_containers(
     let response = http
         .request::<MultipleContainersResponse>(
             "POST",
-            &format!("/ignite/deployments/{}/containers", deployment_id),
+            &format!("/ignite/deployments/{deployment_id}/containers"),
             Some((
                 serde_json::to_vec(&CreateContainers { count })
                     .unwrap()
@@ -35,15 +37,27 @@ pub async fn create_containers(
     Ok(response.containers)
 }
 
-pub async fn delete_container(http: &HttpClient, container_id: &str) -> Result<()> {
-    http.request::<Value>(
-        "DELETE",
-        &format!("/ignite/containers/{}", container_id),
-        None,
-    )
-    .await?;
+pub async fn delete_container(
+    http: &HttpClient,
+    container_id: &str,
+    recreate: bool,
+) -> Result<Option<Container>> {
+    Ok(http
+        .request::<SingleContainer>(
+            "DELETE",
+            &format!("/ignite/containers/{container_id}?recreate={recreate}"),
+            None,
+        )
+        .await?
+        .map(|response| response.container))
+}
 
-    Ok(())
+pub async fn get_container(http: &HttpClient, container_id: &str) -> Result<Container> {
+    Ok(http
+        .request::<SingleContainer>("GET", &format!("/ignite/containers/{container_id}"), None)
+        .await?
+        .ok_or_else(|| anyhow!("Error while parsing response"))?
+        .container)
 }
 
 pub async fn get_all_containers(http: &HttpClient, deployment_id: &str) -> Result<Vec<Container>> {
@@ -57,28 +71,6 @@ pub async fn get_all_containers(http: &HttpClient, deployment_id: &str) -> Resul
         .ok_or_else(|| anyhow!("Error while parsing response"))?;
 
     Ok(response.containers)
-}
-
-pub async fn update_container_state(
-    http: &HttpClient,
-    container_id: &str,
-    preferred_state: &ChangeableContainerState,
-) -> Result<()> {
-    http.request::<Value>(
-        "PUT",
-        &format!("/ignite/containers/{container_id}/state"),
-        Some((
-            serde_json::to_vec(&UpdateContainerState {
-                preferred_state: ContainerState::from_changeable_state(preferred_state),
-            })
-            .unwrap()
-            .into(),
-            "application/json",
-        )),
-    )
-    .await?;
-
-    Ok(())
 }
 
 pub async fn get_container_logs(
@@ -101,7 +93,7 @@ pub async fn get_container_logs(
     Ok(response.logs)
 }
 
-const UNAVAILABLE_ELEMENT: &str = "-";
+pub const UNAVAILABLE_ELEMENT: &str = "-";
 
 pub fn format_containers(containers: &Vec<Container>, title: bool) -> Vec<String> {
     let mut tw = TabWriter::new(vec![]);
@@ -181,4 +173,43 @@ fn format_log(log: &Log, colors: bool, timestamps: bool, details: bool) -> Strin
     };
 
     format!("{timestamp}{log_level}{}", log.message)
+}
+
+pub fn format_single_metrics(
+    metrics: &Option<Metrics>,
+    deployment: &Deployment,
+) -> Result<Vec<String>> {
+    let mut buff = vec![];
+
+    buff.push(format!(
+        "CPU: {}",
+        metrics
+            .clone()
+            .map(|m| format!(
+                "{:.2}%/{} vcpu",
+                m.cpu_usage_percent(deployment.config.resources.vcpu),
+                deployment.config.resources.vcpu
+            ))
+            .unwrap_or_else(|| UNAVAILABLE_ELEMENT.to_string())
+    ));
+
+    buff.push(format!(
+        "Memory: {}",
+        metrics
+            .clone()
+            .map(|m| -> Result<String> {
+                let ram = parse_size(&deployment.config.resources.ram)?;
+
+                Ok(format!(
+                    "{:.2}% {}/{}",
+                    m.memory_usage_percent(ram),
+                    user_friendly_size(m.memory_usage_bytes)?,
+                    user_friendly_size(ram)?
+                ))
+            })
+            .transpose()?
+            .unwrap_or_else(|| UNAVAILABLE_ELEMENT.to_string())
+    ));
+
+    Ok(buff)
 }

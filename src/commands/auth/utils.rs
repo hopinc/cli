@@ -10,7 +10,7 @@ pub fn format_users(users: &Vec<&String>, title: bool) -> Vec<String> {
     }
 
     for user in users {
-        writeln!(&mut tw, "{}", user).unwrap();
+        writeln!(&mut tw, "{user}").unwrap();
     }
 
     String::from_utf8(tw.into_inner().unwrap())

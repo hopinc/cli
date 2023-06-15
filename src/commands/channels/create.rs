@@ -9,6 +9,7 @@ use crate::utils::validate_json_non_null;
 
 #[derive(Debug, Parser, Default, PartialEq, Eq)]
 #[clap(about = "Create a new Channel")]
+#[group(skip)]
 pub struct Options {
     #[clap(short = 'i', long = "id", help = "Custom ID for the channel")]
     custom_id: Option<String>,
@@ -21,15 +22,14 @@ pub struct Options {
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
-    let project_id = state.ctx.clone().current_project_error().id;
+    let project_id = state.ctx.current_project_error()?.id;
 
     let (type_, id, init_state) = if Options::default() == options {
         let type_ = dialoguer::Select::new()
             .with_prompt("Select a channel type")
             .items(&ChannelType::variants())
             .default(0)
-            .interact_opt()?
-            .ok_or_else(|| anyhow::anyhow!("No Channel type selected"))?;
+            .interact()?;
 
         let type_ = ChannelType::variants()[type_].clone();
 

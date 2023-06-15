@@ -7,6 +7,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Delete gateways")]
+#[group(skip)]
 pub struct Options {
     #[clap(name = "gateways", help = "IDs of the gateways")]
     gateways: Vec<String>,
@@ -19,7 +20,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     let gateways = if !options.gateways.is_empty() {
         options.gateways
     } else {
-        let project_id = state.ctx.current_project_error().id;
+        let project_id = state.ctx.current_project_error()?.id;
 
         let deployments = get_all_deployments(&state.http, &project_id).await?;
         ensure!(!deployments.is_empty(), "No deployments found");
@@ -29,9 +30,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             .with_prompt("Select a deployment")
             .items(&deployments_fmt)
             .default(0)
-            .interact_opt()
-            .expect("Failed to select deployment")
-            .expect("No deployment selected");
+            .interact()?;
 
         let gateways = get_all_gateways(&state.http, &deployments[idx].id).await?;
         let gateways_fmt = format_gateways(&gateways, false);
@@ -39,8 +38,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         let idxs = dialoguer::MultiSelect::new()
             .with_prompt("Select Gateways to delete")
             .items(&gateways_fmt)
-            .interact_opt()?
-            .expect("No Gateway selected");
+            .interact()?;
 
         gateways
             .iter()

@@ -5,9 +5,11 @@ use serde_json::Value;
 use crate::state::http::HttpClient;
 use crate::state::State;
 use crate::store::context::Context;
+use crate::store::Store;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Logout the current user")]
+#[group(skip)]
 pub struct Options {}
 
 pub async fn handle(_options: Options, mut state: State) -> Result<()> {

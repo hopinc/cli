@@ -8,17 +8,14 @@ use tokio::process::Command;
 
 use super::utils::{format_containers, format_logs, get_all_containers, get_container_logs};
 use crate::commands::ignite::utils::{format_deployments, get_all_deployments};
+use crate::config::DEFAULT_EDITOR;
 use crate::state::State;
 use crate::utils::arisu::{ArisuClient, ArisuMessage};
 use crate::utils::in_path;
 
-#[cfg(windows)]
-const DEFAULT_EDITOR: &str = "notepad.exe";
-#[cfg(not(windows))]
-const DEFAULT_EDITOR: &str = "vi";
-
 #[derive(Debug, Parser)]
 #[clap(about = "Get logs of a container")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "ID of the container")]
     container: Option<String>,
@@ -49,7 +46,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Some(id) => id,
 
         None => {
-            let project_id = state.ctx.clone().current_project_error().id;
+            let project_id = state.ctx.current_project_error()?.id;
 
             let deployments = get_all_deployments(&state.http, &project_id).await?;
             ensure!(!deployments.is_empty(), "No deployments found");

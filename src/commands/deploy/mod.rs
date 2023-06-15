@@ -4,8 +4,10 @@ pub mod local;
 use std::env::current_dir;
 use std::path::PathBuf;
 
-use anyhow::{ensure, Context, Result};
+use anyhow::{bail, ensure, Context, Result};
 use clap::Parser;
+use leap_client_rs::leap::types::Event;
+use leap_client_rs::{LeapEdge, LeapOptions};
 
 use crate::commands::auth::docker::HOP_REGISTRY_URL;
 use crate::commands::containers::types::{ContainerOptions, ContainerType};
@@ -15,12 +17,15 @@ use crate::commands::gateways::types::{GatewayConfig, GatewayType};
 use crate::commands::gateways::util::{create_gateway, update_gateway_config};
 use crate::commands::ignite::create::{DeploymentConfig, Options as CreateOptions};
 use crate::commands::ignite::types::{
-    CreateDeployment, Deployment, Image, ScalingStrategy, SingleDeployment,
+    CreateDeployment, Deployment, Image, RestartPolicy, RolloutEvents, RolloutState,
+    ScalingStrategy,
 };
 use crate::commands::ignite::utils::{
-    create_deployment, env_file_to_map, rollout, update_deployment_config, WEB_IGNITE_URL,
+    create_deployment, env_file_to_map, get_deployment, rollout, update_deployment_config,
+    WEB_IGNITE_URL,
 };
 use crate::commands::projects::utils::format_project;
+use crate::config::LEAP_PROJECT;
 use crate::state::State;
 use crate::store::hopfile::HopFile;
 use crate::utils::urlify;
@@ -29,6 +34,7 @@ const HOP_BUILD_BASE_URL: &str = "https://builder.hop.io/v1";
 
 #[derive(Debug, Parser)]
 #[clap(about = "Deploy a new container")]
+#[group(skip)]
 pub struct Options {
     #[clap(
         name = "dir",
@@ -55,10 +61,13 @@ pub struct Options {
         help = "Build the container locally using nixpacks or docker instead of using the builder"
     )]
     local: bool,
+
+    #[clap(long, help = "Do not roll out the changes, only build")]
+    no_rollout: bool,
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
-    let mut dir = current_dir().expect("Could not get current directory");
+    let mut dir = current_dir().context("Could not get current directory")?;
 
     if let Some(path) = options.path {
         dir = dir
@@ -76,20 +85,16 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     let (project, deployment, container_options, existing) = match HopFile::find(dir.clone()).await
     {
         Some(hopfile) => {
+            dir = hopfile
+                .path
+                .parent()
+                .context("Could not get the parent dir from the hop file location")?
+                .to_path_buf();
+
             log::info!("Found hopfile: {}", hopfile.path.display());
 
             // TODO: possible update of deployment if it already exists?
-            let deployment = state
-                .http
-                .request::<SingleDeployment>(
-                    "GET",
-                    &format!("/ignite/deployments/{}", hopfile.config.deployment_id),
-                    None,
-                )
-                .await
-                .expect("Failed to get deployment")
-                .unwrap()
-                .deployment;
+            let deployment = get_deployment(&state.http, &hopfile.config.deployment_id).await?;
 
             // if deployment exists it's safe to unwrap
             let project = state
@@ -121,7 +126,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         None => {
             log::info!("No hopfile found, creating one");
 
-            let project = state.ctx.clone().current_project_error();
+            let project = state.ctx.current_project_error()?;
 
             log::info!("Deploying to project {}", format_project(&project));
 
@@ -142,6 +147,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                         // TODO: remove after autoscaling is supported
                         container_strategy: ScalingStrategy::Manual,
                         type_: Some(ContainerType::Persistent),
+                        restart_policy: Some(RestartPolicy::OnFailure),
                         ..Default::default()
                     },
                     ContainerOptions {
@@ -162,6 +168,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                     &Deployment::default(),
                     &Some(default_name),
                     false,
+                    &project,
                 )
                 .await?
             };
@@ -178,7 +185,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             if options.envfile {
                 deployment_config
                     .env
-                    .extend(env_file_to_map(dir.join(".env")).await);
+                    .extend(env_file_to_map(dir.join(".env")).await?);
             }
 
             let deployment =
@@ -218,8 +225,20 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         }
     };
 
+    // connect to leap here so no logs interfere with the deploy
+    let mut leap = LeapEdge::new(LeapOptions {
+        token: Some(&state.ctx.current.clone().unwrap().leap_token),
+        project: &std::env::var("LEAP_PROJECT").unwrap_or_else(|_| LEAP_PROJECT.to_string()),
+        ws_url: &std::env::var("LEAP_WS_URL")
+            .unwrap_or_else(|_| LeapOptions::default().ws_url.to_string()),
+    })
+    .await?;
+
+    // all projects should already be subscribed but this is a precaution
+    leap.channel_subscribe(&project.id).await?;
+
     if !options.local {
-        builder::build(&state, &project.id, &deployment.id, dir.clone()).await?;
+        builder::build(&state, &project.id, &deployment.id, dir.clone(), &mut leap).await?;
     } else {
         local::build(
             &state,
@@ -231,16 +250,51 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     }
 
     if existing {
-        if deployment.container_count > 0 {
-            log::info!("Rolling out new containers");
-            rollout(&state.http, &deployment.id).await?;
+        if deployment.can_rollout() && !options.no_rollout {
+            let rollout = rollout(&state.http, &deployment.id).await?;
+
+            while let Some(event) = leap.listen().await {
+                if let Event::Message(capsuled) = event {
+                    if capsuled.channel.as_deref() != Some(&project.id) {
+                        continue;
+                    }
+
+                    let Ok(rollout_event) = serde_json::from_value(serde_json::to_value(capsuled.data)?) else {
+                        continue;
+                    };
+
+                    match rollout_event {
+                        RolloutEvents::RolloutCreate(event) => {
+                            if rollout.id == event.rollout.id {
+                                log::info!("Rolling out new containers");
+                            }
+                        }
+
+                        RolloutEvents::RolloutUpdate(event) => match event.state {
+                            // default state, when created
+                            RolloutState::Pending => {}
+
+                            RolloutState::Finished => {
+                                log::info!("Successfully rolled out new containers");
+
+                                break;
+                            }
+
+                            RolloutState::Failed => {
+                                bail!("Rollout failed");
+                            }
+                        },
+                    }
+                }
+            }
         }
-    } else if let Some(containers) = container_options
-        .containers
-        .or(container_options.min_containers)
-    {
-        create_containers(&state.http, &deployment.id, containers).await?;
+    } else if let Some(containers) = container_options.containers {
+        if deployment.can_scale() && containers > 0 {
+            create_containers(&state.http, &deployment.id, containers).await?;
+        }
     }
+
+    leap.close().await;
 
     log::info!(
         "Deployed successfully, you can find it at: {}",

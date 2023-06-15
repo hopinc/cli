@@ -14,7 +14,7 @@ use crate::state::State;
 use crate::store::utils::home_path;
 use crate::utils::in_path;
 
-const NIXPACKS_OVERRIDE: &str = "HOP_NIXPACKS_BIN";
+const NIXPACKS_OVERRIDE: &str = "NIXPACKS_BIN";
 
 #[cfg(not(windows))]
 const NIXPACKS_VENDORED_PATH: &str = ".hop/bin/nixpacks";
@@ -72,7 +72,7 @@ pub async fn build(
         let nixpacks_path = if let Ok(path) = std::env::var(NIXPACKS_OVERRIDE) {
             PathBuf::from(path)
         } else {
-            home_path(NIXPACKS_VENDORED_PATH)
+            home_path(NIXPACKS_VENDORED_PATH)?
         };
 
         if fs::metadata(&nixpacks_path).await.is_err() {

@@ -6,13 +6,14 @@ use crate::state::State;
 
 #[derive(Debug, Parser, Default, PartialEq, Eq)]
 #[clap(about = "List all Channel")]
+#[group(skip)]
 pub struct Options {
     #[clap(short, long, help = "Only print the IDs of the Channels")]
     pub quiet: bool,
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
-    let project_id = state.ctx.current_project_error().id;
+    let project_id = state.ctx.current_project_error()?.id;
     let channels = get_all_channels(&state.http, &project_id).await?;
 
     if options.quiet {
@@ -22,7 +23,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             .collect::<Vec<_>>()
             .join(" ");
 
-        println!("{}", ids);
+        println!("{ids}");
     } else {
         let channels_fmt = format_channels(&channels, true);
 

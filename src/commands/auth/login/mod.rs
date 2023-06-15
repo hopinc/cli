@@ -9,32 +9,34 @@ use clap::Parser;
 use self::browser_auth::browser_login;
 use self::flags_auth::flags_login;
 use crate::state::State;
+use crate::store::Store;
 use crate::utils::in_path;
 
-const WEB_AUTH_URL: &str = "https://console.hop.io/cli-auth";
+const WEB_AUTH_URL: &str = "https://console.hop.io/auth/callback/cli";
 const PAT_FALLBACK_URL: &str = "https://console.hop.io/settings/pats";
 
 #[derive(Debug, Parser, Default, PartialEq, Eq)]
 #[clap(about = "Login to Hop")]
+#[group(skip)]
 pub struct Options {
     #[clap(
         long,
         help = "Project Token or Personal Authorization Token, you can use `--token=` to take the token from stdin"
     )]
     token: Option<String>,
-    /*     #[clap(long, help = "Email")]
+    #[clap(long, help = "Email")]
     email: Option<String>,
     #[clap(
         long,
         help = "Password, you can use `--password=` to take the token from stdin"
     )]
-    password: Option<String>, */
+    password: Option<String>,
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
     let init_token = if Options::default() != options {
-        flags_login(options, state.http.clone()).await
-    } else if let Ok(env_token) = std::env::var("HOP_TOKEN") {
+        flags_login(options, state.http.clone()).await?
+    } else if let Ok(env_token) = std::env::var("TOKEN") {
         env_token
     } else {
         browser_login().await?

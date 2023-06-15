@@ -1,7 +1,7 @@
 mod create;
 mod delete;
 mod list;
-mod messages;
+mod message;
 mod subscribe;
 mod tokens;
 mod types;
@@ -23,13 +23,14 @@ pub enum Commands {
     #[clap(alias = "token")]
     Tokens(tokens::Options),
     #[clap(alias = "send", alias = "msg")]
-    Messages(messages::Options),
+    Message(message::Options),
     #[clap(alias = "sub", alias = "ts")]
     Subscribe(subscribe::Options),
 }
 
 #[derive(Debug, Parser)]
 #[clap(about = "Interact with Channels")]
+#[group(skip)]
 pub struct Options {
     #[clap(subcommand)]
     pub commands: Commands,
@@ -41,7 +42,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Commands::List(options) => list::handle(options, state).await,
         Commands::Delete(options) => delete::handle(options, state).await,
         Commands::Tokens(options) => tokens::handle(options, state).await,
-        Commands::Messages(options) => messages::handle(options, state).await,
+        Commands::Message(options) => message::handle(options, state).await,
         Commands::Subscribe(options) => subscribe::handle(options, state).await,
     }
 }

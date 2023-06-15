@@ -7,6 +7,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Delete a Health Check")]
+#[group(skip)]
 pub struct Options {
     #[clap(name = "heath-checks", help = "IDs of the Health Check")]
     pub health_checks: Vec<String>,
@@ -19,7 +20,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     let health_checks = if !options.health_checks.is_empty() {
         options.health_checks
     } else {
-        let project_id = state.ctx.current_project_error().id;
+        let project_id = state.ctx.current_project_error()?.id;
 
         let deployments = get_all_deployments(&state.http, &project_id).await?;
         ensure!(!deployments.is_empty(), "No deployments found");
@@ -29,8 +30,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             .with_prompt("Select a deployment")
             .items(&deployments_fmt)
             .default(0)
-            .interact_opt()?
-            .ok_or_else(|| anyhow::anyhow!("No deployment selected"))?;
+            .interact()?;
 
         let health_checks = get_all_health_checks(&state.http, &deployments[idx].id).await?;
         ensure!(!health_checks.is_empty(), "No health checks found");
@@ -39,8 +39,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         let idxs = dialoguer::MultiSelect::new()
             .with_prompt("Select a health check")
             .items(&health_checks_fmt)
-            .interact_opt()?
-            .ok_or_else(|| anyhow::anyhow!("No health check selected"))?;
+            .interact()?;
 
         health_checks
             .iter()

@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::{bail, ensure, Result};
 use clap::Parser;
 use serde_json::Value;
 
@@ -8,6 +8,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Delete a secret")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "Name of the secret")]
     name: Option<String>,
@@ -20,19 +21,19 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         validate_name(name).unwrap();
     }
 
-    let project_id = state.ctx.current_project_error().id;
+    let project_id = state.ctx.current_project_error()?.id;
 
     let secret_name = match options.name {
         Some(name) => name,
         None => {
             let secrets = state
                 .http
-                .request::<Secrets>("GET", &format!("/projects/{}/secrets", project_id), None)
+                .request::<Secrets>("GET", &format!("/projects/{project_id}/secrets"), None)
                 .await?
                 .unwrap()
                 .secrets;
 
-            assert!(!secrets.is_empty(), "No secrets found");
+            ensure!(!secrets.is_empty(), "No secrets found");
 
             let secrets_fmt = secrets
                 .iter()
@@ -43,9 +44,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .with_prompt("Select a secret")
                 .items(&secrets_fmt)
                 .default(0)
-                .interact_opt()
-                .expect("Failed to select secret")
-                .expect("No secret selected");
+                .interact()?;
 
             secrets[idx].name.clone()
         }
@@ -66,7 +65,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         .http
         .request::<Value>(
             "DELETE",
-            &format!("/projects/{}/secrets/{}", project_id, secret_name),
+            &format!("/projects/{project_id}/secrets/{secret_name}"),
             None,
         )
         .await?;

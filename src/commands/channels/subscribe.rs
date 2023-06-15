@@ -7,6 +7,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser, Default, PartialEq, Eq)]
 #[clap(about = "Subscribe a Leap Token to a Channel")]
+#[group(skip)]
 pub struct Options {
     #[clap(short, long, help = "The ID of the Channel to subscribe to")]
     channel: Option<String>,
@@ -19,7 +20,7 @@ pub struct Options {
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
-    let project_id = state.ctx.current_project_error().id;
+    let project_id = state.ctx.current_project_error()?.id;
 
     let channel_id = if let Some(channel_id) = options.channel {
         channel_id

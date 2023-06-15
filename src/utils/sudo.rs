@@ -14,7 +14,7 @@ pub async fn fix() -> Result<()> {
             // running ~user to get home path
             let home = Command::new("sh")
                 .arg("-c")
-                .arg(format!("eval echo ~{}", user))
+                .arg(format!("eval echo ~{user}"))
                 .output()
                 .await
                 .with_context(|| format!("Failed to get home path of `{user}`"))?

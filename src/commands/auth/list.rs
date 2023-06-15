@@ -1,3 +1,4 @@
+use anyhow::{ensure, Result};
 use clap::Parser;
 
 use super::utils::format_users;
@@ -5,15 +6,16 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "List all authenticated users")]
+#[group(skip)]
 pub struct Options {
     #[clap(short, long, help = "Only print the IDs of the authorized users")]
     pub quiet: bool,
 }
 
-pub fn handle(options: &Options, state: &State) {
+pub fn handle(options: &Options, state: &State) -> Result<()> {
     let users = state.auth.authorized.keys().collect::<Vec<_>>();
 
-    assert!(!users.is_empty(), "There are no authorized users");
+    ensure!(!users.is_empty(), "There are no authorized users");
 
     if options.quiet {
         let ids = users
@@ -22,10 +24,12 @@ pub fn handle(options: &Options, state: &State) {
             .collect::<Vec<_>>()
             .join(" ");
 
-        println!("{}", ids);
+        println!("{ids}");
     } else {
         let users_fmt = format_users(&users, true);
 
         println!("{}", users_fmt.join("\n"));
     }
+
+    Ok(())
 }

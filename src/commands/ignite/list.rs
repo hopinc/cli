@@ -6,13 +6,14 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "List all deployments")]
+#[group(skip)]
 pub struct Options {
     #[clap(short, long, help = "Only print the IDs of the deployments")]
     pub quiet: bool,
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
-    let project_id = state.ctx.current_project_error().id;
+    let project_id = state.ctx.current_project_error()?.id;
 
     let deployments = get_all_deployments(&state.http, &project_id).await?;
 
@@ -23,7 +24,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             .collect::<Vec<_>>()
             .join(" ");
 
-        println!("{}", ids);
+        println!("{ids}");
     } else {
         let deployments_fmt = format_deployments(&deployments, true);
 

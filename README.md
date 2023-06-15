@@ -8,31 +8,35 @@ The Hop CLI allows you to interface with Hop services through your command line.
 
 > Any of the following will make the `hop` command available to you.
 
-### Linux, MacOS and FreeBSD
-
-It can be installed with our universal install script:
-
-```bash
-$ curl -fsSL https://download.hop.sh/install | sh
-```
-
 ### Arch Linux
 
-Use your favourite AUR helper to install the package:
+Use your favorite AUR helper to install the package (e.g. paru):
 
 ```bash
-# yay example
-$ yay -S hop-cli
+paru -S hop-cli
 ```
-
 
 ### Windows
 
 Install with the [Hop Windows Installer 64bit](https://download.hop.sh/windows/x86_64) or the [Hop Windows Installer 32bit](https://download.hop.sh/windows/i686)
 
+### Homebrew
+
+```bash
+brew install hopinc/tap/hop
+```
+
+### Linux, MacOS and FreeBSD
+
+It can be installed with our universal install script:
+
+```bash
+curl -fsSL https://download.hop.sh/install | sh
+```
+
 ### Source
 
-The Hop CLI can only be installed by directly compiling the binary on your machine. To do this, you'll first need to install [Rust](https://www.rust-lang.org/tools/install). Then, once you've cloned the repository, you can execute this command within the directory:
+To build the application from the source code, you'll first need to install [Rust](https://www.rust-lang.org/tools/install). Then, once you've cloned the repository, you can execute this command within the directory:
 
 ```bash
 cargo install --path .
@@ -40,7 +44,7 @@ cargo install --path .
 
 ## Logging In
 
-To get started, you need to login to your Hop account through the CLI:
+To get started, you need to log in to your Hop account through the CLI:
 
 ```bash
 hop auth login
@@ -60,7 +64,7 @@ You can set a default project to use which will automatically be applied to ever
 hop projects switch
 ```
 
-You can override it by passing the `--project` argument. For example: `hop deploy --project api`.
+You can override it by passing the `--project` argument. For example, `hop deploy --project api`.
 
 ### Deploying
 

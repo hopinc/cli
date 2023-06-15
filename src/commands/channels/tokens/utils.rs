@@ -4,11 +4,11 @@ use std::str::FromStr;
 use anyhow::{anyhow, Result};
 use chrono::Utc;
 use ms::{__to_ms__, ms};
-use serde_json::{json, Value};
+use serde_json::Value;
 use tabwriter::TabWriter;
 
 use super::types::{CreateLeapToken, LeapToken, MultipleLeapToken, SingleLeapToken};
-use crate::commands::channels::types::MessageEvent;
+use crate::commands::channels::types::{EventData, MessageEvent};
 use crate::state::http::HttpClient;
 
 pub async fn create_token(
@@ -63,7 +63,7 @@ pub async fn message_token(
     project_id: &str,
     token: &str,
     event: &str,
-    data: Option<Value>,
+    data: Option<EventData>,
 ) -> Result<()> {
     http.request::<Value>(
         "POST",
@@ -71,7 +71,7 @@ pub async fn message_token(
         Some((
             serde_json::to_vec(&MessageEvent {
                 event: event.to_string(),
-                data: data.unwrap_or_else(|| json!({})),
+                data: data.unwrap_or_default(),
             })?
             .into(),
             "application/json",

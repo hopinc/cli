@@ -10,16 +10,18 @@ use tabwriter::TabWriter;
 use tokio::fs;
 
 use super::types::{
-    CreateDeployment, Deployment, MultipleDeployments, Premade, Premades, ScaleRequest,
-    SingleDeployment, Tier, Tiers,
+    CreateDeployment, Deployment, MultipleDeployments, Premade, Premades, RolloutEvent,
+    ScaleRequest, SingleDeployment, Storage, Tier, Tiers,
 };
 use crate::commands::containers::types::{ContainerOptions, ContainerType};
 use crate::commands::ignite::create::Options;
 use crate::commands::ignite::types::{
-    Image, RamSizes, Resources, RestartPolicy, ScalingStrategy, VolumeFs,
+    Image, RamSizes, Resources, RestartPolicy, RolloutResponse, ScalingStrategy, VolumeFs,
 };
+use crate::commands::projects::types::{Project, Sku};
+use crate::commands::projects::utils::{get_quotas, get_skus};
 use crate::state::http::HttpClient;
-use crate::utils::size::parse_size;
+use crate::utils::size::{parse_size, unit_multiplier};
 use crate::utils::{ask_question_iter, parse_key_val};
 
 pub const WEB_IGNITE_URL: &str = "https://console.hop.io/ignite";
@@ -39,14 +41,7 @@ pub async fn get_all_deployments(http: &HttpClient, project_id: &str) -> Result<
 
 pub async fn get_deployment(http: &HttpClient, deployment_id: &str) -> Result<Deployment> {
     let response = http
-        .request::<SingleDeployment>(
-            "GET",
-            &format!(
-                "/ignite/deployments/{deployment_id}",
-                deployment_id = deployment_id
-            ),
-            None,
-        )
+        .request::<SingleDeployment>("GET", &format!("/ignite/deployments/{deployment_id}"), None)
         .await?
         .ok_or_else(|| anyhow!("Failed to parse response"))?;
 
@@ -104,16 +99,18 @@ pub async fn update_deployment(
     Ok(response.deployment)
 }
 
-pub async fn rollout(http: &HttpClient, deployment_id: &str) -> Result<()> {
-    http.request::<Value>(
-        "POST",
-        &format!("/ignite/deployments/{deployment_id}/rollouts"),
-        None,
-    )
-    .await?
-    .ok_or_else(|| anyhow!("Failed to parse response"))?;
+pub async fn rollout(http: &HttpClient, deployment_id: &str) -> Result<RolloutEvent> {
+    let response = http
+        .request::<RolloutResponse>(
+            "POST",
+            &format!("/ignite/deployments/{deployment_id}/rollouts"),
+            None,
+        )
+        .await?
+        .ok_or_else(|| anyhow!("Failed to parse response"))?
+        .rollout;
 
-    Ok(())
+    Ok(response)
 }
 
 pub async fn promote(http: &HttpClient, deployment_id: &str, build_id: &str) -> Result<()> {
@@ -207,6 +204,7 @@ pub async fn update_deployment_config(
     deployment: &Deployment,
     fallback_name: &Option<String>,
     is_update: bool,
+    project: &Project,
 ) -> Result<(CreateDeployment, ContainerOptions)> {
     let mut config = CreateDeployment::from(deployment.clone());
     let mut container_options = ContainerOptions::from_deployment(deployment);
@@ -215,7 +213,7 @@ pub async fn update_deployment_config(
         .clone()
         .map(|s| s.replace(['_', ' ', '.'], "-").to_lowercase());
 
-    if is_visual {
+    let configs = if is_visual {
         update_config_visual(
             http,
             options,
@@ -234,7 +232,46 @@ pub async fn update_deployment_config(
             is_update,
         )
         .await
+    }?;
+
+    let (skus, quota) = tokio::join!(get_skus(http), get_quotas(http, &project.id));
+    let (skus, quota) = (skus?, quota?);
+
+    quota.can_deploy(&config.resources, &config.volume, project)?;
+
+    let (resources, volume_size) = if !project.is_personal() {
+        (config.resources, config.volume.map(|v| v.size))
+    } else {
+        let (applied, billabe) = quota.get_free_tier_billable(&config.resources, &config.volume)?;
+
+        if applied {
+            log::warn!("Free tier has been applied to the resources");
+        }
+
+        billabe
+    };
+
+    let price = get_price_estimate(&skus, &resources, &volume_size)?;
+
+    log::info!(
+        "Estimated monthly price{}: {price}$",
+        if config.type_ == Some(ContainerType::Stateful) {
+            ""
+        } else {
+            " per container"
+        }
+    );
+
+    if is_visual
+        && !dialoguer::Confirm::new()
+            .with_prompt("Do you want to continue?")
+            .interact_opt()?
+            .unwrap_or(false)
+    {
+        bail!("User aborted");
     }
+
+    Ok(configs)
 }
 
 async fn update_config_args(
@@ -255,7 +292,7 @@ async fn update_config_args(
                 None
             }
         })
-        .expect("The argument '--name <NAME>' requires a value but none was supplied")
+        .context("The argument '--name <NAME>' requires a value but none was supplied")?
         .to_lowercase();
 
     validate_deployment_name(&name)?;
@@ -275,7 +312,7 @@ async fn update_config_args(
                     None
                 }
             })
-            .expect("Please specify an image via the `--image` flag"),
+            .context("Please specify an image via the `--image` flag")?,
     );
 
     let tiers = get_tiers(http).await?;
@@ -669,7 +706,7 @@ async fn update_config_visual(
         deployment_config.restart_policy = Some(RestartPolicy::OnFailure);
     }
 
-    if deployment_config.type_ == Some(ContainerType::Stateful) {
+    if is_update && deployment_config.type_ == Some(ContainerType::Stateful) {
         deployment_config.type_ = None;
     }
 
@@ -734,14 +771,13 @@ fn get_env_from_input() -> Option<(String, String)> {
 }
 
 fn validate_deployment_name(name: &str) -> Result<()> {
+    const MIN_LENGTH: usize = 1;
     const MAX_LENGTH: usize = 20;
 
     ensure!(
         name.len() <= MAX_LENGTH,
         "Deployment name must be less than {MAX_LENGTH} characters"
     );
-
-    const MIN_LENGTH: usize = 1;
 
     ensure!(
         name.len() >= MIN_LENGTH,
@@ -777,16 +813,16 @@ pub fn get_shell_array(entrypoint: &str) -> Vec<String> {
         .collect()
 }
 
-pub async fn env_file_to_map(path: PathBuf) -> HashMap<String, String> {
+pub async fn env_file_to_map(path: PathBuf) -> Result<HashMap<String, String>> {
     let mut env = HashMap::new();
 
-    assert!(
+    ensure!(
         path.exists(),
         "Could not find .env file at {}",
         path.display()
     );
 
-    let file = fs::read_to_string(path).await.unwrap();
+    let file = fs::read_to_string(path).await?;
     let lines = file.lines();
 
     for line in lines {
@@ -809,7 +845,7 @@ pub async fn env_file_to_map(path: PathBuf) -> HashMap<String, String> {
         }
     }
 
-    env
+    Ok(env)
 }
 
 pub fn format_premade(premades: &[Premade], title: bool) -> Result<Vec<String>> {
@@ -833,6 +869,61 @@ pub fn format_premade(premades: &[Premade], title: bool) -> Result<Vec<String>> 
         .collect())
 }
 
+const MONTH_IN_MINUTES: f64 = 43200.0;
+
+pub fn get_price_estimate(
+    skus: &[Sku],
+    resources: &Resources,
+    volume: &Option<String>,
+) -> Result<String> {
+    let mut total = 0.0;
+
+    for sku in skus.iter().filter(|sku| sku.product == "ignite") {
+        let mut price = sku.price;
+
+        match sku.id.as_str() {
+            "ignite_vcpu_per_min" => {
+                price *= resources.vcpu;
+            }
+
+            // per 100 MB
+            "ignite_ram_per_min" => {
+                price *= parse_size(&resources.ram)? as f64;
+                price /= (100 * unit_multiplier::MB) as f64;
+            }
+
+            // per 1MB
+            "ignite_volume_per_min" => {
+                if let Some(size) = &volume {
+                    price *= parse_size(size)? as f64;
+                    price /= unit_multiplier::MB as f64;
+                }
+            }
+
+            _ => continue,
+        }
+
+        total += price;
+    }
+
+    total *= MONTH_IN_MINUTES;
+
+    Ok(format!("{total:.2}"))
+}
+
+pub async fn get_storage(http: &HttpClient, deployment_id: &str) -> Result<Storage> {
+    let data = http
+        .request::<Storage>(
+            "GET",
+            &format!("/ignite/deployments/{deployment_id}/storage",),
+            None,
+        )
+        .await?
+        .ok_or_else(|| anyhow!("Failed to parse response"))?;
+
+    Ok(data)
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -850,5 +941,38 @@ mod test {
             Some(r#""echo hello world""#.to_string())
         );
         assert_eq!(entrypoint_array.next(), None);
+    }
+
+    #[test]
+    fn test_price_estimate() {
+        let skus = vec![
+            Sku {
+                id: "ignite_ram_per_min".to_string(),
+                product: "ignite".to_string(),
+                price: 0.0000060896,
+            },
+            Sku {
+                id: "ignite_vcpu_per_min".to_string(),
+                product: "ignite".to_string(),
+                price: 0.0001,
+            },
+            Sku {
+                id: "ignite_volume_per_min".to_string(),
+                product: "ignite".to_string(),
+                price: 0.0000000035,
+            },
+        ];
+
+        let resources = Resources {
+            ram: "1GB".to_string(),
+            vcpu: 1.0,
+            ..Default::default()
+        };
+
+        let volume = Some("1GB".to_string());
+
+        let estimate = get_price_estimate(&skus, &resources, &volume).unwrap();
+
+        assert_eq!(estimate, "7.17");
     }
 }

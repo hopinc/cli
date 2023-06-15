@@ -7,6 +7,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "List Health Checks in a deployment")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "ID of the deployment")]
     pub deployment: Option<String>,
@@ -20,7 +21,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Some(id) => id,
 
         None => {
-            let project_id = state.ctx.current_project_error().id;
+            let project_id = state.ctx.current_project_error()?.id;
 
             let deployments = get_all_deployments(&state.http, &project_id).await?;
             ensure!(!deployments.is_empty(), "No deployments found");
@@ -30,8 +31,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .with_prompt("Select a deployment")
                 .items(&deployments_fmt)
                 .default(0)
-                .interact_opt()?
-                .ok_or_else(|| anyhow::anyhow!("No deployment selected"))?;
+                .interact()?;
 
             deployments[idx].id.clone()
         }
@@ -46,7 +46,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
             .collect::<Vec<_>>()
             .join(" ");
 
-        println!("{}", ids);
+        println!("{ids}");
     } else {
         let health_checks_fmt = format_health_checks(&health_checks, true);
 

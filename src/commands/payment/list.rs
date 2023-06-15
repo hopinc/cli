@@ -6,6 +6,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "List all payment methods")]
+#[group(skip)]
 pub struct Options {
     #[clap(short, long, help = "Only print the IDs of the payment methods")]
     pub quiet: bool,
@@ -21,7 +22,7 @@ pub async fn handle(options: &Options, state: &State) -> Result<()> {
             .collect::<Vec<_>>()
             .join(" ");
 
-        println!("{}", ids);
+        println!("{ids}");
     } else {
         let payment_methods_fmt = format_payment_methods(&payment_methods, true)?;
 

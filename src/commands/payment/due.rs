@@ -11,6 +11,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Check how much is due for a payment method(s)")]
+#[group(skip)]
 pub struct Options {
     #[clap(
         help = "The ID(s) of the payment method(s), if not provided all payment methods will be used"
@@ -54,7 +55,7 @@ pub async fn handle(options: &Options, state: &State) -> Result<()> {
         .into_iter()
         .zip(payment_methods.into_iter())
     {
-        println!("{}", payment_method_fmt);
+        println!("{payment_method_fmt}");
 
         let balances = payment_method_balance.get(&payment_method.id).unwrap();
 

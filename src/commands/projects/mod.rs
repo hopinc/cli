@@ -25,6 +25,7 @@ pub enum Commands {
 
 #[derive(Debug, Parser)]
 #[clap(about = "Interact with projects")]
+#[group(skip)]
 pub struct Options {
     #[clap(subcommand)]
     pub commands: Commands,
@@ -35,15 +36,7 @@ pub async fn handle(options: Options, state: State) -> anyhow::Result<()> {
         Commands::Switch(options) => switch::handle(options, state).await,
         Commands::Delete(options) => delete::handle(options, state).await,
         Commands::Create(options) => create::handle(options, state).await,
-
-        Commands::List(options) => {
-            list::handle(options, state);
-            Ok(())
-        }
-
-        Commands::Info(options) => {
-            info::handle(&options, state);
-            Ok(())
-        }
+        Commands::List(options) => list::handle(options, state),
+        Commands::Info(options) => info::handle(&options, state),
     }
 }

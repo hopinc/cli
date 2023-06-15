@@ -18,10 +18,10 @@ impl Display for Version {
         let mut version = format!("{}.{}.{}", self.major, self.minor, self.patch);
 
         if let Some(prelease) = &self.release {
-            write!(version, "-{}", prelease)?;
+            write!(version, "-{prelease}")?;
         }
 
-        write!(f, "{}", version)
+        write!(f, "{version}")
     }
 }
 

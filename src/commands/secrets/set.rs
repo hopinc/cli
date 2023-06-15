@@ -7,6 +7,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Set a secret")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "Name of the secret")]
     name: String,
@@ -17,7 +18,7 @@ pub struct Options {
 pub async fn handle(options: Options, state: State) -> Result<()> {
     validate_name(&options.name)?;
 
-    let project_id = state.ctx.current_project().expect("Project not found").id;
+    let project_id = state.ctx.current_project_error()?.id;
 
     let secret = state
         .http

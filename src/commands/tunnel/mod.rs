@@ -11,13 +11,9 @@ use tokio::net::TcpListener;
 use tokio::sync::mpsc::unbounded_channel;
 
 use self::utils::{parse_publish, TonneruSocket};
-use super::ignite::utils::get_all_deployments;
+use crate::commands::gateways::util::{format_gateways, get_all_gateways};
 use crate::commands::ignite::types::Deployment;
-use crate::commands::ignite::utils::{format_deployments, get_deployment};
-use crate::commands::tunnel::types::Prefix;
-use crate::commands::tunnel::utils::{
-    add_entry_to_hosts, get_id_with_prefix, remove_entry_from_hosts,
-};
+use crate::commands::tunnel::utils::{add_entry_to_hosts, remove_entry_from_hosts};
 use crate::state::State;
 use crate::utils::urlify;
 
@@ -25,9 +21,11 @@ use crate::utils::urlify;
 const TONNERU_URI: &str = "tonneru.hop.io";
 const TONNERU_PORT: u16 = 443;
 const DOMAIN_SUFFIX: &str = "hop";
+const CONTAINER_PREFIX: &str = "container_";
 
 #[derive(Debug, Parser)]
 #[clap(about = "Access your application via a tunnel")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "Resource to tunnel to, can be a deployment name, ID")]
     pub deployment: Option<String>,
@@ -38,43 +36,30 @@ pub struct Options {
 }
 
 pub async fn handle(options: &Options, state: State) -> Result<()> {
-    let project = state.ctx.clone().current_project_error();
+    // check if the options.deployment starts with container_ else use the
+    // state.get_deployment_by_opt_id_or_name
+    let resource = if options
+        .deployment
+        .clone()
+        .map(|d| d.starts_with(CONTAINER_PREFIX))
+        .unwrap_or(false)
+    {
+        let container = options.deployment.clone().unwrap();
 
-    let deployment = match get_id_with_prefix(options.deployment.as_deref()) {
-        Some((Prefix::Deployment, id)) => get_deployment(&state.http, &id).await?,
-        Some((Prefix::Container, id)) => Deployment {
-            id: id.clone(),
-            name: id,
+        Deployment {
+            name: container.clone(),
+            id: container,
             container_count: 1,
             ..Default::default()
-        },
-        unknown => {
-            let deployments = get_all_deployments(&state.http, &project.id).await?;
-            ensure!(!deployments.is_empty(), "No deployments found.");
-
-            if let Some((_, name)) = unknown {
-                deployments
-                    .iter()
-                    .find(|d| d.name.to_lowercase() == name.to_lowercase())
-                    .ok_or_else(|| anyhow!("Deployment not found."))?
-                    .clone()
-            } else {
-                let deployments_fmt = format_deployments(&deployments, false);
-
-                let idx = dialoguer::Select::new()
-                    .with_prompt("Select a deployment")
-                    .items(&deployments_fmt)
-                    .default(0)
-                    .interact_opt()?
-                    .ok_or_else(|| anyhow!("No deployment selected."))?;
-
-                deployments[idx].clone()
-            }
         }
+    } else {
+        state
+            .get_deployment_by_opt_name_or_id(options.deployment.as_deref())
+            .await?
     };
 
     ensure!(
-        deployment.container_count > 0,
+        resource.container_count > 0,
         "Deployment has no running containers."
     );
 
@@ -89,19 +74,19 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
         let mut ports = HashSet::new();
 
         // metadata is only available for running containers
-        deployment
+        resource
             .metadata
             .unwrap_or_default()
             .container_port_mappings
+            .unwrap_or_default()
             .values()
-            .for_each(|v| {
-                v.iter().for_each(|p| {
-                    let port_split = p.split(':').collect::<Vec<_>>();
+            .flat_map(|p| p.iter())
+            .for_each(|p| {
+                let port_split = p.split(':').collect::<Vec<_>>();
 
-                    if let Some(port) = port_split.last() {
-                        ports.insert(port.to_string());
-                    }
-                });
+                if let Some(port) = port_split.last() {
+                    ports.insert(port.to_string());
+                }
             });
 
         let mut ports = ports.into_iter().collect::<Vec<_>>();
@@ -117,8 +102,7 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
                     .with_prompt("Select a local port")
                     .items(&ports)
                     .default(0)
-                    .interact_opt()?
-                    .ok_or_else(|| anyhow!("No port selected."))?
+                    .interact()?
             };
 
             if idx == ports.len() - 1 {
@@ -138,8 +122,7 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
                     .with_prompt("Select the remote port")
                     .items(&ports)
                     .default(0)
-                    .interact_opt()?
-                    .ok_or_else(|| anyhow!("No port selected."))?
+                    .interact()?
             };
 
             if idx == ports.len() - 1 {
@@ -165,7 +148,33 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
     let domain = if !options.hosts {
         ip_address.to_string()
     } else {
-        format!("{}.{DOMAIN_SUFFIX}", deployment.name)
+        let mut gateways = if !resource.id.starts_with(CONTAINER_PREFIX) {
+            get_all_gateways(&state.http, &resource.id)
+                .await?
+                .into_iter()
+                .filter(|g| g.is_internal())
+                .collect::<Vec<_>>()
+        } else {
+            vec![]
+        };
+
+        match &mut gateways[..] {
+            [] => format!("{}.{DOMAIN_SUFFIX}", resource.name),
+
+            // safe to unwrap because we filter out non-internal gateways
+            [single] => single.internal_domain.take().unwrap(),
+            _ => {
+                let gateways_fmt = format_gateways(&gateways, false);
+
+                let gateway = dialoguer::Select::new()
+                    .with_prompt("Select an internal gateway that best suits your needs")
+                    .items(&gateways_fmt)
+                    .default(0)
+                    .interact()?;
+
+                gateways[gateway].internal_domain.take().unwrap()
+            }
+        }
     };
 
     if options.hosts {
@@ -201,11 +210,11 @@ pub async fn handle(options: &Options, state: State) -> Result<()> {
 
     log::info!(
         "Forwarding to `{}` on {}",
-        deployment.name,
+        resource.name,
         urlify(&format!("{domain}:{local_port}"))
     );
 
-    let tonneru = TonneruSocket::new(&token, &deployment.id, remote_port)?;
+    let tonneru = TonneruSocket::new(&token, &resource.id, remote_port)?;
 
     loop {
         let (mut stream, local_socket) = listiner.accept().await?;

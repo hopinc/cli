@@ -15,16 +15,19 @@ jobs:
       tag_name: ${{ steps.tag.outputs.tag_name }}
     steps:
       - name: Checkout the repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 1
 
       - name: Get tag data
         id: tag
         run: |
-          echo ::set-output name=tag_name::${GITHUB_REF#refs/*/}
+          # replace the following commands to use the new GITHUB_OUTPUT syntax
+
+          echo "tag_name=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
+
           if [[ ${{ github.event.ref }} =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+-[0-9]+$ ]]; then
-            echo ::set-output name=pre_release::true
+            echo "pre_release=true" >> $GITHUB_OUTPUT
           fi
 
       - name: Create new release
@@ -84,19 +87,20 @@ jobs:
             platform: i686-Windows
             flags: --all-features
 
-          # ARM WINDOWS xD
+          # these targets currently fail for unknown reasons
+
           # - target: aarch64-pc-windows-msvc
           #   os: windows-latest
           #   platform: aarch64-windows
 
-          - target: x86_64-unknown-freebsd
-            os: ubuntu-latest
-            platform: x86_64-FreeBSD
-            flags: --all-features
+          # - target: x86_64-unknown-freebsd
+          #   os: ubuntu-latest
+          #   platform: x86_64-FreeBSD
+          #   flags: --all-features
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 1
 
@@ -114,6 +118,9 @@ jobs:
         with:
           command: install
           args: cargo-wix
+
+      - name: Cache
+        uses: Swatinem/rust-cache@v2
 
       - name: Build release binary
         uses: actions-rs/cargo@v1
@@ -172,7 +179,7 @@ jobs:
         run: for file in hop-*/hop-*; do openssl dgst -sha256 -r "$file" | awk '{print $1}' > "${file}.sha256"; done
 
       - name: Update Release
-        run: gh release edit ${{ needs.draft-release.outputs.tag_name }} --draft=false --repo=hopinc/hop_cli
+        run: gh release edit ${{ needs.draft-release.outputs.tag_name }} --draft=false --repo=${{ github.repository }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -190,7 +197,7 @@ jobs:
     environment: prod
     steps:
       - name: Checkout the repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 1
 
@@ -212,7 +219,6 @@ jobs:
         with:
           command: publish
           args: --no-verify
-          use-cross: ${{ matrix.os == 'ubuntu-latest' }}
 
   publish-aur:
     name: Publish to AUR
@@ -233,13 +239,13 @@ jobs:
         run: |
           git config --global user.name "${{ secrets.AUR_GIT_USER }}"
           git config --global user.email "${{ secrets.AUR_GIT_EMAIL }}"
-          git clone ssh://aur@aur.archlinux.org:/hop-cli.git
+          git clone ssh://aur@aur.archlinux.org:/hop-cli.git --depth 1
 
       - name: Update PKGBUILD
         run: |
           cd hop-cli
 
-          curl -fsSL https://github.com/hopinc/hop_cli/archive/refs/tags/${{ needs.draft-release.outputs.tag_name }}.tar.gz -o hop-cli-archive.tar.gz
+          curl -fsSL https://github.com/${{ github.repository }}/archive/refs/tags/${{ needs.draft-release.outputs.tag_name }}.tar.gz -o hop-cli-archive.tar.gz
 
           VERSION=$(echo ${{ needs.draft-release.outputs.tag_name }} | sed 's/v//')
           OLD_VERSION=$(cat .SRCINFO | awk '/pkgver = (.*)/{ print $3 }')
@@ -260,3 +266,35 @@ jobs:
           git add PKGBUILD .SRCINFO
           git commit -m "Update PKGBUILD for ${{ needs.draft-release.outputs.tag_name }}"
           git push origin master
+
+  publish-homebrew:
+    name: Update Homebrew Formula
+    needs: ["draft-release", "build-release"]
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    environment: prod
+    steps:
+      - name: Clone Homebrew repo
+        run: |
+          git config --global user.name "hopdeployer"
+          git config --global user.email "phin+hopdeployer@hop.io"
+          git clone https://github.com/hopinc/homebrew-tap.git --depth 1
+
+      - name: Update Formula
+        run: |
+          cd homebrew-tap
+
+          curl -fsSL https://github.com/${{ github.repository }}/archive/${{ needs.draft-release.outputs.tag_name }}.tar.gz -o hop-cli-archive.tar.gz
+
+          CHECKSUM=$(sha256sum hop-cli-archive.tar.gz | awk '{ print $1 }')
+
+          sed -i "s/\/v.*.tar.gz/\/${{ needs.draft-release.outputs.tag_name }}.tar.gz/" hop.rb
+          sed -i "s/sha256 .*/sha256 \"$CHECKSUM\"/" hop.rb
+
+      - name: Push to Homebrew
+        run: |
+          cd homebrew-tap
+
+          git add hop.rb
+          git commit -m "Update hop.rb for ${{ needs.draft-release.outputs.tag_name }}"
+          git push https://${{ secrets.GHCR_TOKEN }}@github.com/hopinc/homebrew-tap.git main

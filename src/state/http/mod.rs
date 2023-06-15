@@ -1,6 +1,6 @@
 mod types;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use hyper::StatusCode;
 use reqwest::header::HeaderMap;
 use reqwest::Client as AsyncClient;
@@ -29,8 +29,7 @@ impl HttpClient {
         }
 
         let ua = format!(
-            "hop_cli/{} on {}",
-            VERSION,
+            "hop_cli/{VERSION} on {}",
             sys_info::os_type().unwrap_or_else(|_| "unknown".to_string())
         );
 
@@ -74,7 +73,7 @@ impl HttpClient {
             .map_err(|e| anyhow!(e))
     }
 
-    async fn handle_error<T>(
+    pub async fn handle_error<T>(
         &self,
         response: reqwest::Response,
         status: StatusCode,
@@ -82,11 +81,15 @@ impl HttpClient {
         let body = response.json::<ErrorResponse>().await;
 
         match body {
-            Ok(body) => Err(anyhow!("{}", body.error.message)),
+            Ok(body) => bail!("{}", body.error.message),
             Err(err) => {
                 log::debug!("Error deserialize message: {:#?}", err);
 
-                Err(anyhow!("Error: HTTP {:#?}", status))
+                bail!(
+                    "HTTP {}: {}",
+                    status.as_u16(),
+                    status.canonical_reason().unwrap_or("Unknown")
+                )
             }
         }
     }
@@ -100,12 +103,28 @@ impl HttpClient {
     where
         T: serde::de::DeserializeOwned,
     {
-        let mut request = self.client.request(
-            method.parse().unwrap(),
-            format!("{}{}", self.base_url, path),
-        );
+        self.request_with_query(method, path, None, data).await
+    }
+
+    pub async fn request_with_query<T>(
+        &self,
+        method: &str,
+        path: &str,
+        query: Option<&[&[&str; 2]]>,
+        data: Option<(reqwest::Body, &str)>,
+    ) -> Result<Option<T>>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        let mut request = self
+            .client
+            .request(method.parse()?, format!("{}{path}", self.base_url));
 
         log::debug!("request: {} {} {:?}", method, path, data);
+
+        if let Some(query) = query {
+            request = request.query(query);
+        }
 
         if let Some((body, content_type)) = data {
             request = request.header("content-type", content_type);

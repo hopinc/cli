@@ -77,6 +77,7 @@ pub struct VolumeConfig {
 
 #[derive(Debug, Parser, Default, PartialEq, Clone)]
 #[clap(about = "Create a new deployment")]
+#[group(skip)]
 pub struct Options {
     #[clap(flatten)]
     pub config: DeploymentConfig,
@@ -86,7 +87,7 @@ pub struct Options {
 }
 
 pub async fn handle(options: Options, state: State) -> Result<()> {
-    let project = state.ctx.current_project_error();
+    let project = state.ctx.current_project_error()?;
 
     log::info!(
         "Deploying to project {} /{} ({})",
@@ -104,6 +105,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         &Deployment::default(),
         &None,
         false,
+        &project,
     )
     .await?;
 

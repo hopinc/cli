@@ -4,6 +4,7 @@ mod delete;
 pub mod from_compose;
 mod get_env;
 mod health;
+mod inspect;
 mod list;
 mod promote;
 pub mod rollout;
@@ -26,9 +27,11 @@ pub enum Commands {
     List(list::Options),
     #[clap(name = "rm", alias = "delete")]
     Delete(delete::Options),
+    Update(update::Options),
+    #[clap(alias = "info")]
+    Inspect(inspect::Options),
     #[clap(alias = "rollouts")]
     Rollout(rollout::Options),
-    Update(update::Options),
     Scale(scale::Options),
     #[clap(name = "get-env")]
     GetEnv(get_env::Options),
@@ -52,6 +55,7 @@ pub enum Commands {
 
 #[derive(Debug, Parser)]
 #[clap(about = "Interact with Ignite deployments")]
+#[group(skip)]
 pub struct Options {
     #[clap(subcommand)]
     pub commands: Commands,
@@ -63,6 +67,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Commands::Create(options) => create::handle(options, state).await,
         Commands::Delete(options) => delete::handle(options, state).await,
         Commands::Update(options) => update::handle(options, state).await,
+        Commands::Inspect(options) => inspect::handle(options, state).await,
         Commands::Rollout(options) => rollout::handle(options, state).await,
         Commands::Scale(options) => scale::handle(options, state).await,
         Commands::GetEnv(options) => get_env::handle(options, state).await,

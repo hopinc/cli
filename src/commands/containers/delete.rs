@@ -8,6 +8,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Delete containers")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "IDs of the containers")]
     containers: Vec<String>,
@@ -20,7 +21,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     let containers = if !options.containers.is_empty() {
         options.containers
     } else {
-        let project_id = state.ctx.current_project_error().id;
+        let project_id = state.ctx.current_project_error()?.id;
 
         let deployments = get_all_deployments(&state.http, &project_id).await?;
         ensure!(!deployments.is_empty(), "No deployments found");
@@ -66,7 +67,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     for container in &containers {
         log::info!("Deleting container `{}`", container);
 
-        if let Err(err) = delete_container(&state.http, container).await {
+        if let Err(err) = delete_container(&state.http, container, false).await {
             log::error!("Failed to delete container `{}`: {}", container, err);
         } else {
             delete_count += 1;

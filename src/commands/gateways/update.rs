@@ -11,6 +11,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Update a Gateway")]
+#[group(skip)]
 pub struct Options {
     #[clap(name = "gateway", help = "ID of the Gateway")]
     pub gateway: Option<String>,
@@ -24,7 +25,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Some(gateway_id) => get_gateway(&state.http, &gateway_id).await?,
 
         None => {
-            let project_id = state.ctx.current_project_error().id;
+            let project_id = state.ctx.current_project_error()?.id;
 
             let deployments = get_all_deployments(&state.http, &project_id).await?;
             ensure!(!deployments.is_empty(), "No deployments found");
@@ -34,9 +35,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .with_prompt("Select a deployment")
                 .items(&deployments_fmt)
                 .default(0)
-                .interact_opt()
-                .expect("Failed to select deployment")
-                .expect("No deployment selected");
+                .interact()?;
 
             let gateways = get_all_gateways(&state.http, &deployments[idx].id).await?;
             let gateways_fmt = format_gateways(&gateways, false);
@@ -45,8 +44,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .with_prompt("Select a Gateway to update")
                 .default(0)
                 .items(&gateways_fmt)
-                .interact_opt()?
-                .expect("No Gateways selected");
+                .interact()?;
 
             gateways[idx].clone()
         }

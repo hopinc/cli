@@ -24,6 +24,7 @@ pub enum Commands {
 
 #[derive(Debug, Parser)]
 #[clap(about = "Interact with Channel Tokens")]
+#[group(skip)]
 pub struct Options {
     #[clap(subcommand)]
     pub commands: Commands,

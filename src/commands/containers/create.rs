@@ -7,6 +7,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Create containers for a deployment")]
+#[group(skip)]
 pub struct Options {
     #[clap(short, long, help = "ID of the deployment")]
     deployment: Option<String>,
@@ -20,7 +21,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Some(id) => id,
 
         None => {
-            let project_id = state.ctx.current_project_error().id;
+            let project_id = state.ctx.current_project_error()?.id;
 
             let deployments = get_all_deployments(&state.http, &project_id).await?;
             ensure!(!deployments.is_empty(), "No deployments found");

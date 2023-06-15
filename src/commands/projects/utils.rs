@@ -1,12 +1,11 @@
 use std::io::Write;
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use regex::Regex;
 use tabwriter::TabWriter;
 
+use super::types::{CreateProject, Project, Quotas, SingleProjectResponse, Sku, SkuResponse};
 use crate::state::http::HttpClient;
-
-use super::types::{CreateProject, Project, SingleProjectResponse};
 
 pub fn format_projects(projects: &Vec<Project>, title: bool) -> Vec<String> {
     let mut tw = TabWriter::new(vec![]);
@@ -74,7 +73,21 @@ pub fn validate_namespace(namespace: &str) -> Result<()> {
         bail!("Namespace must be less than 15 characters")
     } else if !regex.is_match(namespace) {
         bail!("Namespace must contain only letters, numbers and underscores")
-    } else {
-        Ok(())
     }
+
+    Ok(())
+}
+
+pub async fn get_quotas(http: &HttpClient, project_id: &str) -> Result<Quotas> {
+    http.request::<Quotas>("GET", &format!("/quotas?project={project_id}"), None)
+        .await?
+        .context("Error while parsing response")
+}
+
+pub async fn get_skus(http: &HttpClient) -> Result<Vec<Sku>> {
+    Ok(http
+        .request::<SkuResponse>("GET", "/skus", None)
+        .await?
+        .context("Error while parsing response")?
+        .skus)
 }

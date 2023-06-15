@@ -1,6 +1,5 @@
 use std::fmt::Display;
 use std::str::FromStr;
-use std::vec;
 
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
@@ -56,57 +55,16 @@ impl Display for ContainerState {
     }
 }
 
-impl ContainerState {
-    pub fn from_changeable_state(state: &ChangeableContainerState) -> Self {
-        match state {
-            ChangeableContainerState::Start => Self::Running,
-            ChangeableContainerState::Stop => Self::Stopped,
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
-pub enum ChangeableContainerState {
-    #[serde(rename = "stop")]
-    Stop,
-
-    #[serde(rename = "start")]
-    Start,
-}
-
-impl Display for ChangeableContainerState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            serde_json::to_string(self).unwrap().replace('"', "")
-        )
-    }
-}
-
-impl FromStr for ChangeableContainerState {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        serde_json::from_str(&format!("\"{}\"", s.to_lowercase())).map_err(|e| anyhow!(e))
-    }
-}
-
-impl ChangeableContainerState {
-    pub fn values() -> Vec<Self> {
-        vec![Self::Stop, Self::Start]
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Uptime {
     pub last_start: Option<DateTime<Utc>>,
 }
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Container {
     pub id: String,
-    pub created_at: String,
+    pub created_at: DateTime<Utc>,
     pub state: ContainerState,
+    pub metrics: Option<Metrics>,
     pub deployment_id: String,
     pub internal_ip: Option<String>,
     pub region: String,
@@ -145,11 +103,6 @@ pub struct CreateContainers {
     pub count: u64,
 }
 
-#[derive(Debug, Serialize)]
-pub struct UpdateContainerState {
-    pub preferred_state: ContainerState,
-}
-
 #[derive(Debug, Deserialize, Clone)]
 pub struct Log {
     pub timestamp: DateTime<Utc>,
@@ -160,4 +113,38 @@ pub struct Log {
 #[derive(Debug, Deserialize)]
 pub struct LogsResponse {
     pub logs: Vec<Log>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SingleContainer {
+    pub container: Container,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct Metrics {
+    pub cpu_usage_percent: f64,
+    pub memory_usage_bytes: u64,
+}
+
+/// Reusable metrics functions
+impl Metrics {
+    /// Normalize the metrics to the number of vcpus
+    pub fn cpu_usage_percent(&self, cpu_count: f64) -> f64 {
+        // 100% = 4vcpu
+        self.cpu_usage_percent / cpu_count / 4.0
+    }
+
+    /// Normalize the metrics to the amount of memory
+    pub fn memory_usage_percent(&self, memory: u64) -> f64 {
+        self.memory_usage_bytes as f64 / (memory as f64) * 100.0
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "e", content = "d", rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum ContainerEvents {
+    ContainerMetricsUpdate {
+        container_id: String,
+        metrics: Metrics,
+    },
 }

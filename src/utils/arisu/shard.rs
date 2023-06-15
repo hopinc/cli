@@ -1,8 +1,9 @@
 use std::time::Duration;
 
 use anyhow::{anyhow, bail, Result};
+use async_tungstenite::tokio::connect_async_with_config;
+use async_tungstenite::tungstenite::protocol::WebSocketConfig;
 use async_tungstenite::tungstenite::Message;
-use async_tungstenite::{tokio::connect_async_with_config, tungstenite::protocol::WebSocketConfig};
 use futures_util::{SinkExt, StreamExt};
 use serde_json::{json, Value};
 use tokio::spawn;
@@ -10,8 +11,7 @@ use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tokio::task::JoinHandle;
 use tokio::time::{interval, timeout};
 
-use super::types::{ArisuEvent, ArisuMessage, ConnectionStage};
-use super::types::{OpCode, WsStream};
+use super::types::{ArisuEvent, ArisuMessage, ConnectionStage, OpCode, WsStream};
 
 const ARISU_URL: &str = "wss://arisu.hop.io/ws";
 
@@ -39,7 +39,8 @@ impl ArisuShard {
     pub async fn new(info: ArisuShardInfo) -> Result<Self> {
         let (heartbeat_tx, heartbeat_rx) = unbounded_channel::<()>();
 
-        let client = connect(ARISU_URL).await?;
+        let client =
+            connect(&std::env::var("ARISU_URL").unwrap_or_else(|_| ARISU_URL.to_string())).await?;
 
         Ok(Self {
             stage: ConnectionStage::Handshake,
@@ -59,7 +60,7 @@ impl ArisuShard {
 
         log::debug!(
             "Sending message: {}",
-            body /* .replace(&self.token, "*****") */
+            body // .replace(&self.token, "*****")
         );
 
         self.client
@@ -211,6 +212,8 @@ impl ArisuShard {
 
 async fn connect(base_url: &str) -> Result<WsStream> {
     let url = format!("{base_url}?encoding=json&compression=none");
+
+    log::debug!("{url}");
 
     let config = WebSocketConfig {
         max_message_size: None,

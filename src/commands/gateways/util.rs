@@ -35,10 +35,7 @@ pub async fn get_all_gateways(http: &HttpClient, deployment_id: &str) -> Result<
     let response = http
         .request::<MultipleGateways>(
             "GET",
-            &format!(
-                "/ignite/deployments/{deployment_id}/gateways",
-                deployment_id = deployment_id
-            ),
+            &format!("/ignite/deployments/{deployment_id}/gateways"),
             None,
         )
         .await?
@@ -64,7 +61,7 @@ pub async fn update_gateway(
     let response = http
         .request::<SingleGateway>(
             "PATCH",
-            &format!("/ignite/gateways/{gateway_id}", gateway_id = gateway_id),
+            &format!("/ignite/gateways/{gateway_id}"),
             Some((
                 serde_json::to_vec(&gateway_config).unwrap().into(),
                 "application/json",

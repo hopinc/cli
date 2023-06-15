@@ -3,7 +3,7 @@ use std::ffi::OsString;
 use std::path::PathBuf;
 use std::process::Command as Cmd;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, ensure, Context, Result};
 use runas::Command as SudoCmd;
 use tokio::fs;
 
@@ -34,9 +34,9 @@ pub async fn download(
         ))
         .send()
         .await
-        .expect("Failed to get latest release");
+        .context("Failed to get latest release")?;
 
-    assert!(
+    ensure!(
         response.status().is_success(),
         "Failed to get latest release: {}",
         response.status()
@@ -45,7 +45,7 @@ pub async fn download(
     let data = response
         .bytes()
         .await
-        .expect("Failed to get latest release");
+        .context("Failed to get latest release")?;
 
     let packed_temp = temp_dir().join(filename);
 
@@ -143,26 +143,21 @@ pub async fn create_completions_commands(
 
 #[cfg(windows)]
 pub async fn unpack(packed_temp: &PathBuf, filename: &str) -> Result<PathBuf> {
-    use std::vec;
-
-    use async_zip::read::stream::ZipFileReader;
-    use tokio::io::AsyncReadExt;
+    use async_zip::tokio::read::fs::ZipFileReader;
+    use futures_util::AsyncReadExt;
 
     log::debug!("Unpacking: {packed_temp:?}");
 
-    let stream = fs::File::open(packed_temp).await?;
     // seeking breaks the zips since its a single file
-    let zip = ZipFileReader::new(stream);
+    let zip = ZipFileReader::new(packed_temp).await?;
 
-    let exe = temp_dir().join(&format!("{filename}.exe"));
+    let exe = temp_dir().join(format!("{filename}.exe"));
 
     let mut data = vec![];
 
     // unpack the only file
-    zip.next_entry()
+    zip.reader_with_entry(0)
         .await?
-        .expect("brokey entry")
-        .reader()
         .read_to_end(&mut data)
         .await?;
 
@@ -233,7 +228,14 @@ pub async fn execute_commands(
     elevated_args: &Vec<OsString>,
 ) -> Result<()> {
     if !elevated_args.is_empty() {
-        log::debug!("elevated commands: {elevated_args:?}");
+        log::debug!(
+            "elevated commands: {:?}",
+            elevated_args
+                .iter()
+                .map(|s| s.to_string_lossy())
+                .collect::<Vec<_>>()
+                .join(" ")
+        );
 
         SudoCmd::new(CMD)
             .args(CMD_ARGS)
@@ -245,7 +247,14 @@ pub async fn execute_commands(
     }
 
     if !non_elevated_args.is_empty() {
-        log::debug!("non-elevated commands: {non_elevated_args:?}");
+        log::debug!(
+            "non-elevated commands: {:?}",
+            non_elevated_args
+                .iter()
+                .map(|s| s.to_string_lossy())
+                .collect::<Vec<_>>()
+                .join(" ")
+        );
 
         Cmd::new(CMD)
             .args(CMD_ARGS)

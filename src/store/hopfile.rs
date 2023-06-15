@@ -1,7 +1,7 @@
 use std::env::current_dir;
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
@@ -45,7 +45,7 @@ impl HopFile {
     fn serialize(path: PathBuf, content: Self) -> Option<String> {
         match path.extension() {
             Some(ext) => match ext.to_str() {
-                Some("yml") | Some("yaml") => serde_yaml::to_string(&content).ok(),
+                Some("yml" | "yaml") => serde_yaml::to_string(&content).ok(),
                 Some("json") => serde_json::to_string(&content).ok(),
                 _ => None,
             },
@@ -64,7 +64,7 @@ impl HopFile {
     fn deserialize(path: PathBuf, content: &str) -> Option<Self> {
         let hopfile: Option<Self> = match path.extension() {
             Some(ext) => match ext.to_str() {
-                Some("yml") | Some("yaml") => serde_yaml::from_str(content).ok(),
+                Some("yml" | "yaml") => serde_yaml::from_str(content).ok(),
                 Some("json") => serde_json::from_str(content).ok(),
                 _ => None,
             },
@@ -87,6 +87,19 @@ impl HopFile {
 
     // Find a hopfile in the current directory or any of its parents.
     pub async fn find(mut path: PathBuf) -> Option<Self> {
+        // if there are environment variables set, use them instead
+        if let (Ok(project_id), Ok(deployment_id)) =
+            (std::env::var("PROJECT_ID"), std::env::var("DEPLOYMENT_ID"))
+        {
+            log::info!("Using environment variables for project and deployment IDs");
+
+            return Some(HopFile::new(
+                path.join("hop.yml"),
+                &project_id,
+                &deployment_id,
+            ));
+        }
+
         loop {
             for filename in VALID_HOP_FILENAMES {
                 let file_path = path.join(filename);
@@ -115,7 +128,7 @@ impl HopFile {
         let path = self.path.clone();
 
         let content =
-            Self::serialize(path.clone(), self.clone()).expect("Failed to serialize hop file");
+            Self::serialize(path.clone(), self.clone()).context("Failed to serialize hop file")?;
 
         let mut file = File::create(&path).await?;
 

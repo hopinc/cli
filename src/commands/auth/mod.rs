@@ -24,6 +24,7 @@ pub enum Commands {
 
 #[derive(Debug, Parser)]
 #[clap(about = "Authenticate with Hop")]
+#[group(skip)]
 pub struct Options {
     #[clap(subcommand)]
     pub commands: Commands,
@@ -34,10 +35,7 @@ pub async fn handle(options: Options, mut state: State) -> Result<()> {
         Commands::Login(options) => login::handle(options, state).await,
         Commands::Logout(options) => logout::handle(options, state).await,
         Commands::Switch(options) => switch::handle(options, state).await,
-        Commands::List(options) => {
-            list::handle(&options, &state);
-            Ok(())
-        }
+        Commands::List(options) => list::handle(&options, &state),
         Commands::Docker(options) => docker::handle(&options, &mut state).await,
     }
 }

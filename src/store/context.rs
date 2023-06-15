@@ -1,14 +1,16 @@
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{anyhow, Context as _, Result};
 use serde::{Deserialize, Serialize};
 use tokio::fs::{self, File};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use super::utils::home_path;
+use super::Storable;
 use crate::commands::auth::types::AuthorizedClient;
 use crate::commands::projects::types::Project;
 use crate::config::EXEC_NAME;
+use crate::impl_store;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct Context {
@@ -30,11 +32,15 @@ pub struct Context {
     pub project_override: Option<String>,
 }
 
-impl Context {
-    fn path() -> PathBuf {
+impl Storable for Context {
+    fn path() -> Result<PathBuf> {
         home_path(".hop/context.json")
     }
+}
 
+impl_store!(Context);
+
+impl Context {
     pub fn find_project_by_id_or_namespace(&self, id_or_namespace: &str) -> Option<Project> {
         self.current
             .as_ref()
@@ -58,59 +64,9 @@ impl Context {
         }
     }
 
-    pub fn current_project_error(self) -> Project {
-        self.current_project().unwrap_or_else(|| panic!("No project specified, run `{} projects switch` or use --project to specify a project",
-            EXEC_NAME))
-    }
-
-    pub async fn new() -> Self {
-        let path = Self::path();
-
-        match fs::metadata(path.clone()).await {
-            Ok(_) => match File::open(path).await {
-                Ok(mut file) => {
-                    let mut buffer = String::new();
-                    file.read_to_string(&mut buffer)
-                        .await
-                        .expect("Failed to read auth store");
-
-                    serde_json::from_str(&buffer).unwrap()
-                }
-
-                Err(err) => {
-                    panic!("Error opening auth file: {}", err)
-                }
-            },
-            Err(_) => Self::default().save().await.unwrap(),
-        }
-    }
-
-    pub async fn save(&mut self) -> Result<Self> {
-        if let Some(ref authorized) = self.current {
-            self.default_user = Some(authorized.id.clone());
-        }
-
-        let path = Self::path();
-
-        fs::create_dir_all(path.parent().unwrap())
-            .await
-            .expect("Failed to create auth store directory");
-
-        let mut file = File::create(path.clone())
-            .await
-            .expect("Error opening auth file:");
-
-        file.write_all(
-            serde_json::to_string(&self)
-                .expect("Failed to deserialize auth")
-                .as_bytes(),
-        )
-        .await
-        .expect("Failed to write auth store");
-
-        log::debug!("Saved context to {}", path.display());
-
-        Ok(self.clone())
+    #[inline]
+    pub fn current_project_error(&self) -> Result<Project> {
+        self.current_project().with_context(|| anyhow!("No project specified, run `{EXEC_NAME} projects switch` or use --project to specify a project"))
     }
 
     // for future use with external package managers

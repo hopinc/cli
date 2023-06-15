@@ -4,15 +4,15 @@ mod util;
 use std::path::PathBuf;
 
 use anyhow::{bail, Result};
-use hop_leap::leap::types::Event;
-use hop_leap::{LeapEdge, LeapOptions};
+use leap_client_rs::leap::types::Event;
+use leap_client_rs::LeapEdge;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::{fs, spawn};
 
 use self::types::BuildEvents;
 use self::util::{builder_post, compress};
+use crate::commands::deploy::builder::types::BuildStatus;
 use crate::commands::ignite::builds::utils::cancel_build;
-use crate::config::HOP_LEAP_PROJECT;
 use crate::state::State;
 use crate::utils::urlify;
 
@@ -21,18 +21,8 @@ pub async fn build(
     project_id: &str,
     deployment_id: &str,
     dir: PathBuf,
+    leap: &mut LeapEdge,
 ) -> Result<()> {
-    // connect to leap here so no logs interfere with the deploy
-    let mut leap = LeapEdge::new(LeapOptions {
-        token: Some(&state.ctx.current.clone().unwrap().leap_token),
-        project: HOP_LEAP_PROJECT,
-        ..Default::default()
-    })
-    .await?;
-
-    // all projects should already be subscribed but this is a precaution
-    leap.channel_subscribe(project_id).await?;
-
     // deployment id is used not to colide if the user is deploying multiple items
     let packed = compress(deployment_id, dir).await?;
 
@@ -93,6 +83,39 @@ pub async fn build(
             };
 
             match build_data {
+                BuildEvents::BuildCreate(build_create) => {
+                    if build_create.build.id == build.id {
+                        println!("Validating build...");
+                    }
+                }
+
+                BuildEvents::BuildUpdate(build_update) => {
+                    if build_update.build.id == build.id {
+                        match build_update.build.state {
+                            // initial state from create
+                            BuildStatus::Validating => {}
+
+                            BuildStatus::Pending => {
+                                println!("Build has been successfully validated, building...");
+                            }
+
+                            BuildStatus::ValidationFailed => {
+                                tx.send("OK").ok();
+                                leap.close().await;
+
+                                // this **should** be present if the status is validation failed
+                                let error = build_update.build.validation_failure.unwrap();
+
+                                bail!(
+                                    "Build validation failed: {} Visit {} for more information",
+                                    error.reason,
+                                    urlify(&error.help_link)
+                                );
+                            }
+                        }
+                    }
+                }
+
                 BuildEvents::BuildProgress(build_progress) => {
                     if build_progress.build_id == build.id {
                         print!("{}", build_progress.log);
@@ -111,11 +134,12 @@ pub async fn build(
                 BuildEvents::PushSuccess(build_complete) => {
                     if build_complete.build_id == build.id {
                         tx.send("OK").ok();
-                        leap.close().await;
 
                         println!();
 
                         log::info!("Build complete");
+
+                        return Ok(());
                     }
                 }
 

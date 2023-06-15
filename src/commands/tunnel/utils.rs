@@ -17,7 +17,7 @@ use tokio_rustls::{
     rustls::{ClientConfig, OwnedTrustAnchor, RootCertStore},
 };
 
-use super::types::{Prefix, TonneruPacket};
+use super::types::TonneruPacket;
 use super::{TONNERU_PORT, TONNERU_URI};
 use crate::commands::update::util::execute_commands;
 use crate::utils::is_writable;
@@ -280,17 +280,4 @@ pub async fn remove_entry_from_hosts(domain: &str) -> Result<()> {
     fs::remove_file(&temp_hosts).await?;
 
     Ok(())
-}
-
-pub fn get_id_with_prefix(id: Option<&str>) -> Option<(Prefix, String)> {
-    if let Some(id) = id {
-        let mut split = id.split('_');
-
-        Some((
-            split.next().map(|p| p.parse().unwrap()).unwrap_or_default(),
-            id.to_string(),
-        ))
-    } else {
-        None
-    }
 }

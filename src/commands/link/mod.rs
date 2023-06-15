@@ -12,6 +12,7 @@ use crate::store::hopfile::HopFile;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Link an existing deployment to a hopfile")]
+#[group(skip)]
 pub struct Options {
     #[clap(
         name = "dir",
@@ -36,7 +37,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         log::warn!("A hopfile was found {dir:?}, did you mean to `{EXEC_NAME} deploy`?");
     }
 
-    let project = state.ctx.current_project_error();
+    let project = state.ctx.current_project_error()?;
 
     log::info!("Project: {}", format_project(&project));
 
@@ -52,8 +53,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .with_prompt("Select a deployment")
                 .items(&deployments_fmt)
                 .default(0)
-                .interact_opt()?
-                .expect("No deployment selected");
+                .interact()?;
 
             ensure!(
                 !deployments.is_empty(),

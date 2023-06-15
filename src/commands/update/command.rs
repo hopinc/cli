@@ -14,10 +14,12 @@ use super::util::{
 use crate::config::{ARCH, VERSION};
 use crate::state::http::HttpClient;
 use crate::state::State;
+use crate::store::Store;
 use crate::utils::capitalize;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Update Hop to the latest version")]
+#[group(skip)]
 pub struct Options {
     #[clap(short, long, help = "Force update")]
     pub force: bool,

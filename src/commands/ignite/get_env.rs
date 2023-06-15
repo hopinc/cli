@@ -9,6 +9,7 @@ use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Get current deployments env values")]
+#[group(skip)]
 pub struct Options {
     #[clap(help = "ID of the deployment to get env values")]
     pub deployment: Option<String>,
@@ -19,7 +20,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Some(id) => get_deployment(&state.http, &id).await?,
 
         None => {
-            let project_id = state.ctx.current_project_error().id;
+            let project_id = state.ctx.current_project_error()?.id;
 
             let deployments = get_all_deployments(&state.http, &project_id).await?;
             ensure!(!deployments.is_empty(), "No deployments found");
@@ -29,9 +30,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                 .with_prompt("Select a deployment")
                 .items(&deployments_fmt)
                 .default(0)
-                .interact_opt()
-                .expect("Failed to select deployment")
-                .expect("No deployment selected");
+                .interact()?;
 
             deployments[idx].clone()
         }
