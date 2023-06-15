@@ -578,7 +578,6 @@ async fn update_config_visual(
         volume.size = dialoguer::Input::<String>::new()
             .with_prompt("Volume size")
             .default(volume.size)
-            .show_default(is_update)
             .validate_with(|size: &String| -> Result<()> { parse_size(size).map(|_| ()) })
             .interact_text()?;
 

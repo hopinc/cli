@@ -1,11 +1,14 @@
 use anyhow::{anyhow, Result};
 use clap::Parser;
+use rand::Rng;
 use regex::Regex;
 
 use super::create::DeploymentConfig;
 use crate::commands::containers::utils::create_containers;
 use crate::commands::ignite::create::Options as CreateOptions;
-use crate::commands::ignite::types::{Config, Deployment, Image, MapTo, PremadeInput, Volume};
+use crate::commands::ignite::types::{
+    Autogen, Config, Deployment, Image, MapTo, PremadeInput, Volume,
+};
 use crate::commands::ignite::utils::{
     create_deployment, format_premade, get_premade, update_deployment_config, WEB_IGNITE_URL,
 };
@@ -48,32 +51,20 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         &premades[selection]
     };
 
-    let (mut deployment_config, container_options) = update_deployment_config(
-        &state.http,
-        CreateOptions {
-            config: options.config.clone(),
-            // temporary value that gets replaced after we get the name
-            image: Some("".to_string()),
-        },
-        options == Options::default(),
-        &Deployment {
-            config: Config {
-                entrypoint: premade.entrypoint.clone(),
-                env: premade.environment.clone().unwrap_or_default(),
-                volume: Some(Volume {
-                    fs: premade.filesystem.clone().unwrap_or_default(),
-                    mount_path: premade.mountpath.clone(),
-                    size: "".to_string(),
-                }),
-                ..Default::default()
-            },
+    let mut deployment = Deployment {
+        config: Config {
+            entrypoint: premade.entrypoint.clone(),
+            env: premade.environment.clone().unwrap_or_default(),
+            volume: Some(Volume {
+                fs: premade.filesystem.clone().unwrap_or_default(),
+                mount_path: premade.mountpath.clone(),
+                size: "".to_string(),
+            }),
             ..Default::default()
         },
-        &Some(premade.name.clone()),
-        false,
-        &project,
-    )
-    .await?;
+
+        ..Default::default()
+    };
 
     if let Some(form) = &premade.form {
         log::info!("This template requires some additional information");
@@ -85,29 +76,52 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                     autogen,
                     max_length,
                     validator,
+                    required,
                 } => {
                     let mut input = dialoguer::Input::<String>::new();
 
                     if let Some(default) = default {
                         input.default(default.clone());
+                    } else if let Some(autogen) = autogen {
+                        input.default(match autogen {
+                            Autogen::ProjectNamespace => project.namespace.clone(),
+
+                            Autogen::SecureToken => {
+                                // generate random bits securely
+                                let mut rng = rand::thread_rng();
+
+                                // generate a random string of 24 characters
+                                std::iter::repeat(())
+                                    .map(|()| rng.sample(rand::distributions::Alphanumeric))
+                                    .take(24)
+                                    .map(|b| b as char)
+                                    .collect()
+                            }
+                        });
                     }
 
                     input.validate_with(|input: &String| -> Result<(), String> {
-                        if let Some(max_length) = *max_length {
-                            if input.len() > max_length {
-                                return Err(format!(
-                                    "Input must be less than {max_length} characters",
-                                ));
-                            }
+                        if input.len() > *max_length {
+                            return Err(
+                                format!("Input must be less than {max_length} characters",),
+                            );
                         }
 
-                        if let Some(validator) = validator.clone() {
-                            if Regex::new(&validator)
-                                .map_err(|e| e.to_string())?
-                                .is_match(input)
-                            {
-                                return Err(format!("Input must match regex `{validator}`",));
+                        let validator = {
+                            let valid = validator.split('/').into_iter().collect::<Vec<_>>();
+
+                            if valid.len() == 3 {
+                                valid[1]
+                            } else {
+                                return Err(format!("Invalid validator `{validator}`",));
                             }
+                        };
+
+                        if !Regex::new(validator)
+                            .map_err(|e| e.to_string())?
+                            .is_match(input)
+                        {
+                            return Err(format!("Input must match regex `{validator}`",));
                         }
 
                         Ok(())
@@ -119,19 +133,77 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                         input.with_prompt(&field.title);
                     }
 
-                    input.interact()?
+                    input.allow_empty(!required);
+
+                    let value = input.interact()?;
+
+                    if *required {
+                        value
+                    } else {
+                        continue;
+                    }
+                }
+
+                PremadeInput::Range {
+                    default,
+                    min,
+                    max,
+                    increment,
+                    unit,
+                } => {
+                    let items = std::iter::repeat(())
+                        .enumerate()
+                        .map(|(i, _)| format!("{}{}", min + (i as u64 * increment), unit))
+                        .take(((max - min) / increment) as usize)
+                        .collect::<Vec<_>>();
+
+                    let mut input = dialoguer::Select::new();
+
+                    input.default(
+                        items
+                            .iter()
+                            .position(|i| i == &format!("{default}{unit}"))
+                            .unwrap_or(0),
+                    );
+
+                    input.with_prompt(&field.title);
+
+                    input.items(&items);
+
+                    items[input.interact()?].clone()
                 }
             };
 
             for place in &field.map_to {
                 match place {
                     MapTo::Env { key } => {
-                        deployment_config.env.insert(key.clone(), value.clone());
+                        deployment.config.env.insert(key.clone(), value.clone());
+                    }
+                    MapTo::VolumeSize => {
+                        deployment.config.volume = deployment.config.volume.take().map(|mut v| {
+                            v.size = value.clone();
+                            v
+                        });
                     }
                 }
             }
         }
     }
+
+    let (mut deployment_config, container_options) = update_deployment_config(
+        &state.http,
+        CreateOptions {
+            config: options.config.clone(),
+            // temporary value that gets replaced after we get the name
+            image: Some("".to_string()),
+        },
+        options == Options::default(),
+        &deployment,
+        &Some(premade.name.clone()),
+        false,
+        &project,
+    )
+    .await?;
 
     // override the image with the premade image
     deployment_config.image = Some(Image {

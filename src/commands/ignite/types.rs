@@ -436,8 +436,17 @@ pub enum PremadeInput {
     String {
         default: Option<String>,
         autogen: Option<Autogen>,
-        max_length: Option<usize>,
-        validator: Option<String>,
+        max_length: usize,
+        validator: String,
+        #[serde(default)]
+        required: bool,
+    },
+    Range {
+        default: u64,
+        min: u64,
+        max: u64,
+        increment: u64,
+        unit: String,
     },
 }
 
@@ -449,9 +458,10 @@ pub enum Autogen {
 }
 
 #[derive(Debug, Deserialize, Clone)]
-#[serde(tag = "type", rename_all = "lowercase")]
+#[serde(tag = "type", rename_all = "snake_case")]
 pub enum MapTo {
     Env { key: String },
+    VolumeSize,
 }
 
 #[derive(Debug, Deserialize, Clone)]
