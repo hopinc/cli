@@ -48,7 +48,7 @@ pub async fn run() -> Result<()> {
 
     utils::sudo::fix().await?;
 
-    let mut state = State::new(StateOptions {
+    let state = State::new(StateOptions {
         override_project: std::env::var("PROJECT_ID").ok().or(cli.project),
         override_token: std::env::var("TOKEN").ok(),
     })
@@ -56,17 +56,25 @@ pub async fn run() -> Result<()> {
 
     match cli.commands {
         #[cfg(feature = "update")]
-        Commands::Update(_) => None,
+        Commands::Update(_) => {}
 
         // do not show the notice if we are in completions mode
         // since it could break the shell
-        Commands::Completions(_) => None,
+        Commands::Completions(_) => {}
 
         // only show the notice if we are not in debug mode or in CI
-        _ if cfg!(debug_assertions) || state.is_ci => None,
+        _ if cfg!(debug_assertions) || state.is_ci => {}
 
-        // its okay for the notice to fail
-        _ => version_notice(&mut state.ctx).await.ok(),
+        // async block to spawn the update check in the background :)
+        _ => {
+            let ctx = state.ctx.clone();
+
+            tokio::spawn(async move {
+                if let Err(e) = version_notice(ctx).await {
+                    log::debug!("Failed to check for updates: {e}");
+                }
+            });
+        }
     };
 
     if let Err(error) = handle_command(cli.commands, state).await {
