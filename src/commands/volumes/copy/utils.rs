@@ -75,8 +75,10 @@ pub async fn get_files_from_volume(
     let packed = response
         .headers()
         .get("x-directory")
-        .context("No content type header")?
-        .to_str()?
+        .map(|x| x.to_str())
+        .transpose()?
+        // if the header is not present, assume false (not packed)
+        .unwrap_or("false")
         .to_lowercase()
         == "true";
 

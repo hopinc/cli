@@ -34,7 +34,8 @@ pub struct Project {
     pub namespace: String,
     #[serde(rename = "type")]
     pub type_: String,
-    #[serde(deserialize_with = "deserialize_null_default")]
+    //@this route does not return this field at all, hence the serde(default)
+    #[serde(default, deserialize_with = "deserialize_null_default")]
     pub tier: ProjectTier,
 }
 

@@ -108,7 +108,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
                         }
 
                         let validator = {
-                            let valid = validator.split('/').into_iter().collect::<Vec<_>>();
+                            let valid = validator.split('/').collect::<Vec<_>>();
 
                             if valid.len() == 3 {
                                 valid[1]
