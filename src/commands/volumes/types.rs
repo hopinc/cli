@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(untagged)]
@@ -15,4 +15,17 @@ pub struct File {
     pub created_at: String,
     pub updated_at: String,
     pub size: u64,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct MoveRequest {
+    #[serde(rename = "oldPath")]
+    pub source: String,
+    #[serde(rename = "newPath")]
+    pub target: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct CreateDirectory {
+    pub recursive: bool,
 }

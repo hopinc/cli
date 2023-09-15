@@ -33,7 +33,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         let (deployment, volume, path) = match target {
             (Some((deployment, volume)), path) => (deployment, volume, path),
             (None, _) => {
-                log::warn!("No deployment identifier found in `{file}`, skipping");
+                log::warn!("No deployment identifier found in `{file}`, skipping, make sure to use the format <deployment name or id>:<path>");
 
                 continue;
             }

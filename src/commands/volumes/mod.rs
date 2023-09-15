@@ -1,6 +1,8 @@
 mod copy;
 mod delete;
 mod list;
+mod mkdir;
+mod r#move;
 mod types;
 mod utils;
 
@@ -11,12 +13,15 @@ use crate::state::State;
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {
-    #[clap(name = "ls", alias = "list")]
+    #[clap(name = "ls", alias = "list", alias = "dir")]
     List(list::Options),
     #[clap(name = "cp", alias = "copy")]
     Copy(copy::Options),
     #[clap(name = "rm", alias = "delete")]
     Delete(delete::Options),
+    #[clap(name = "mv", alias = "move")]
+    Move(r#move::Options),
+    Mkdir(mkdir::Options),
 }
 
 #[derive(Debug, Parser)]
@@ -34,5 +39,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Commands::List(options) => list::handle(options, state).await,
         Commands::Copy(options) => copy::handle(options, state).await,
         Commands::Delete(options) => delete::handle(options, state).await,
+        Commands::Move(options) => r#move::handle(options, state).await,
+        Commands::Mkdir(options) => mkdir::handle(options, state).await,
     }
 }

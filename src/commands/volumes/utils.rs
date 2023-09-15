@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use anyhow::{bail, Context, Result};
 use chrono::Datelike;
 
-use super::types::{File, Files};
+use super::types::{CreateDirectory, File, Files, MoveRequest};
 use crate::commands::ignite::types::Deployment;
 use crate::state::http::HttpClient;
 use crate::state::State;
@@ -169,6 +169,52 @@ pub async fn parse_target_from_path_like(
     let volume = get_volume_from_deployment(&deployment.id)?;
 
     Ok((Some((deployment, volume)), path.to_string()))
+}
+
+pub async fn move_file(
+    http: &HttpClient,
+    deployment: &str,
+    volume: &str,
+    source: &str,
+    target: &str,
+) -> Result<()> {
+    http.request::<()>(
+        "PATCH",
+        &format!("/ignite/deployments/{deployment}/volumes/{volume}/path"),
+        Some((
+            serde_json::to_vec(&MoveRequest {
+                source: source.to_owned(),
+                target: target.to_owned(),
+            })?
+            .into(),
+            "application/json",
+        )),
+    )
+    .await?;
+
+    Ok(())
+}
+
+pub async fn create_directory(
+    http: &HttpClient,
+    deployment: &str,
+    volume: &str,
+    path: &str,
+    recursive: bool,
+) -> Result<()> {
+    let path = path_into_uri_safe(path);
+
+    http.request::<()>(
+        "POST",
+        &format!("/ignite/deployments/{deployment}/volumes/{volume}/{path}"),
+        Some((
+            serde_json::to_vec(&CreateDirectory { recursive })?.into(),
+            "application/json",
+        )),
+    )
+    .await?;
+
+    Ok(())
 }
 
 #[cfg(test)]
