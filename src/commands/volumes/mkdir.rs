@@ -1,8 +1,9 @@
 use anyhow::Result;
 use clap::Parser;
 
-use super::utils::{parse_target_from_path_like, path_into_uri_safe};
-use crate::{commands::volumes::utils::create_directory, state::State};
+use super::utils::parse_target_from_path_like;
+use crate::commands::volumes::utils::create_directory;
+use crate::state::State;
 
 #[derive(Debug, Parser)]
 #[clap(about = "Delete files")]
@@ -28,8 +29,6 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
 
         match target {
             (Some((deployment, volume)), path) => {
-                let path = path_into_uri_safe(&path);
-
                 create_directory(
                     &state.http,
                     &deployment.id,

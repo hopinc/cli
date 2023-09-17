@@ -19,6 +19,7 @@ mod whoami;
 use anyhow::Result;
 use clap::Subcommand;
 use ignite::from_compose;
+use volumes::backup;
 
 use crate::state::State;
 
@@ -60,6 +61,7 @@ pub enum Commands {
     Volumes(volumes::Options),
     #[clap(alias = "compose")]
     FromCompose(from_compose::Options),
+    Backup(backup::Options),
 }
 
 pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
@@ -99,6 +101,7 @@ pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
                 Commands::FromCompose(options) => from_compose::handle(options, state).await,
                 Commands::Payment(options) => payment::handle(options, state).await,
                 Commands::Volumes(options) => volumes::handle(options, state).await,
+                Commands::Backup(options) => backup::handle(options, state).await,
             }
         }
     }

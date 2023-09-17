@@ -202,13 +202,15 @@ pub async fn create_directory(
     path: &str,
     recursive: bool,
 ) -> Result<()> {
-    let path = path_into_uri_safe(path);
-
     http.request::<()>(
         "POST",
-        &format!("/ignite/deployments/{deployment}/volumes/{volume}/{path}"),
+        &format!("/ignite/deployments/{deployment}/volumes/{volume}/folder"),
         Some((
-            serde_json::to_vec(&CreateDirectory { recursive })?.into(),
+            serde_json::to_vec(&CreateDirectory {
+                path: path.to_owned(),
+                recursive,
+            })?
+            .into(),
             "application/json",
         )),
     )

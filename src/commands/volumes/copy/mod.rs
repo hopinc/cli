@@ -1,4 +1,4 @@
-mod fslike;
+pub mod fslike;
 mod utils;
 
 use anyhow::{bail, Result};

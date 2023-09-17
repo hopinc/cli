@@ -27,5 +27,7 @@ pub struct MoveRequest {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct CreateDirectory {
+    #[serde(rename = "name")]
+    pub path: String,
     pub recursive: bool,
 }

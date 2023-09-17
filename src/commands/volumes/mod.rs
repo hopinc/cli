@@ -1,3 +1,4 @@
+pub mod backup;
 mod copy;
 mod delete;
 mod list;
@@ -22,6 +23,7 @@ pub enum Commands {
     #[clap(name = "mv", alias = "move")]
     Move(r#move::Options),
     Mkdir(mkdir::Options),
+    Backup(backup::Options),
 }
 
 #[derive(Debug, Parser)]
@@ -41,5 +43,6 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Commands::Delete(options) => delete::handle(options, state).await,
         Commands::Move(options) => r#move::handle(options, state).await,
         Commands::Mkdir(options) => mkdir::handle(options, state).await,
+        Commands::Backup(options) => backup::handle(options, state).await,
     }
 }
