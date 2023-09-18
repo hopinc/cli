@@ -19,7 +19,7 @@ macro_rules! impl_store {
                 let mut buffer = String::new();
                 file.read_to_string(&mut buffer).await?;
 
-                serde_json::from_str(&buffer).context("Failed to deserialize")
+                serde_json::from_str(&buffer).context(format!("Failed to deserialize {} store", stringify!($name)))
             }
 
             async fn save(&self) -> Result<Self> {
@@ -37,7 +37,7 @@ macro_rules! impl_store {
 
                 file.write_all(
                     serde_json::to_string(&self)
-                        .context("Failed to serialize")?
+                        .context(format!("Failed to serialize {} store", stringify!($name)))?
                         .as_bytes(),
                 )
                 .await
