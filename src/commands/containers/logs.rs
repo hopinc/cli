@@ -1,6 +1,6 @@
 use std::env::temp_dir;
 
-use anyhow::{ensure, Result};
+use anyhow::{ensure, Context, Result};
 use clap::Parser;
 use futures_util::StreamExt;
 use tokio::fs;
@@ -119,19 +119,24 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         format_logs(&logs, true, options.timestamps, options.details).join("\n")
     );
 
-    let token = state.token().unwrap();
+    let token = state.token().context("No token found")?;
 
     let mut arisu = ArisuClient::new(&container, &token).await?;
 
     while let Some(message) = arisu.next().await {
         match message {
+            ArisuMessage::Open => arisu.request_logs().await?,
+
             ArisuMessage::ServiceMessage(data) => log::info!("Service: {data}"),
-            ArisuMessage::Out(log) => {
+
+            ArisuMessage::Logs(log) => {
                 print!(
                     "{}",
                     format_logs(&[log], true, options.timestamps, options.details)[0]
                 );
             }
+
+            _ => {}
         }
     }
 

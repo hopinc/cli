@@ -16,6 +16,7 @@ pub struct State {
     pub auth: Auth,
     pub ctx: Context,
     pub http: HttpClient,
+    pub debug: bool,
     token: Option<String>,
     token_type: Option<TokenType>,
 }
@@ -24,6 +25,7 @@ pub struct State {
 pub struct StateOptions {
     pub override_project: Option<String>,
     pub override_token: Option<String>,
+    pub debug: bool,
 }
 
 impl State {
@@ -65,6 +67,7 @@ impl State {
             http,
             auth,
             ctx,
+            debug: options.debug,
         })
     }
 

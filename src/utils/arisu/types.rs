@@ -4,28 +4,27 @@ use chrono::DateTime;
 use serde::de::Error as SerdeError;
 use serde::Deserialize;
 use serde_json::Value;
-use serde_repr::Deserialize_repr;
+use serde_repr::{Deserialize_repr, Serialize_repr};
 
-use crate::commands::containers::types::Log;
+use crate::commands::containers::types::{Log, Metrics};
 
 pub type WsStream = WebSocketStream<ConnectStream>;
 
-#[derive(Debug, Clone, Copy, Deserialize_repr)]
+#[derive(Debug, Clone, Copy, Deserialize_repr, Serialize_repr)]
 #[repr(u8)]
 pub enum OpCode {
     Hello = 1,
     Identify,
     ServiceMessage,
     Heartbeat,
-    Out,
-    In,
+    Logs,
+    Stdin, // unused for now
     HeartbeatAck,
-}
-
-impl OpCode {
-    pub fn number(self) -> u8 {
-        self as u8
-    }
+    RequestMetrics,
+    RequestMetricsAck,
+    Metrics,
+    RequestLogs,
+    RequestLogsAck,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -41,8 +40,11 @@ pub enum ConnectionStage {
 pub enum ArisuEvent {
     Hello(u64),
     ServiceMessage(String),
-    Out(Log),
+    Logs(Log),
+    Metrics(Metrics),
     HeartbeatAck,
+    LogsRequestedAck,
+    MetricsRequestedAck,
 }
 
 impl<'de> Deserialize<'de> for ArisuEvent {
@@ -86,7 +88,7 @@ impl<'de> Deserialize<'de> for ArisuEvent {
                 Self::ServiceMessage(message)
             }
 
-            OpCode::Out => {
+            OpCode::Logs => {
                 let d = gw_event
                     .remove("d")
                     .ok_or_else(|| SerdeError::custom("missing d"))?;
@@ -113,14 +115,39 @@ impl<'de> Deserialize<'de> for ArisuEvent {
                     .ok_or_else(|| SerdeError::custom("missing level"))?
                     .to_string();
 
-                Self::Out(Log {
+                Self::Logs(Log {
                     timestamp,
                     message,
                     level,
                 })
             }
 
+            OpCode::Metrics => {
+                let d = gw_event
+                    .remove("d")
+                    .ok_or_else(|| SerdeError::custom("missing d"))?;
+
+                let cpu_usage_percent = d
+                    .get("cpu_usage_percent")
+                    .and_then(Value::as_f64)
+                    .ok_or_else(|| SerdeError::custom("missing cpu_usage_percent"))?;
+
+                let memory_usage_bytes = d
+                    .get("memory_usage_bytes")
+                    .and_then(Value::as_u64)
+                    .ok_or_else(|| SerdeError::custom("missing memory_usage_bytes"))?;
+
+                Self::Metrics(Metrics {
+                    cpu_usage_percent,
+                    memory_usage_bytes,
+                })
+            }
+
             OpCode::HeartbeatAck => Self::HeartbeatAck,
+
+            OpCode::RequestLogsAck => Self::LogsRequestedAck,
+
+            OpCode::RequestMetricsAck => Self::MetricsRequestedAck,
 
             _ => return Err(SerdeError::custom("invalid opcode")),
         };
@@ -131,7 +158,21 @@ impl<'de> Deserialize<'de> for ArisuEvent {
 
 #[derive(Debug, Clone)]
 pub enum ArisuMessage {
-    Out(Log),
+    Open,
+    Logs(Log),
+    Metrics(Metrics),
 
     ServiceMessage(String),
+}
+
+impl From<Log> for ArisuMessage {
+    fn from(log: Log) -> Self {
+        Self::Logs(log)
+    }
+}
+
+impl From<Metrics> for ArisuMessage {
+    fn from(metrics: Metrics) -> Self {
+        Self::Metrics(metrics)
+    }
 }

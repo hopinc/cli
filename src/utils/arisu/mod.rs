@@ -1,28 +1,45 @@
 mod shard;
 mod types;
 
+use std::sync::{
+    atomic::{AtomicBool, Ordering::Relaxed},
+    Arc,
+};
+
 use anyhow::Result;
 use futures_util::Stream;
-use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver /* , UnboundedSender */};
+use serde_json::{json, Value};
+use tokio::sync::mpsc::{
+    unbounded_channel, UnboundedReceiver, UnboundedSender, /* , UnboundedSender */
+};
 
-use self::shard::{ArisuShard, ArisuShardInfo};
 pub use self::types::ArisuMessage;
+use self::{
+    shard::{ArisuShard, ArisuShardInfo},
+    types::OpCode,
+};
 
 pub struct ArisuClient {
-    // tx: UnboundedSender<String>,
+    tx: UnboundedSender<Value>,
     rx: UnboundedReceiver<ArisuMessage>,
+    logs_requested: Arc<AtomicBool>,
+    metrics_requested: Arc<AtomicBool>,
 }
 
 impl ArisuClient {
     pub async fn new(container_id: &str, token: &str) -> Result<Self> {
-        let (_arisu_out_tx, arisu_out_rx) = unbounded_channel::<String>();
-        let (arisu_in_tx, arisu_in_rx) = unbounded_channel::<ArisuMessage>();
+        let (tx, arisu_out_rx) = unbounded_channel::<_>();
+        let (arisu_in_tx, rx) = unbounded_channel::<_>();
+        let logs_requested = Arc::new(AtomicBool::new(false));
+        let metrics_requested = Arc::new(AtomicBool::new(false));
 
         let shard_info = ArisuShardInfo {
             arisu_in_tx,
             arisu_out_rx,
             container_id: container_id.to_string(),
             token: token.to_string(),
+            logs_requested: logs_requested.clone(),
+            metrics_requested: metrics_requested.clone(),
         };
 
         let mut shard = ArisuShard::new(shard_info).await?;
@@ -34,9 +51,44 @@ impl ArisuClient {
         });
 
         Ok(Self {
-            // tx: arisu_out_tx,
-            rx: arisu_in_rx,
+            tx,
+            rx,
+            logs_requested,
+            metrics_requested,
         })
+    }
+
+    pub async fn request_logs(&self) -> Result<()> {
+        if self.logs_requested.load(Relaxed) {
+            return Ok(());
+        }
+
+        self.tx.send(json!({
+            "op": OpCode::RequestLogs,
+        }))?;
+
+        while !self.logs_requested.load(Relaxed) {
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        }
+
+        Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub async fn request_metrics(&self) -> Result<()> {
+        if self.metrics_requested.load(Relaxed) {
+            return Ok(());
+        }
+
+        self.tx.send(json!({
+            "op": OpCode::RequestMetrics,
+        }))?;
+
+        while !self.metrics_requested.load(Relaxed) {
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        }
+
+        Ok(())
     }
 }
 

@@ -51,6 +51,7 @@ pub async fn run() -> Result<()> {
     let state = State::new(StateOptions {
         override_project: std::env::var("PROJECT_ID").ok().or(cli.project),
         override_token: std::env::var("TOKEN").ok(),
+        debug: cli.debug,
     })
     .await?;
 

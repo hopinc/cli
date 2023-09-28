@@ -1,17 +1,15 @@
 use std::io::Write;
 
-use anyhow::{ensure, Result};
+use anyhow::{ensure, Context, Result};
 use clap::Parser;
 use console::Term;
-use leap_client_rs::leap::types::Event;
-use leap_client_rs::{LeapEdge, LeapOptions};
+use futures_util::StreamExt;
 
-use super::types::ContainerEvents;
 use super::utils::{format_containers, get_all_containers, get_container};
 use crate::commands::containers::utils::format_single_metrics;
 use crate::commands::ignite::utils::{format_deployments, get_all_deployments, get_deployment};
-use crate::config::LEAP_PROJECT;
 use crate::state::State;
+use crate::utils::arisu::{ArisuClient, ArisuMessage};
 
 #[derive(Debug, Parser)]
 #[clap(about = "Get metrics for a container")]
@@ -70,43 +68,26 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         return Ok(());
     }
 
-    let mut leap = LeapEdge::new(LeapOptions {
-        token: Some(&state.ctx.current.clone().unwrap().leap_token),
-        project: &std::env::var("LEAP_PROJECT").unwrap_or_else(|_| LEAP_PROJECT.to_string()),
-        ws_url: &std::env::var("LEAP_WS_URL")
-            .unwrap_or_else(|_| LeapOptions::default().ws_url.to_string()),
-    })
-    .await?;
+    let token = state.token().context("No token found")?;
 
-    while let Some(msg) = leap.listen().await {
-        let capsuled = match msg {
-            Event::Message(message) => message,
+    let mut arisu = ArisuClient::new(&container.id, &token).await?;
 
-            _ => continue,
-        };
+    while let Some(message) = arisu.next().await {
+        match message {
+            ArisuMessage::Open => arisu.request_metrics().await?,
 
-        let Ok(container_events) = serde_json::from_value(serde_json::to_value(capsuled.data)?) else {
-            continue;
-        };
+            ArisuMessage::Metrics(metrics) => {
+                let metrics = format_single_metrics(&Some(metrics), &deployment)?;
 
-        let metrics = match container_events {
-            ContainerEvents::ContainerMetricsUpdate {
-                container_id,
-                metrics,
-            } => {
-                if container_id != container.id {
-                    continue;
+                if !state.debug {
+                    term.clear_last_lines(metrics.len())?;
                 }
 
-                metrics
+                writeln!(term, "{}", metrics.join("\n"))?
             }
-        };
 
-        let metrics = format_single_metrics(&Some(metrics), &deployment)?;
-
-        term.clear_last_lines(metrics.len())?;
-
-        writeln!(term, "{}", metrics.join("\n"))?
+            _ => {}
+        }
     }
 
     Ok(())

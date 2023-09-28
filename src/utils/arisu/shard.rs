@@ -1,3 +1,5 @@
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{anyhow, bail, Result};
@@ -6,6 +8,7 @@ use async_tungstenite::tungstenite::protocol::WebSocketConfig;
 use async_tungstenite::tungstenite::Message;
 use futures_util::{SinkExt, StreamExt};
 use serde_json::{json, Value};
+use std::sync::atomic::Ordering::Relaxed;
 use tokio::spawn;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tokio::task::JoinHandle;
@@ -19,20 +22,24 @@ const ARISU_URL: &str = "wss://arisu.hop.io/ws";
 pub struct ArisuShardInfo {
     pub container_id: String,
     pub token: String,
-    pub arisu_out_rx: UnboundedReceiver<String>,
+    pub arisu_out_rx: UnboundedReceiver<Value>,
     pub arisu_in_tx: UnboundedSender<ArisuMessage>,
+    pub logs_requested: Arc<AtomicBool>,
+    pub metrics_requested: Arc<AtomicBool>,
 }
 
 pub struct ArisuShard {
     client: WsStream,
     container_id: String,
     token: String,
-    arisu_out_rx: UnboundedReceiver<String>,
+    arisu_out_rx: UnboundedReceiver<Value>,
     arisu_in_tx: UnboundedSender<ArisuMessage>,
     heartbeat_tx: UnboundedSender<()>,
     heartbeat_rx: UnboundedReceiver<()>,
     stage: ConnectionStage,
     heartbeat_interval: Option<JoinHandle<()>>,
+    logs_requested: Arc<AtomicBool>,
+    metrics_requested: Arc<AtomicBool>,
 }
 
 impl ArisuShard {
@@ -52,16 +59,18 @@ impl ArisuShard {
             heartbeat_tx,
             heartbeat_rx,
             heartbeat_interval: None,
+            logs_requested: info.logs_requested,
+            metrics_requested: info.metrics_requested,
         })
     }
 
-    async fn send_json(&mut self, json: Value) -> Result<()> {
+    async fn send_json<T>(&mut self, json: T) -> Result<()>
+    where
+        T: serde::Serialize,
+    {
         let body = serde_json::to_string(&json)?;
 
-        log::debug!(
-            "Sending message: {}",
-            body // .replace(&self.token, "*****")
-        );
+        log::debug!("Sending message: {body}");
 
         self.client
             .send(Message::Text(body))
@@ -102,7 +111,7 @@ impl ArisuShard {
 
     async fn identify(&mut self) -> Result<()> {
         let msg = json!({
-            "op": OpCode::Identify.number(),
+            "op": OpCode::Identify,
             "d": {
                 "container_id": self.container_id,
                 "token": self.token,
@@ -114,16 +123,7 @@ impl ArisuShard {
 
     async fn heartbeat(&mut self) -> Result<()> {
         let msg = json!({
-            "op": OpCode::Heartbeat.number(),
-        });
-
-        self.send_json(msg).await
-    }
-
-    async fn stdin(&mut self, data: &str) -> Result<()> {
-        let msg = json!({
-            "op": OpCode::In.number(),
-            "d": data,
+            "op": OpCode::Heartbeat,
         });
 
         self.send_json(msg).await
@@ -164,6 +164,10 @@ impl ArisuShard {
             ArisuEvent::ServiceMessage(message) => {
                 if self.stage == ConnectionStage::Identifying {
                     self.stage = ConnectionStage::Connected;
+
+                    if self.arisu_in_tx.send(ArisuMessage::Open).is_err() {
+                        return false;
+                    }
                 } else if self.stage != ConnectionStage::Connected {
                     // cant recover from this
                     return false;
@@ -174,9 +178,23 @@ impl ArisuShard {
                     .is_ok()
             }
 
-            ArisuEvent::Out(log) => self.arisu_in_tx.send(ArisuMessage::Out(log)).is_ok(),
+            ArisuEvent::Logs(log) => self.arisu_in_tx.send(log.into()).is_ok(),
+
+            ArisuEvent::Metrics(metrics) => self.arisu_in_tx.send(metrics.into()).is_ok(),
 
             ArisuEvent::HeartbeatAck => true,
+
+            ArisuEvent::LogsRequestedAck => {
+                self.logs_requested.store(true, Relaxed);
+
+                true
+            }
+
+            ArisuEvent::MetricsRequestedAck => {
+                self.metrics_requested.store(true, Relaxed);
+
+                true
+            }
         }
     }
 
@@ -187,7 +205,7 @@ impl ArisuShard {
             }
 
             if let Ok(data) = self.arisu_out_rx.try_recv() {
-                self.stdin(&data).await?;
+                self.send_json(data).await?;
             }
 
             match self.receive_json().await {
