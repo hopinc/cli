@@ -25,6 +25,8 @@ pub enum OpCode {
     Metrics,
     RequestLogs,
     RequestLogsAck,
+    UnsubscribeLogs,
+    UnsubscribeMetrics,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

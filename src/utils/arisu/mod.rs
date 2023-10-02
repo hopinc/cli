@@ -75,6 +75,22 @@ impl ArisuClient {
     }
 
     #[allow(dead_code)]
+    pub async fn unsubscribe_logs(&self) -> Result<()> {
+        if !self.logs_requested.load(Relaxed) {
+            return Ok(());
+        }
+
+        self.tx.send(json!({
+            "op": OpCode::UnsubscribeLogs,
+        }))?;
+
+        while self.logs_requested.load(Relaxed) {
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        }
+
+        Ok(())
+    }
+
     pub async fn request_metrics(&self) -> Result<()> {
         if self.metrics_requested.load(Relaxed) {
             return Ok(());
@@ -85,6 +101,23 @@ impl ArisuClient {
         }))?;
 
         while !self.metrics_requested.load(Relaxed) {
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        }
+
+        Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub async fn unsubscribe_metrics(&self) -> Result<()> {
+        if !self.metrics_requested.load(Relaxed) {
+            return Ok(());
+        }
+
+        self.tx.send(json!({
+            "op": OpCode::UnsubscribeMetrics,
+        }))?;
+
+        while self.metrics_requested.load(Relaxed) {
             tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
         }
 
