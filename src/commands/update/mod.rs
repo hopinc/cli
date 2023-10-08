@@ -1,4 +1,4 @@
-pub(self) mod checker;
+pub mod checker;
 #[cfg(feature = "update")]
 mod command;
 mod parse;

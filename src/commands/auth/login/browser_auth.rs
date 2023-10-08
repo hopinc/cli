@@ -16,7 +16,7 @@ pub async fn browser_login() -> Result<String> {
 
     let url = format!(
         "{WEB_AUTH_URL}?{}",
-        vec!["callback", &format!("http://localhost:{port}/")].join("=")
+        ["callback", &format!("http://localhost:{port}/")].join("=")
     );
 
     // lunch a web server to handle the auth request

@@ -1,4 +1,5 @@
 use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering::Relaxed;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -8,7 +9,6 @@ use async_tungstenite::tungstenite::protocol::WebSocketConfig;
 use async_tungstenite::tungstenite::Message;
 use futures_util::{SinkExt, StreamExt};
 use serde_json::{json, Value};
-use std::sync::atomic::Ordering::Relaxed;
 use tokio::spawn;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tokio::task::JoinHandle;
@@ -236,8 +236,8 @@ async fn connect(base_url: &str) -> Result<WsStream> {
     let config = WebSocketConfig {
         max_message_size: None,
         max_frame_size: None,
-        max_send_queue: None,
         accept_unmasked_frames: false,
+        ..Default::default()
     };
 
     let (stream, _) = connect_async_with_config(url, Some(config)).await?;

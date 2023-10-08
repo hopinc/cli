@@ -1,4 +1,4 @@
-#![deny(clippy::pedantic, clippy::nursery, clippy::cargo)]
+#![deny(clippy::pedantic, clippy::nursery)] // clippy::cargo is removed because of dependency issues :( (tokio and hyper)
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

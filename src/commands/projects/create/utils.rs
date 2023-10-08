@@ -32,7 +32,7 @@ pub async fn get_payment_method_from_user(http: &HttpClient) -> Result<String> {
 
             let url = format!(
                 "{WEB_PAYMENTS_URL}?{}",
-                vec!["callback", &format!("http://localhost:{port}/payment")].join("=")
+                ["callback", &format!("http://localhost:{port}/payment")].join("=")
             );
 
             if let Err(why) = webbrowser::open(&url) {

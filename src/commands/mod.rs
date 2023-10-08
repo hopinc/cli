@@ -14,6 +14,7 @@ mod secrets;
 mod tunnel;
 pub mod update;
 mod volumes;
+mod webhooks;
 mod whoami;
 
 use anyhow::Result;
@@ -59,6 +60,8 @@ pub enum Commands {
     Tunnel(tunnel::Options),
     #[clap(alias = "volume", alias = "v")]
     Volumes(volumes::Options),
+    #[clap(alias = "webhook", alias = "wh")]
+    Webhooks(webhooks::Options),
     #[clap(alias = "compose")]
     FromCompose(from_compose::Options),
     Backup(backup::Options),
@@ -102,6 +105,7 @@ pub async fn handle_command(command: Commands, mut state: State) -> Result<()> {
                 Commands::Payment(options) => payment::handle(options, state).await,
                 Commands::Volumes(options) => volumes::handle(options, state).await,
                 Commands::Backup(options) => backup::handle(options, state).await,
+                Commands::Webhooks(options) => webhooks::handle(options, state).await,
             }
         }
     }

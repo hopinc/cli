@@ -1,5 +1,6 @@
 pub mod http;
 use anyhow::{ensure, Context as AnyhyowContext, Result};
+use hop::{Hop, HopOptions};
 
 use self::http::HttpClient;
 use crate::commands::auth::login::util::{token_options, TokenType};
@@ -17,6 +18,7 @@ pub struct State {
     pub ctx: Context,
     pub http: HttpClient,
     pub debug: bool,
+    pub hop: Hop,
     token: Option<String>,
     token_type: Option<TokenType>,
 }
@@ -52,19 +54,24 @@ impl State {
 
         let (token, token_type) = Self::handle_token(init_token)?;
 
+        let api_url = std::env::var("API_URL")
+            .ok()
+            .or_else(|| ctx.override_api_url.clone());
+
         // preffer the override token over the auth token
-        let http = HttpClient::new(
-            token.clone(),
-            std::env::var("API_URL")
-                .ok()
-                .or_else(|| ctx.override_api_url.clone()),
-        );
+        let http = HttpClient::new(token.clone(), api_url.clone());
+
+        let hop = Hop::new_with_options(HopOptions {
+            token: token.clone(),
+            api_url,
+        })?;
 
         Ok(State {
             is_ci: Self::check_if_ci(),
             token_type,
             token,
             http,
+            hop,
             auth,
             ctx,
             debug: options.debug,
