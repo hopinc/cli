@@ -292,9 +292,8 @@ impl<'de> Deserialize<'de> for HealthCheckTest {
         let value = Value::deserialize(deserializer)?;
 
         // regex to extract the hostname port and path from a given curl command
-        let re =
-            Regex::new(r#"^curl\s?((?:-|--)[A-Za-z]+)*\s+(https?://)?([^/:\s]+)(:\d+)?(/.*)?$"#)
-                .unwrap();
+        let re = Regex::new(r"^curl\s?((?:-|--)[A-Za-z]+)*\s+(https?://)?([^/:\s]+)(:\d+)?(/.*)?$")
+            .unwrap();
 
         let test_string = match value {
             Value::String(s) => s,

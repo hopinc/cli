@@ -42,9 +42,9 @@ impl TonneruSocket {
 
         #[cfg(not(windows))]
         let config = {
-            // ref: https://github.com/rustls/hyper-rustls/blob/main/src/config.rs#L55
+            // ref: https://github.com/rustls/hyper-rustls/blob/fcb72be6e3b0e060bfe5bc183a67c16ea56e7132/src/config.rs#L55-L69
             let mut roots = RootCertStore::empty();
-            roots.add_server_trust_anchors(webpki_roots::TLS_SERVER_ROOTS.0.iter().map(|ta| {
+            roots.add_trust_anchors(webpki_roots::TLS_SERVER_ROOTS.iter().map(|ta| {
                 OwnedTrustAnchor::from_subject_spki_name_constraints(
                     ta.subject,
                     ta.spki,
