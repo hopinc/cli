@@ -42,7 +42,6 @@ jobs:
     name: Build Release Assets
     needs: ["draft-release"]
     runs-on: ${{ matrix.os }}
-    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
@@ -114,6 +113,10 @@ jobs:
       - name: Install Wix [Windows]
         if: matrix.os == 'windows-latest'
         run: cargo install cargo-wix
+
+      - name: Install Cross [Linux]
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo install cross
 
       - name: Cache
         uses: Swatinem/rust-cache@v2
@@ -197,7 +200,7 @@ jobs:
           components: rustfmt, clippy
 
       - name: Login to Crates
-        env: 
+        env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: cargo login
 
