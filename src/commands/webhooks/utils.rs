@@ -1,7 +1,7 @@
 use std::io::Write;
 
 use anyhow::Result;
-use hop::webhooks::types::{PossibleEvents, Webhook};
+use hop::webhooks::types::{PossibleEvents, Webhook, EVENT_CATEGORIES, EVENT_NAMES};
 use tabwriter::TabWriter;
 
 pub fn format_webhooks(webhooks: &[Webhook], title: bool) -> Vec<String> {
@@ -31,4 +31,22 @@ pub fn format_webhooks(webhooks: &[Webhook], title: bool) -> Vec<String> {
 
 pub fn string_to_event(string: &str) -> Result<PossibleEvents> {
     serde_json::from_str(string).map_err(|e| e.into())
+}
+
+pub fn get_formatted_events() -> Result<Vec<String>> {
+    let mut events = vec![];
+
+    let mut start_idx = 0usize;
+
+    for (name, end_idx) in EVENT_CATEGORIES {
+        let end_idx = end_idx as usize + start_idx;
+
+        for (_, event) in &EVENT_NAMES[start_idx..end_idx] {
+            events.push(format!("{name}: {event}"));
+        }
+
+        start_idx = end_idx;
+    }
+
+    Ok(events)
 }

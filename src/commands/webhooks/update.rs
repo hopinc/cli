@@ -1,9 +1,9 @@
 use anyhow::{Context, Result};
 use clap::Parser;
-use hop::webhooks::types::{PossibleEvents, EVENT_CATEGORIES, EVENT_NAMES};
+use hop::webhooks::types::{PossibleEvents, EVENT_NAMES};
 
 use super::utils::string_to_event;
-use crate::commands::webhooks::utils::format_webhooks;
+use crate::commands::webhooks::utils::{format_webhooks, get_formatted_events};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
@@ -51,23 +51,10 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     let events = if !options.events.is_empty() {
         options.events
     } else {
-        let mut events = vec![];
-        let mut start_idx = 0usize;
-
-        for (name, end_idx) in EVENT_CATEGORIES {
-            let end_idx = end_idx as usize + start_idx;
-
-            for (_, event) in &EVENT_NAMES[start_idx..end_idx] {
-                events.push(format!("{name}: {event}"))
-            }
-
-            start_idx = end_idx;
-        }
-
         let dialoguer_events = loop {
             let test = dialoguer::MultiSelect::new()
                 .with_prompt("Select events")
-                .items(&events)
+                .items(&get_formatted_events()?)
                 .defaults(&EVENT_NAMES.map(|(event, _)| old.events.contains(&event)))
                 .interact()?;
 
@@ -79,7 +66,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         EVENT_NAMES
             .into_iter()
             .enumerate()
-            .filter(|(idx, _)| dialoguer_events.contains(idx))
+            .filter(|(idx, _)| dialoguer_events.binary_search(idx).is_ok())
             .map(|(_, (event, _))| event)
             .collect()
     };
