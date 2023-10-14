@@ -11,7 +11,7 @@ use crate::utils::urlify;
 #[clap(about = "Create a new webhook")]
 #[group(skip)]
 pub struct Options {
-    #[clap(short, long, help = "The url to send the webhook to")]
+    #[clap(help = "The url to send the webhook to")]
     pub url: Option<String>,
     #[clap(short, long, help = "The events to send the webhook on", value_parser = string_to_event )]
     pub events: Vec<PossibleEvents>,
@@ -32,13 +32,13 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         options.events
     } else {
         let dialoguer_events = loop {
-            let test = dialoguer::MultiSelect::new()
+            let idxs = dialoguer::MultiSelect::new()
                 .with_prompt("Select events")
                 .items(&get_formatted_events()?)
                 .interact()?;
 
-            if !test.is_empty() {
-                break test;
+            if !idxs.is_empty() {
+                break idxs;
             }
         };
 

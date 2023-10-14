@@ -4,8 +4,9 @@ use hop::{Hop, HopOptions};
 
 use self::http::HttpClient;
 use crate::commands::auth::login::util::{token_options, TokenType};
+use crate::commands::ignite::groups::utils::fetch_grouped_deployments;
 use crate::commands::ignite::types::Deployment;
-use crate::commands::ignite::utils::{format_deployments, get_all_deployments, get_deployment};
+use crate::commands::ignite::utils::{get_all_deployments, get_deployment};
 use crate::config::EXEC_NAME;
 use crate::store::auth::Auth;
 use crate::store::context::Context;
@@ -165,16 +166,22 @@ impl State {
         if let Some(name_or_id) = name_or_id {
             self.get_deployment_by_name_or_id(name_or_id).await
         } else {
-            let deployments =
-                get_all_deployments(&self.http, &self.ctx.current_project_error()?.id).await?;
+            let (deployments_fmt, deployments, validator) =
+                fetch_grouped_deployments(self, false, true).await?;
 
-            let deployments_fmt = format_deployments(&deployments, false);
+            let idx = loop {
+                let idx = dialoguer::Select::new()
+                    .with_prompt("Select a deployment")
+                    .items(&deployments_fmt)
+                    .default(0)
+                    .interact()?;
 
-            let idx = dialoguer::Select::new()
-                .with_prompt("Select a deployment")
-                .items(&deployments_fmt)
-                .default(0)
-                .interact()?;
+                if let Ok(idx) = validator(idx) {
+                    break idx;
+                }
+
+                console::Term::stderr().clear_last_lines(1)?
+            };
 
             Ok(deployments[idx].clone())
         }

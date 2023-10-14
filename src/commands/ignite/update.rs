@@ -1,11 +1,9 @@
-use anyhow::{anyhow, ensure, Result};
+use anyhow::{anyhow, Result};
 use clap::Parser;
 
 use super::create::Options as CreateOptions;
-use crate::commands::ignite::utils::{
-    format_deployments, get_all_deployments, rollout, scale, update_deployment,
-    update_deployment_config,
-};
+use crate::commands::ignite::groups::utils::fetch_grouped_deployments;
+use crate::commands::ignite::utils::{rollout, scale, update_deployment, update_deployment_config};
 use crate::state::State;
 
 #[derive(Debug, Parser)]
@@ -29,15 +27,22 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Some(id) => state.get_deployment_by_name_or_id(&id).await?,
 
         None => {
-            let deployments = get_all_deployments(&state.http, &project.id).await?;
-            ensure!(!deployments.is_empty(), "No deployments found");
-            let deployments_fmt = format_deployments(&deployments, false);
+            let (deployments_fmt, deployments, validator) =
+                fetch_grouped_deployments(&state, false, true).await?;
 
-            let idx = dialoguer::Select::new()
-                .with_prompt("Select a deployment")
-                .items(&deployments_fmt)
-                .default(0)
-                .interact()?;
+            let idx = loop {
+                let idx = dialoguer::Select::new()
+                    .with_prompt("Select a deployment")
+                    .items(&deployments_fmt)
+                    .default(0)
+                    .interact()?;
+
+                if let Ok(idx) = validator(idx) {
+                    break idx;
+                }
+
+                console::Term::stderr().clear_last_lines(1)?
+            };
 
             deployments[idx].clone()
         }

@@ -3,6 +3,7 @@ pub mod create;
 mod delete;
 pub mod from_compose;
 mod get_env;
+pub mod groups;
 mod health;
 mod inspect;
 mod list;
@@ -41,6 +42,8 @@ pub enum Commands {
     Health(health::Options),
     #[clap(alias = "build")]
     Builds(builds::Options),
+    #[clap(alias = "gr")]
+    Groups(groups::Options),
     #[clap(alias = "rollback")]
     Promote(promote::Options),
     #[clap(alias = "template")]
@@ -79,5 +82,6 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Commands::FromCompose(options) => from_compose::handle(options, state).await,
         Commands::Tunnel(options) => super::tunnel::handle(&options, state).await,
         Commands::Templates(options) => templates::handle(options, state).await,
+        Commands::Groups(options) => groups::handle(options, state).await,
     }
 }

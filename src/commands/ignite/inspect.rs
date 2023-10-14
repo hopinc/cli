@@ -1,11 +1,12 @@
 use std::io::Write;
 
-use anyhow::{ensure, Result};
+use anyhow::Result;
 use clap::Parser;
 use tabwriter::TabWriter;
 
 use super::utils::get_tiers;
-use crate::commands::ignite::utils::{format_deployments, get_all_deployments, get_storage};
+use crate::commands::ignite::groups::utils::fetch_grouped_deployments;
+use crate::commands::ignite::utils::get_storage;
 use crate::state::State;
 
 #[derive(Debug, Parser)]
@@ -20,17 +21,22 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     let mut deployment = if let Some(id_or_name) = options.deployment {
         state.get_deployment_by_name_or_id(&id_or_name).await?
     } else {
-        let project_id = state.ctx.current_project_error()?.id;
+        let (deployments_fmt, deployments, validator) =
+            fetch_grouped_deployments(&state, false, true).await?;
 
-        let deployments = get_all_deployments(&state.http, &project_id).await?;
-        ensure!(!deployments.is_empty(), "No deployments found");
-        let deployments_fmt = format_deployments(&deployments, false);
+        let idx = loop {
+            let idx = dialoguer::Select::new()
+                .with_prompt("Select a deployment")
+                .items(&deployments_fmt)
+                .default(0)
+                .interact()?;
 
-        let idx = dialoguer::Select::new()
-            .with_prompt("Select a deployment")
-            .items(&deployments_fmt)
-            .default(0)
-            .interact()?;
+            if let Ok(idx) = validator(idx) {
+                break idx;
+            }
+
+            console::Term::stderr().clear_last_lines(1)?
+        };
 
         deployments[idx].clone()
     };

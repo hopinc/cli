@@ -52,14 +52,14 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         options.events
     } else {
         let dialoguer_events = loop {
-            let test = dialoguer::MultiSelect::new()
+            let idxs = dialoguer::MultiSelect::new()
                 .with_prompt("Select events")
                 .items(&get_formatted_events()?)
                 .defaults(&EVENT_NAMES.map(|(event, _)| old.events.contains(&event)))
                 .interact()?;
 
-            if !test.is_empty() {
-                break test;
+            if !idxs.is_empty() {
+                break idxs;
             }
         };
 

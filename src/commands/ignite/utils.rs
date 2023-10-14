@@ -158,45 +158,6 @@ pub async fn get_premade(http: &HttpClient) -> Result<Vec<Premade>> {
     Ok(response.premade)
 }
 
-pub fn format_deployments(deployments: &Vec<Deployment>, title: bool) -> Vec<String> {
-    let mut tw = TabWriter::new(vec![]);
-
-    if title {
-        writeln!(
-            &mut tw,
-            "NAME\tID\tCONTAINERS\tCREATED\tTYPE\tSTRATEGY\tRESTART"
-        )
-        .unwrap();
-    }
-
-    for deployment in deployments {
-        writeln!(
-            &mut tw,
-            "{}\t{}\t{}/{}\t{}\t{}\t{}\t{}",
-            deployment.name,
-            deployment.id,
-            deployment.container_count,
-            deployment.target_container_count,
-            deployment.created_at,
-            deployment.config.type_,
-            deployment.config.container_strategy,
-            deployment
-                .config
-                .restart_policy
-                .as_ref()
-                .map(|p| p.to_string())
-                .unwrap_or_else(|| "-".to_string()),
-        )
-        .unwrap();
-    }
-
-    String::from_utf8(tw.into_inner().unwrap())
-        .unwrap()
-        .lines()
-        .map(std::string::ToString::to_string)
-        .collect()
-}
-
 pub async fn update_deployment_config(
     http: &HttpClient,
     options: Options,

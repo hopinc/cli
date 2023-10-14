@@ -1,8 +1,8 @@
-use anyhow::{ensure, Result};
+use anyhow::Result;
 use clap::Parser;
 
-use super::utils::{format_deployments, get_all_deployments, rollout};
-use crate::state::State;
+use super::utils::rollout;
+use crate::{commands::ignite::groups::utils::fetch_grouped_deployments, state::State};
 
 #[derive(Debug, Parser)]
 #[clap(about = "Rollout new containers to a deployment")]
@@ -17,17 +17,22 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
         Some(id) => id,
 
         None => {
-            let project_id = state.ctx.current_project_error()?.id;
+            let (deployments_fmt, deployments, validator) =
+                fetch_grouped_deployments(&state, false, true).await?;
 
-            let deployments = get_all_deployments(&state.http, &project_id).await?;
-            ensure!(!deployments.is_empty(), "No deployments found");
-            let deployments_fmt = format_deployments(&deployments, false);
+            let idx = loop {
+                let idx = dialoguer::Select::new()
+                    .with_prompt("Select a deployment")
+                    .items(&deployments_fmt)
+                    .default(0)
+                    .interact()?;
 
-            let idx = dialoguer::Select::new()
-                .with_prompt("Select a deployment")
-                .items(&deployments_fmt)
-                .default(0)
-                .interact()?;
+                if let Ok(idx) = validator(idx) {
+                    break idx;
+                }
+
+                console::Term::stderr().clear_last_lines(1)?
+            };
 
             deployments[idx].id.clone()
         }

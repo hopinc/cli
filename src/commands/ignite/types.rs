@@ -183,6 +183,7 @@ pub struct Deployment {
     pub container_count: u64,
     pub target_container_count: u64,
     pub config: Config,
+    pub group_id: Option<String>,
     #[serde(skip_serializing)]
     pub metadata: Option<Metadata>,
 }
