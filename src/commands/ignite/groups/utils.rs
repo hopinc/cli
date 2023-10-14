@@ -1,6 +1,6 @@
 use std::{io::Write, str::FromStr};
 
-use anyhow::{anyhow, ensure, Error, Result};
+use anyhow::{anyhow, ensure, Error, Ok, Result};
 use chrono::{DateTime, Utc};
 use hop::ignite::groups::types::Group;
 use tabwriter::TabWriter;
@@ -186,8 +186,10 @@ pub async fn fetch_grouped_deployments(
     let closure = move |idx| {
         let search = ignore_list.binary_search(&idx);
 
-        if let Ok(idx_c) = search {
-            Ok(idx - idx_c - 1)
+        // because indexes are ordered, we can subtract the possible index from the current index
+        // to get the actual index in the `deps` vector
+        if let Err(possible) = search {
+            Ok(idx - possible)
         } else {
             Err(anyhow!("Invalid index selected"))
         }
