@@ -66,7 +66,7 @@ async-compression = { version = "0.4", features = ["tokio", "gzip"] }
 
 # *nix only deps
 [target.'cfg(all(not(windows), not(macos)))'.dependencies]
-hop = { version = "0.1.9", features = [
+hop = { version = "0.1", features = [
     "chrono",
     "rustls-tls-webpki-roots",
 ], default-features = false }

@@ -773,9 +773,9 @@ dependencies = [
 
 [[package]]
 name = "hop"
-version = "0.1.9"
+version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "616a68be95745a3b1df6c370a28beedc12c30ff9d1acee6257c1271f50a04110"
+checksum = "e3da67dfd0975a6d356942869e33715f54f0ff62bfcc4972a7452ccb31485099"
 dependencies = [
  "chrono",
  "reqwest",

@@ -1,7 +1,7 @@
-mod add;
 mod create;
 mod delete;
 mod list;
+mod r#move;
 pub mod utils;
 
 use anyhow::Result;
@@ -15,8 +15,8 @@ pub enum Commands {
     Create(create::Options),
     #[clap(name = "rm", alias = "delete")]
     Delete(delete::Options),
-    #[clap(name = "add", alias = "add-deployment")]
-    Add(add::Options),
+    #[clap(name = "move", alias = "add-deployment", alias = "add")]
+    Move(r#move::Options),
     List(list::Options),
 }
 
@@ -32,7 +32,7 @@ pub async fn handle(options: Options, state: State) -> Result<()> {
     match options.commands {
         Commands::Create(options) => create::handle(options, state).await,
         Commands::Delete(options) => delete::handle(options, state).await,
-        Commands::Add(options) => add::handle(options, state).await,
+        Commands::Move(options) => r#move::handle(options, state).await,
         Commands::List(options) => list::handle(options, state).await,
     }
 }
