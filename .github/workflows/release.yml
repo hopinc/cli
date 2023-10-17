@@ -200,9 +200,7 @@ jobs:
           components: rustfmt, clippy
 
       - name: Login to Crates
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-        run: cargo login
+        run: cargo login ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
       - name: Publish Crates
         run: cargo publish --locked --no-verify
