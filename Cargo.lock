@@ -785,7 +785,7 @@ dependencies = [
 
 [[package]]
 name = "hop-cli"
-version = "0.2.60"
+version = "0.2.61"
 dependencies = [
  "anyhow",
  "async-compression 0.4.3",
