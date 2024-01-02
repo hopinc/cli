@@ -224,8 +224,8 @@ const CMD_ARGS: &[&str] = &["/C"];
 const CMD_ARGS: &[&str] = &["-c"];
 
 pub async fn execute_commands(
-    non_elevated_args: &Vec<OsString>,
-    elevated_args: &Vec<OsString>,
+    non_elevated_args: &[OsString],
+    elevated_args: &[OsString],
 ) -> Result<()> {
     if !elevated_args.is_empty() {
         log::debug!(

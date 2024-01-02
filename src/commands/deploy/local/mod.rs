@@ -55,6 +55,8 @@ pub async fn build(
             .arg(dir)
             .arg("-t")
             .arg(image)
+            .arg("--progress=plain")
+            .arg("--platform=linux/amd64")
             .args(build_args)
             .status()
             .await?;
@@ -87,6 +89,7 @@ pub async fn build(
             .arg("build")
             .arg("-n")
             .arg(image)
+            .arg("--platform=linux/amd64")
             .arg(dir)
             .status()
             .await?;
